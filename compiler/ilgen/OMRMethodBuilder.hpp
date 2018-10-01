@@ -27,6 +27,7 @@
 #include <fstream>
 #include "ilgen/IlBuilder.hpp"
 #include "env/TypedAllocator.hpp"
+#include "ilgen/MethodBuilderRecorder.hpp"
 
 // Maximum length of _definingLine string (including null terminator)
 #define MAX_LINE_NUM_LEN 7
@@ -35,6 +36,7 @@ class TR_BitVector;
 namespace TR { class BytecodeBuilder; }
 namespace TR { class ResolvedMethod; }
 namespace TR { class SymbolReference; }
+namespace TR { class JitBuilderRecorder; }
 namespace TR { class VirtualMachineState; }
 
 namespace TR { class SegmentProvider; }
@@ -44,37 +46,23 @@ class TR_Memory;
 namespace OMR
 {
 
-class MethodBuilder : public TR::IlBuilder
+class MethodBuilder : public TR::MethodBuilderRecorder
    {
    public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
-   MethodBuilder(TR::TypeDictionary *types, TR::VirtualMachineState *vmState = NULL);
+   MethodBuilder(TR::TypeDictionary *types, TR::VirtualMachineState *vmState = NULL, TR::JitBuilderRecorder *recorder = NULL);
    MethodBuilder(TR::MethodBuilder *callerMB, TR::VirtualMachineState *vmState = NULL);
+
    virtual ~MethodBuilder();
 
    virtual void setupForBuildIL();
 
    virtual bool injectIL();
 
-   /**
-    * @brief returns the next index to be used for new values
-    * @returns the next value index
-    * If this method build is an inlined MethodBuilder, then the answer to
-    * this query is delegated to the caller's MethodBuilder, which means
-    * only the top-level MethodBuilder object assigns value IDs.
-    */
-   int32_t getNextValueID();
-
-   bool usesBytecodeBuilders()                               { return _useBytecodeBuilders; }
-   void setUseBytecodeBuilders()                             { _useBytecodeBuilders = true; }
-
    void addToAllBytecodeBuildersList(TR::BytecodeBuilder *bcBuilder);
    void addToTreeConnectingWorklist(TR::BytecodeBuilder *builder);
    void addToBlockCountingWorklist(TR::BytecodeBuilder *builder);
-
-   virtual TR::VirtualMachineState *vmState()                { return _vmState; }
-   virtual void setVMState(TR::VirtualMachineState *vmState) { _vmState = vmState; }
 
    virtual bool isMethodBuilder()                            { return true; }
    virtual TR::MethodBuilder *asMethodBuilder();
@@ -85,7 +73,7 @@ class MethodBuilder : public TR::IlBuilder
    const char *getDefiningLine()                             { return _definingLine; }
 
    const char *getMethodName()                               { return _methodName; }
-   void AllLocalsHaveBeenDefined()                           { _newSymbolsAreTemps = true; }
+   void AllLocalsHaveBeenDefined();
 
    TR::IlType *getReturnType()                               { return _returnType; }
    int32_t getNumParameters()                                { return _numParameters; }
@@ -110,7 +98,7 @@ class MethodBuilder : public TR::IlBuilder
    void AppendBuilder(TR::BytecodeBuilder *bb);
    void AppendBuilder(TR::IlBuilder *b)    { this->OMR::IlBuilder::AppendBuilder(b); }
 
-   void DefineFile(const char *file)                         { _definingFile = file; }
+   void DefineFile(const char *file);
 
    void DefineLine(const char *line);
    void DefineLine(int line);
@@ -309,17 +297,11 @@ class MethodBuilder : public TR::IlBuilder
    TR::IlType                * _cachedParameterTypesArray[10];
 
    bool                        _newSymbolsAreTemps;
-   int32_t                     _nextValueID;
 
-   bool                        _useBytecodeBuilders;
    uint32_t                    _numBlocksBeforeWorklist;
    List<TR::BytecodeBuilder> * _countBlocksWorklist;
    List<TR::BytecodeBuilder> * _connectTreesWorklist;
    List<TR::BytecodeBuilder> * _allBytecodeBuilders;
-   TR::VirtualMachineState   * _vmState;
-
-   TR_BitVector              * _bytecodeWorklist;
-   TR_BitVector              * _bytecodeHasBeenInWorklist;
 
    int32_t                     _inlineSiteIndex;
    int32_t                     _nextInlineSiteIndex;

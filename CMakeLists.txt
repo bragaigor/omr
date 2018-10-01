@@ -156,6 +156,11 @@ if(OMR_JITBUILDER)
 	add_subdirectory(jitbuilder)
 endif(OMR_JITBUILDER)
 
+if(OMR_IMPERIUM)
+	omr_assert(FATAL_ERROR TEST DEFINED OMR_JITBUILDER)
+	add_subdirectory(imperium)
+endif(OMR_IMPERIUM)
+
 # This should come last to ensure dependencies
 # are defined
 if(OMR_FVTEST)

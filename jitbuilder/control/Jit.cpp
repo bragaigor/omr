@@ -202,6 +202,19 @@ compileMethodBuilder(TR::MethodBuilder *m, uint8_t **entry)
    }
 
 extern "C"
+int32_t
+recordMethodBuilder(TR::MethodBuilder *m)
+   {
+   TR::ResolvedMethod resolvedMethod(m);
+   TR::IlGeneratorMethodDetails details(&resolvedMethod);
+
+   int32_t rc=0;
+   compileMethodFromDetails(NULL, details, warm, rc, false);
+   m->typeDictionary()->NotifyCompilationDone();
+   return rc;
+   }
+
+extern "C"
 void
 shutdownJit()
    {

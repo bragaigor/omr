@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2000, 2016 IBM Corp. and others
+ * Copyright (c) 2016, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -19,16 +19,23 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include <stdint.h>                      // for int32_t, uint8_t
-#include "compile/CompilationTypes.hpp"  // for TR_Hotness
-#include "env/ConcreteFE.hpp"            // for FrontEnd
+#ifndef TR_JITBUILDERRECORDER_BINARYFILE_INCL
+#define TR_JITBUILDERRECORDER_BINARYFILE_INCL
 
-struct OMR_VMThread;
-class TR_ResolvedMethod;
-namespace TR { class IlGeneratorMethodDetails; }
-namespace TR { class JitConfig; }
+#include "ilgen/OMRJitBuilderRecorderBinaryFile.hpp"
 
-int32_t init_options(TR::JitConfig *jitConfig, char * cmdLineOptions);
-int32_t commonJitInit(OMR::FrontEnd &fe, char * cmdLineOptions);
-uint8_t *compileMethod(OMR_VMThread *omrVMThread, TR_ResolvedMethod &compilee, TR_Hotness hotness, int32_t &rc);
-uint8_t *compileMethodFromDetails(OMR_VMThread *omrVMThread, TR::IlGeneratorMethodDetails &details, TR_Hotness hotness, int32_t &rc, bool shouldCompile = true);
+namespace TR
+{
+   class JitBuilderRecorderBinaryFile : public OMR::JitBuilderRecorderBinaryFile
+      {
+      public:
+         JitBuilderRecorderBinaryFile(const TR::MethodBuilderRecorder *mb, const char *fileName)
+            : OMR::JitBuilderRecorderBinaryFile(mb, fileName)
+            { }
+         virtual ~JitBuilderRecorderBinaryFile()
+            { }
+      };
+
+} // namespace TR
+
+#endif // !defined(TR_JITBUILDERRECORDER_BINARYFILE_INCL)
