@@ -19,61 +19,49 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#ifndef OMR_ILTYPE_INCL
-#define OMR_ILTYPE_INCL
+#ifndef OMR_JITBUILDERRECORDER_TEXTFILE_INCL
+#define OMR_JITBUILDERRECORDER_TEXTFILE_INCL
 
-#include "il/DataTypes.hpp"
+#include "ilgen/JitBuilderRecorder.hpp"
 
-class TR_Memory;
-#ifndef TR_ALLOC
-#define TR_ALLOC(x)
-#endif
+#include <iostream>
+#include <fstream>
+#include <map>
 
-
+namespace TR { class IlBuilderRecorder; }
+namespace TR { class MethodBuilderRecorder; }
 namespace TR { class IlType; }
-namespace TR { class JitBuilderRecorder; }
+namespace TR { class IlValue; }
 
 namespace OMR
 {
 
-class IlType
+class JitBuilderRecorderTextFile : public TR::JitBuilderRecorder
    {
-public:
-   TR_ALLOC(TR_Memory::IlGenerator)
+   public:
+   JitBuilderRecorderTextFile(const TR::MethodBuilderRecorder *mb, const char *fileName);
+   virtual ~JitBuilderRecorderTextFile() { }
 
-   IlType(const char *name) :
-      _name(name)
-      { }
-   IlType() :
-      _name(0)
-      { }
-   virtual ~IlType()
-      { }
+   virtual void Close();
+   virtual void String(const char * const string);
+   virtual void Number(int8_t num);
+   virtual void Number(int16_t num);
+   virtual void Number(int32_t num);
+   virtual void Number(int64_t num);
+   virtual void Number(float num);
+   virtual void Number(double num);
+   virtual void ID(TypeID id);
+   virtual void Statement(const char *s);
+   virtual void Type(const TR::IlType *type);
+   virtual void Value(const TR::IlValue *v);
+   virtual void Builder(const TR::IlBuilderRecorder *b);
+   virtual void Location(const void * location);
+   virtual void EndStatement();
 
-   const char *getName() { return _name; }
-   virtual char *getSignatureName();
-   const TR::IlType * self();
-
-   virtual TR::DataType getPrimitiveType() { return TR::NoType; }
-
-   virtual bool isArray() { return false; }
-   virtual bool isPointer() { return false; }
-   virtual TR::IlType *baseType() { return NULL; }
-
-   virtual bool isStruct() {return false; }
-   virtual bool isUnion() { return false; }
-
-   virtual size_t getSize();
-
-   void RecordFirstTime(TR::JitBuilderRecorder *recorder);
-   virtual void Record(TR::JitBuilderRecorder *recorder);
-
-protected:
-   const char *_name;
-   static const char * signatureNameForType[TR::NumOMRTypes];
-   static const uint8_t primitiveTypeAlignment[TR::NumOMRTypes];
+   private:
+   std::fstream _file;
    };
 
 } // namespace OMR
 
-#endif // !defined(OMR_ILTYPE_INCL)
+#endif // !defined(OMR_JITBUILDERRECORDER_TEXTFILE_INCL)

@@ -32,10 +32,6 @@ namespace TR
          BytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name=NULL)
             : OMR::BytecodeBuilder(methodBuilder, bcIndex, name)
             { }
-         void initialize(TR::IlGeneratorMethodDetails * details,
-                           TR::ResolvedMethodSymbol     * methodSymbol,
-                           TR::FrontEnd                 * fe,
-                           TR::SymbolReferenceTable     * symRefTab); 
       };
 
 } // namespace TR

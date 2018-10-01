@@ -47,6 +47,7 @@ ALL_TESTS = \
             pointer \
             pow2 \
             recfib \
+            recordReplayTest \
             simple \
             structarray \
             switch \
@@ -68,6 +69,7 @@ common_goal: $(ALL_TESTS)
 	./nestedloop
 	./pow2
 	./simple
+	./recordReplayTest
 	./toiltype
 	./worklist
 
@@ -272,6 +274,11 @@ simple : libjitbuilder.a Simple.o
 Simple.o: src/Simple.cpp src/Simple.hpp
 	$(CXX) -o $@ $(CXXFLAGS) $<
 
+recordReplayTest : libjitbuilder.a RecordReplayTest.o
+	$(CXX) -g -fno-rtti -o $@ RecordReplayTest.o $(JITBUILDER_LINK_FLAGS)
+
+RecordReplayTest.o: src/RecordReplayTest.cpp src/RecordReplayTest.hpp
+	$(CXX) -o $@ $(CXXFLAGS) $<
 
 structarray : libjitbuilder.a StructArray.o
 	$(CXX) -g -fno-rtti -o $@ StructArray.o $(JITBUILDER_LINK_FLAGS)

@@ -43,6 +43,7 @@ operandstacktests
 pointer
 pow2
 recfib
+recordReplayTest
 simple
 structarray
 switch
