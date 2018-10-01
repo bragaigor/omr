@@ -37,6 +37,7 @@ extern "C" {
 typedef void * (*ClientAllocator)(void * impl);
 typedef void * (*ImplGetter)(void *client);
 }
+namespace TR { class JitBuilderRecorder; }
 
 namespace OMR
 {
@@ -59,6 +60,7 @@ public:
 
    const char *getName() { return _name; }
    virtual char *getSignatureName();
+   const TR::IlType * self();
 
    virtual TR::IlType *primitiveType(TR::TypeDictionary * d);
 
@@ -105,6 +107,8 @@ public:
       {
       _getImpl = getter;
       }
+   void RecordFirstTime(TR::JitBuilderRecorder *recorder);
+   virtual void Record(TR::JitBuilderRecorder *recorder);
 
 protected:
    /**

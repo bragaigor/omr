@@ -190,6 +190,20 @@ internal_compileMethodBuilder(TR::MethodBuilder *m, void **entry)
    return m->Compile(entry);
    }
 
+extern "C"
+int32_t
+recordMethodBuilder(TR::MethodBuilder *m)
+   {
+   TR::ResolvedMethod resolvedMethod(m);
+   TR::IlGeneratorMethodDetails details(&resolvedMethod);
+
+   int32_t rc=0;
+   compileMethodFromDetails(NULL, details, warm, rc, false);
+   m->typeDictionary()->NotifyCompilationDone();
+   return rc;
+   }
+
+extern "C"
 void
 internal_shutdownJit()
    {
