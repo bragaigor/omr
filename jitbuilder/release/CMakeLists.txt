@@ -40,6 +40,7 @@ create_jitbuilder_test(iterfib         src/IterativeFib.cpp)
 create_jitbuilder_test(nestedloop      src/NestedLoop.cpp)
 create_jitbuilder_test(pow2            src/Pow2.cpp)
 create_jitbuilder_test(simple          src/Simple.cpp)
+create_jitbuilder_test(recordReplayTest  src/RecordReplayTest.cpp)
 create_jitbuilder_test(worklist        src/Worklist.cpp)
 
 # Additional Tests: These may not run properly on all platforms
