@@ -265,7 +265,10 @@ JIT_PRODUCT_SOURCE_FILES+=\
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRJitBuilderRecorderBinaryBuffer.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRJitBuilderRecorderBinaryFile.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRJitBuilderRecorderTextFile.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/OMRJitBuilderReplay.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/OMRJitBuilderReplayTextFile.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRMethodBuilderRecorder.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/OMRMethodBuilderReplay.cpp \
     $(JIT_OMR_DIRTY_DIR)/runtime/Alignment.cpp \
     $(JIT_OMR_DIRTY_DIR)/runtime/CodeCacheTypes.cpp \
     $(JIT_OMR_DIRTY_DIR)/runtime/OMRCodeCache.cpp \
