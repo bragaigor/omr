@@ -42,15 +42,6 @@
     #endif
     }
 
- OMR::JitBuilderReplayTextFile::JitBuilderReplayTextFile(std::string fileString)
-    : TR::JitBuilderReplay(), _isFile(false), _fileStream(std::istringstream(fileString))
-    {
-    start();
-    #ifdef DEBUG
-    std::cout << "JitBuilderReplayTextFile: constructor - file as string passed in" << '\n';
-    #endif
-    }
-
 void
 OMR::JitBuilderReplayTextFile::start()
    {

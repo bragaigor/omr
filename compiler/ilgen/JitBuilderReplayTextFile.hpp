@@ -32,9 +32,6 @@
           JitBuilderReplayTextFile(const char *fileName)
              : OMR::JitBuilderReplayTextFile(fileName)
              { }
-          JitBuilderReplayTextFile(std::string fileString)
-             : OMR::JitBuilderReplayTextFile(fileString)
-             { }
           virtual ~JitBuilderReplayTextFile()
              { }
        };

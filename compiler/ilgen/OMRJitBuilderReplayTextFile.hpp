@@ -41,7 +41,6 @@
     enum BuilderFlag {METHOD_BUILDER, IL_BUILDER};
 
     JitBuilderReplayTextFile(const char *fileName);
-    JitBuilderReplayTextFile(std::string fileString);
 
     void start();
     void processFirstLineFromTextFile();
