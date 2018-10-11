@@ -187,7 +187,8 @@ TR::Instruction *OMR::X86::TreeEvaluator::insertLoadConstant(TR::Node           
    TR::Compilation *comp = cg->comp();
    static const TR_X86OpCodes ops[TR_NumRematerializableTypes+1][3] =
       //    load 0      load -1     load c
-      { { XOR4RegReg, OR4RegImms, MOV4RegImm4 },   // Byte constant
+      { { BADIA32Op,  BADIA32Op,  BADIA32Op   },   // LEA; should not seen here
+        { XOR4RegReg, OR4RegImms, MOV4RegImm4 },   // Byte constant
         { XOR4RegReg, OR4RegImms, MOV4RegImm4 },   // Short constant
         { XOR4RegReg, OR4RegImms, MOV4RegImm4 },   // Char constant
         { XOR4RegReg, OR4RegImms, MOV4RegImm4 },   // Int constant
@@ -416,12 +417,14 @@ OMR::X86::TreeEvaluator::insertLoadMemory(
    {
    TR::Compilation *comp = cg->comp();
    static const TR_X86OpCodes ops[TR_NumRematerializableTypes] =
-      { L1RegMem,     // Byte
-        L2RegMem,     // Short
-        L2RegMem,     // Char
-        L4RegMem,     // Int
-        L4RegMem,     // Address (64-bit addresses handled specailly below)
-        L8RegMem,     // Long
+      {
+      LEARegMem(),  // Load Effective Address
+      L1RegMem,     // Byte
+      L2RegMem,     // Short
+      L2RegMem,     // Char
+      L4RegMem,     // Int
+      L4RegMem,     // Address (64-bit addresses handled specailly below)
+      L8RegMem,     // Long
       };
 
    TR_X86OpCodes opCode = ops[type];
@@ -3066,29 +3069,40 @@ TR::Register *OMR::X86::TreeEvaluator::directCallEvaluator(TR::Node *node, TR::C
 
    if (SymRef && SymRef->getSymbol()->castToMethodSymbol()->isInlinedByCG())
       {
-      if (comp->getSymRefTab()->isNonHelper(SymRef, TR::SymbolReferenceTable::atomicAdd32BitSymbol))
+      TR_X86OpCodes op = BADIA32Op;
+
+      if (comp->getSymRefTab()->isNonHelper(SymRef, TR::SymbolReferenceTable::atomicAddSymbol))
          {
-         return inlineAtomicMemoryUpdate(node, LADD4MemReg, cg);
+         op = node->getChild(1)->getDataType().isInt32() ? LADD4MemReg : LADD8MemReg;
          }
-      if (comp->getSymRefTab()->isNonHelper(SymRef, TR::SymbolReferenceTable::atomicAdd64BitSymbol))
+      else if (comp->getSymRefTab()->isNonHelper(SymRef, TR::SymbolReferenceTable::atomicFetchAndAddSymbol))
          {
-         return inlineAtomicMemoryUpdate(node, LADD8MemReg, cg);
+         op = node->getChild(1)->getDataType().isInt32() ? LXADD4MemReg : LXADD8MemReg;
          }
-      if (comp->getSymRefTab()->isNonHelper(SymRef, TR::SymbolReferenceTable::atomicFetchAndAdd32BitSymbol))
+      else if (comp->getSymRefTab()->isNonHelper(SymRef, TR::SymbolReferenceTable::atomicFetchAndAdd32BitSymbol))
          {
-         return inlineAtomicMemoryUpdate(node, LXADD4MemReg, cg);
+         op = LXADD4MemReg;
          }
-      if (comp->getSymRefTab()->isNonHelper(SymRef, TR::SymbolReferenceTable::atomicFetchAndAdd64BitSymbol))
+      else if (comp->getSymRefTab()->isNonHelper(SymRef, TR::SymbolReferenceTable::atomicFetchAndAdd64BitSymbol))
          {
-         return inlineAtomicMemoryUpdate(node, LXADD8MemReg, cg);
+         op = LXADD8MemReg;
          }
-      if (comp->getSymRefTab()->isNonHelper(SymRef, TR::SymbolReferenceTable::atomicSwap32BitSymbol))
+      else if (comp->getSymRefTab()->isNonHelper(SymRef, TR::SymbolReferenceTable::atomicSwapSymbol))
          {
-         return inlineAtomicMemoryUpdate(node, XCHG4MemReg, cg);
+         op = node->getChild(1)->getDataType().isInt32() ? XCHG4MemReg : XCHG8MemReg;
          }
-      if (comp->getSymRefTab()->isNonHelper(SymRef, TR::SymbolReferenceTable::atomicSwap64BitSymbol))
+      else if (comp->getSymRefTab()->isNonHelper(SymRef, TR::SymbolReferenceTable::atomicSwap32BitSymbol))
          {
-         return inlineAtomicMemoryUpdate(node, XCHG8MemReg, cg);
+         op = XCHG4MemReg;
+         }
+      else if (comp->getSymRefTab()->isNonHelper(SymRef, TR::SymbolReferenceTable::atomicSwap64BitSymbol))
+         {
+         op = XCHG8MemReg;
+         }
+
+      if (op != BADIA32Op)
+         {
+         return inlineAtomicMemoryUpdate(node, op, cg);
          }
       }
 
