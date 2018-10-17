@@ -67,7 +67,7 @@ OMR::MethodBuilderRecorder::MethodBuilderRecorder(TR::TypeDictionary *types, TR:
    if (rec)
       {
       rec->StoreID(this);
-      rec->BeginStatement(rec->STATEMENT_NEWMETHODBUILDER);
+      rec->BeginStatement(StatementName::STATEMENT_NEWMETHODBUILDER);
       rec->Builder(asMethodBuilder());
       rec->EndStatement();
       }
@@ -85,7 +85,7 @@ OMR::MethodBuilderRecorder::AllLocalsHaveBeenDefined()
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asMethodBuilder(), rec->STATEMENT_ALLLOCALSHAVEBEENDEFINED);
+      rec->BeginStatement(asMethodBuilder(), StatementName::STATEMENT_ALLLOCALSHAVEBEENDEFINED);
       rec->EndStatement();
       }
    }
@@ -105,7 +105,7 @@ OMR::MethodBuilderRecorder::DefineFile(const char *name)
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asMethodBuilder(), rec->STATEMENT_DEFINEFILE);
+      rec->BeginStatement(asMethodBuilder(), StatementName::STATEMENT_DEFINEFILE);
       rec->String(name);
       rec->EndStatement();
       }
@@ -117,7 +117,7 @@ OMR::MethodBuilderRecorder::DefineLine(const char *line)
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asMethodBuilder(), rec->STATEMENT_DEFINELINESTRING);
+      rec->BeginStatement(asMethodBuilder(), StatementName::STATEMENT_DEFINELINESTRING);
       rec->String(line);
       rec->EndStatement();
       }
@@ -129,7 +129,7 @@ OMR::MethodBuilderRecorder::DefineLine(int32_t line)
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asMethodBuilder(), rec->STATEMENT_DEFINELINENUMBER);
+      rec->BeginStatement(asMethodBuilder(), StatementName::STATEMENT_DEFINELINENUMBER);
       rec->Number(line);
       rec->EndStatement();
       }
@@ -141,7 +141,7 @@ OMR::MethodBuilderRecorder::DefineName(const char *name)
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asMethodBuilder(), rec->STATEMENT_DEFINENAME);
+      rec->BeginStatement(asMethodBuilder(), StatementName::STATEMENT_DEFINENAME);
       rec->String(name);
       rec->EndStatement();
       }
@@ -155,7 +155,7 @@ OMR::MethodBuilderRecorder::DefineLocal(const char *name, TR::IlType *dt)
       {
       dt->RecordFirstTime(rec);
 
-      rec->BeginStatement(asMethodBuilder(), rec->STATEMENT_DEFINELOCAL);
+      rec->BeginStatement(asMethodBuilder(), StatementName::STATEMENT_DEFINELOCAL);
       rec->Type(dt);
       rec->String(name);
       rec->EndStatement();
@@ -170,7 +170,7 @@ OMR::MethodBuilderRecorder::DefineMemory(const char *name, TR::IlType *dt, void 
       {
       dt->RecordFirstTime(rec);
 
-      rec->BeginStatement(asMethodBuilder(), rec->STATEMENT_DEFINEMEMORY);
+      rec->BeginStatement(asMethodBuilder(), StatementName::STATEMENT_DEFINEMEMORY);
       rec->String(name);
       rec->Type(dt);
       rec->Location(location);
@@ -186,7 +186,7 @@ OMR::MethodBuilderRecorder::DefineParameter(const char *name, TR::IlType *dt)
       {
       dt->RecordFirstTime(rec);
 
-      rec->BeginStatement(asMethodBuilder(), rec->STATEMENT_DEFINEPARAMETER);
+      rec->BeginStatement(asMethodBuilder(), StatementName::STATEMENT_DEFINEPARAMETER);
       rec->Type(dt);
       rec->String(name);
       rec->EndStatement();
@@ -201,7 +201,7 @@ OMR::MethodBuilderRecorder::DefineArrayParameter(const char *name, TR::IlType *e
       {
       elementType->RecordFirstTime(rec);
 
-      rec->BeginStatement(asMethodBuilder(), rec->STATEMENT_DEFINEARRAYPARAMETER);
+      rec->BeginStatement(asMethodBuilder(), StatementName::STATEMENT_DEFINEARRAYPARAMETER);
       rec->Type(elementType);
       rec->String(name);
       rec->EndStatement();
@@ -216,7 +216,7 @@ OMR::MethodBuilderRecorder::DefineReturnType(TR::IlType *dt)
       {
       dt->RecordFirstTime(rec);
 
-      rec->BeginStatement(asMethodBuilder(), rec->STATEMENT_DEFINERETURNTYPE);
+      rec->BeginStatement(asMethodBuilder(), StatementName::STATEMENT_DEFINERETURNTYPE);
       rec->Type(dt);
       rec->EndStatement();
       }
@@ -260,7 +260,7 @@ OMR::MethodBuilderRecorder::DefineFunction(const char* const name,
       for (int32_t p=0;p < numParms;p++)
          parmTypes[p]->RecordFirstTime(rec);
 
-      rec->BeginStatement(asMethodBuilder(), rec->STATEMENT_DEFINEFUNCTION);
+      rec->BeginStatement(asMethodBuilder(), StatementName::STATEMENT_DEFINEFUNCTION);
       rec->String(name);
       rec->String(fileName);
       rec->String(lineNumber);
