@@ -40,7 +40,7 @@ OMR::BytecodeBuilderRecorder::BytecodeBuilderRecorder(TR::MethodBuilder *methodB
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asBytecodeBuilder(), rec->STATEMENT_NEWILBUILDER);
+      rec->BeginStatement(asBytecodeBuilder(), StatementName::STATEMENT_NEWILBUILDER);
       rec->Builder(asBytecodeBuilder());
       rec->EndStatement();
       }

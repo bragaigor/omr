@@ -79,7 +79,7 @@ OMR::IlBuilderRecorder::DoneConstructor(const char * value)
      TR::JitBuilderRecorder *rec = recorder();
      if (rec)
         {
-        rec->BeginStatement(asIlBuilder(), rec->STATEMENT_DONECONSTRUCTOR);
+        rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_DONECONSTRUCTOR);
         rec->String(value);
         rec->EndStatement();
         }
@@ -99,7 +99,7 @@ OMR::IlBuilderRecorder::NewIlBuilder()
    if (rec)
       {
       rec->StoreID(asIlBuilder());
-      rec->BeginStatement(rec->STATEMENT_NEWILBUILDER);
+      rec->BeginStatement(StatementName::STATEMENT_NEWILBUILDER);
       rec->Builder(asIlBuilder());
       rec->EndStatement();
       }
@@ -190,7 +190,7 @@ OMR::IlBuilderRecorder::NullAddress()
       {
       rec->StoreID(returnValue);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_NULLADDRESS);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_NULLADDRESS);
       rec->Value(returnValue);
       rec->EndStatement();
       }
@@ -208,7 +208,7 @@ OMR::IlBuilderRecorder::ConstInt8(int8_t value)
       rec->StoreID(returnValue);
       Int8->RecordFirstTime(rec);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_CONSTINT8);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_CONSTINT8);
       rec->Value(returnValue);
       rec->Number(value);
       rec->EndStatement();
@@ -226,7 +226,7 @@ OMR::IlBuilderRecorder::ConstInt16(int16_t value)
       rec->StoreID(returnValue);
       Int16->RecordFirstTime(rec);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_CONSTINT16);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_CONSTINT16);
       rec->Value(returnValue);
       rec->Number(value);
       rec->EndStatement();
@@ -244,7 +244,7 @@ OMR::IlBuilderRecorder::ConstInt32(int32_t value)
       rec->StoreID(returnValue);
       Int32->RecordFirstTime(rec);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_CONSTINT32);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_CONSTINT32);
       rec->Value(returnValue);
       rec->Number(value);
       rec->EndStatement();
@@ -262,7 +262,7 @@ OMR::IlBuilderRecorder::ConstInt64(int64_t value)
       rec->StoreID(returnValue);
       Int64->RecordFirstTime(rec);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_CONSTINT64);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_CONSTINT64);
       rec->Value(returnValue);
       rec->Number(value);
       rec->EndStatement();
@@ -280,7 +280,7 @@ OMR::IlBuilderRecorder::ConstFloat(float value)
       rec->StoreID(returnValue);
       Float->RecordFirstTime(rec);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_CONSTFLOAT);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_CONSTFLOAT);
       rec->Value(returnValue);
       rec->Number(value);
       rec->EndStatement();
@@ -298,7 +298,7 @@ OMR::IlBuilderRecorder::ConstDouble(double value)
       rec->StoreID(returnValue);
       Double->RecordFirstTime(rec);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_CONSTDOUBLE);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_CONSTDOUBLE);
       rec->Value(returnValue);
       rec->Number(value);
       rec->EndStatement();
@@ -316,7 +316,7 @@ OMR::IlBuilderRecorder::ConstAddress(const void * const value)
       rec->StoreID(returnValue);
       Address->RecordFirstTime(rec);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_CONSTADDRESS);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_CONSTADDRESS);
       rec->Value(returnValue);
       rec->Location(value);
       rec->EndStatement();
@@ -334,7 +334,7 @@ OMR::IlBuilderRecorder::ConstString(const char * const value)
       rec->StoreID(returnValue);
       Address->RecordFirstTime(rec);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_CONSTSTRING);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_CONSTSTRING);
       rec->Value(returnValue);
       rec->String(value);
       rec->EndStatement();
@@ -361,7 +361,7 @@ OMR::IlBuilderRecorder::Add(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      binaryOp(returnValue, left, right, rec->STATEMENT_ADD);
+      binaryOp(returnValue, left, right, StatementName::STATEMENT_ADD);
    return returnValue;
    }
 
@@ -371,7 +371,7 @@ OMR::IlBuilderRecorder::AddWithOverflow(TR::IlBuilder **handler, TR::IlValue *le
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_ADDWITHOVERFLOW);
+      assertNotRecorded(rec, StatementName::STATEMENT_ADDWITHOVERFLOW);
    return returnValue;
    }
 
@@ -381,7 +381,7 @@ OMR::IlBuilderRecorder::AddWithUnsignedOverflow(TR::IlBuilder **handler, TR::IlV
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_ADDWITHUNSIGNEDOVERFLOW);
+      assertNotRecorded(rec, StatementName::STATEMENT_ADDWITHUNSIGNEDOVERFLOW);
    return returnValue;
    }
 
@@ -391,7 +391,7 @@ OMR::IlBuilderRecorder::Sub(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      binaryOp(returnValue, left, right, rec->STATEMENT_SUB);
+      binaryOp(returnValue, left, right, StatementName::STATEMENT_SUB);
    return returnValue;
    }
 
@@ -401,7 +401,7 @@ OMR::IlBuilderRecorder::SubWithOverflow(TR::IlBuilder **handler, TR::IlValue *le
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_SUBWITHOVERFLOW);
+      assertNotRecorded(rec, StatementName::STATEMENT_SUBWITHOVERFLOW);
    return returnValue;
    }
 
@@ -411,7 +411,7 @@ OMR::IlBuilderRecorder::SubWithUnsignedOverflow(TR::IlBuilder **handler, TR::IlV
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_SUBWITHUNSIGNEDOVERFLOW);
+      assertNotRecorded(rec, StatementName::STATEMENT_SUBWITHUNSIGNEDOVERFLOW);
    return returnValue;
    }
 
@@ -421,7 +421,7 @@ OMR::IlBuilderRecorder::Mul(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      binaryOp(returnValue, left, right, rec->STATEMENT_MUL);
+      binaryOp(returnValue, left, right, StatementName::STATEMENT_MUL);
    return returnValue;
    }
 
@@ -431,7 +431,7 @@ OMR::IlBuilderRecorder::MulWithOverflow(TR::IlBuilder **handler, TR::IlValue *le
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_MULWITHOVERFLOW);
+      assertNotRecorded(rec, StatementName::STATEMENT_MULWITHOVERFLOW);
    return returnValue;
    }
 
@@ -441,7 +441,7 @@ OMR::IlBuilderRecorder::Div(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      binaryOp(returnValue, left, right, rec->STATEMENT_DIV);
+      binaryOp(returnValue, left, right, StatementName::STATEMENT_DIV);
    return returnValue;
    }
 
@@ -451,7 +451,7 @@ OMR::IlBuilderRecorder::Rem(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_REM);
+      assertNotRecorded(rec, StatementName::STATEMENT_REM);
    return returnValue;
    }
 
@@ -461,7 +461,7 @@ OMR::IlBuilderRecorder::And(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      binaryOp(returnValue, left, right, rec->STATEMENT_AND);
+      binaryOp(returnValue, left, right, StatementName::STATEMENT_AND);
    return returnValue;
    }
 
@@ -471,7 +471,7 @@ OMR::IlBuilderRecorder::Or(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      binaryOp(returnValue, left, right, rec->STATEMENT_OR);
+      binaryOp(returnValue, left, right, StatementName::STATEMENT_OR);
    return returnValue;
    }
 
@@ -481,7 +481,7 @@ OMR::IlBuilderRecorder::Xor(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      binaryOp(returnValue, left, right, rec->STATEMENT_XOR);
+      binaryOp(returnValue, left, right, StatementName::STATEMENT_XOR);
    return returnValue;
    }
 
@@ -491,7 +491,7 @@ OMR::IlBuilderRecorder::ShiftL(TR::IlValue *v, TR::IlValue *amount)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_SHIFTL);
+      assertNotRecorded(rec, StatementName::STATEMENT_SHIFTL);
    return returnValue;
    }
 
@@ -501,7 +501,7 @@ OMR::IlBuilderRecorder::ShiftR(TR::IlValue *v, TR::IlValue *amount)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_SHIFTR);
+      assertNotRecorded(rec, StatementName::STATEMENT_SHIFTR);
    return returnValue;
    }
 
@@ -511,7 +511,7 @@ OMR::IlBuilderRecorder::UnsignedShiftR(TR::IlValue *v, TR::IlValue *amount)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      shiftOp(returnValue, v, amount, rec->STATEMENT_UNSIGNEDSHIFTR);
+      shiftOp(returnValue, v, amount, StatementName::STATEMENT_UNSIGNEDSHIFTR);
    return returnValue;
    }
 
@@ -521,7 +521,7 @@ OMR::IlBuilderRecorder::EqualTo(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_EQUALTO);
+      assertNotRecorded(rec, StatementName::STATEMENT_EQUALTO);
    return returnValue;
    }
 
@@ -531,7 +531,7 @@ OMR::IlBuilderRecorder::NotEqualTo(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      binaryOp(returnValue, left, right, rec->STATEMENT_NOTEQUALTO);
+      binaryOp(returnValue, left, right, StatementName::STATEMENT_NOTEQUALTO);
    return returnValue;
    }
 
@@ -541,7 +541,7 @@ OMR::IlBuilderRecorder::GreaterThan(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      binaryOp(returnValue, left, right, rec->STATEMENT_GREATERTHAN);
+      binaryOp(returnValue, left, right, StatementName::STATEMENT_GREATERTHAN);
    return returnValue;
    }
 
@@ -551,7 +551,7 @@ OMR::IlBuilderRecorder::UnsignedGreaterThan(TR::IlValue *left, TR::IlValue *righ
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_UNSIGNEDGREATERTHAN);
+      assertNotRecorded(rec, StatementName::STATEMENT_UNSIGNEDGREATERTHAN);
    return returnValue;
    }
 
@@ -561,7 +561,7 @@ OMR::IlBuilderRecorder::GreaterOrEqualTo(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_GREATEROREQUALTO);
+      assertNotRecorded(rec, StatementName::STATEMENT_GREATEROREQUALTO);
    return returnValue;
    }
 
@@ -571,7 +571,7 @@ OMR::IlBuilderRecorder::UnsignedGreaterOrEqualTo(TR::IlValue *left, TR::IlValue 
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_UNSIGNEDGREATEROREQUALTO);
+      assertNotRecorded(rec, StatementName::STATEMENT_UNSIGNEDGREATEROREQUALTO);
    return returnValue;
    }
 
@@ -581,7 +581,7 @@ OMR::IlBuilderRecorder::LessThan(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      binaryOp(returnValue, left, right, rec->STATEMENT_LESSTHAN);
+      binaryOp(returnValue, left, right, StatementName::STATEMENT_LESSTHAN);
    return returnValue;
    }
 
@@ -591,7 +591,7 @@ OMR::IlBuilderRecorder::UnsignedLessThan(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_UNSIGNEDLESSTHAN);
+      assertNotRecorded(rec, StatementName::STATEMENT_UNSIGNEDLESSTHAN);
    return returnValue;
    }   
 
@@ -601,7 +601,7 @@ OMR::IlBuilderRecorder::LessOrEqualTo(TR::IlValue *left, TR::IlValue *right)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_LESSOREQUALTO);
+      assertNotRecorded(rec, StatementName::STATEMENT_LESSOREQUALTO);
    return returnValue;
    }
 
@@ -611,7 +611,7 @@ OMR::IlBuilderRecorder::UnsignedLessOrEqualTo(TR::IlValue *left, TR::IlValue *ri
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_UNSIGNEDLESSOREQUALTO);
+      assertNotRecorded(rec, StatementName::STATEMENT_UNSIGNEDLESSOREQUALTO);
    return returnValue;
    }
 
@@ -621,7 +621,7 @@ OMR::IlBuilderRecorder::Negate(TR::IlValue *v)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_NEGATE);
+      assertNotRecorded(rec, StatementName::STATEMENT_NEGATE);
    return returnValue;
    }
 
@@ -631,7 +631,7 @@ OMR::IlBuilderRecorder::ConvertBitsTo(TR::IlType* type, TR::IlValue* value)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_CONVERTBITSTO);
+      assertNotRecorded(rec, StatementName::STATEMENT_CONVERTBITSTO);
    return returnValue;
    }
 
@@ -641,7 +641,7 @@ OMR::IlBuilderRecorder::ConvertTo(TR::IlType *dt, TR::IlValue *v)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      convertTo(returnValue, dt, v, rec->STATEMENT_CONVERTTO);
+      convertTo(returnValue, dt, v, StatementName::STATEMENT_CONVERTTO);
    return returnValue;
    }
 
@@ -651,7 +651,7 @@ OMR::IlBuilderRecorder::UnsignedConvertTo(TR::IlType *dt, TR::IlValue *v)
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      convertTo(returnValue, dt, v, rec->STATEMENT_UNSIGNEDCONVERTTO);
+      convertTo(returnValue, dt, v, StatementName::STATEMENT_UNSIGNEDCONVERTTO);
    return returnValue;
    }
 
@@ -662,7 +662,7 @@ OMR::IlBuilderRecorder::Store(const char *name, TR::IlValue *value)
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_STORE);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_STORE);
       rec->String(name);
       rec->Value(value);
       rec->EndStatement();
@@ -675,7 +675,7 @@ OMR::IlBuilderRecorder::StoreOver(TR::IlValue *dest, TR::IlValue *value)
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_STOREOVER);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_STOREOVER);
       rec->Value(dest);
       rec->Value(value);
       rec->EndStatement();
@@ -688,7 +688,7 @@ OMR::IlBuilderRecorder::StoreAt(TR::IlValue *address, TR::IlValue *value)
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_STOREAT);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_STOREAT);
       rec->Value(address);
       rec->Value(value);
       rec->EndStatement();
@@ -701,7 +701,7 @@ OMR::IlBuilderRecorder::StoreIndirect(const char *type, const char *field, TR::I
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_STOREINDIRECT);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_STOREINDIRECT);
       rec->String(type);
       rec->String(field);
       rec->Value(object);
@@ -719,7 +719,7 @@ OMR::IlBuilderRecorder::Load(const char *name)
       {
       rec->StoreID(returnValue);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_LOAD);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_LOAD);
       rec->Value(returnValue);
       rec->String(name);
       rec->EndStatement();
@@ -737,7 +737,7 @@ OMR::IlBuilderRecorder::LoadIndirect(const char *type, const char *field, TR::Il
       {
       rec->StoreID(returnValue);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_LOADINDIRECT);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_LOADINDIRECT);
       rec->Value(returnValue);
       rec->String(type);
       rec->String(field);
@@ -758,7 +758,7 @@ OMR::IlBuilderRecorder::LoadAt(TR::IlType *dt, TR::IlValue *address)
       rec->StoreID(returnValue);
       dt->RecordFirstTime(rec);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_LOADAT);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_LOADAT);
       rec->Value(returnValue);
       rec->Type(dt);
       rec->Value(address);
@@ -778,7 +778,7 @@ OMR::IlBuilderRecorder::IndexAt(TR::IlType *dt, TR::IlValue *base, TR::IlValue *
       rec->StoreID(returnValue);
       dt->RecordFirstTime(rec);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_INDEXAT);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_INDEXAT);
       rec->Value(returnValue);
       rec->Type(dt);
       rec->Value(base);
@@ -798,7 +798,7 @@ OMR::IlBuilderRecorder::CreateLocalArray(int32_t numElements, TR::IlType *elemen
       {
       rec->StoreID(returnValue);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_CREATELOCALARRAY);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_CREATELOCALARRAY);
       rec->Value(returnValue);
       rec->Number(numElements);
       rec->Type(elementType);
@@ -816,7 +816,7 @@ OMR::IlBuilderRecorder::CreateLocalStruct(TR::IlType *structType)
       {
       rec->StoreID(returnValue);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_CREATELOCALSTRUCT);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_CREATELOCALSTRUCT);
       rec->Value(returnValue);
       rec->Type(structType);
       rec->EndStatement();
@@ -830,7 +830,7 @@ OMR::IlBuilderRecorder::AtomicAdd(TR::IlValue * baseAddress, TR::IlValue * value
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_ATOMICADD);
+      assertNotRecorded(rec, StatementName::STATEMENT_ATOMICADD);
    return returnValue;
    }
 
@@ -843,7 +843,7 @@ OMR::IlBuilderRecorder::StructFieldInstanceAddress(const char* structName, const
       {
       rec->StoreID(returnValue);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_STRUCTFIELDINSTANCEADDRESS);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_STRUCTFIELDINSTANCEADDRESS);
       rec->Value(returnValue);
       rec->String(structName);
       rec->String(fieldName);
@@ -863,7 +863,7 @@ OMR::IlBuilderRecorder::UnionFieldInstanceAddress(const char* unionName, const c
       {
       rec->StoreID(returnValue);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_UNIONFIELDINSTANCEADDRESS);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_UNIONFIELDINSTANCEADDRESS);
       rec->Value(returnValue);
       rec->String(unionName);
       rec->String(fieldName);
@@ -884,7 +884,7 @@ OMR::IlBuilderRecorder::VectorLoad(const char *name)
       {
       rec->StoreID(returnValue);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_VECTORLOAD);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_VECTORLOAD);
       rec->Value(returnValue);
       rec->String(name);
       rec->EndStatement();
@@ -903,7 +903,7 @@ OMR::IlBuilderRecorder::VectorLoadAt(TR::IlType *dt, TR::IlValue *address)
       rec->StoreID(returnValue);
       dt->RecordFirstTime(rec);
 
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_VECTORLOADAT);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_VECTORLOADAT);
       rec->Value(returnValue);
       rec->Type(dt);
       rec->Value(address);
@@ -919,7 +919,7 @@ OMR::IlBuilderRecorder::VectorStore(const char *name, TR::IlValue *value)
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_VECTORSTORE);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_VECTORSTORE);
       rec->String(name);
       rec->Value(value);
       rec->EndStatement();
@@ -932,7 +932,7 @@ OMR::IlBuilderRecorder::VectorStoreAt(TR::IlValue *address, TR::IlValue *value)
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_VECTORSTOREAT);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_VECTORSTOREAT);
       rec->Value(address);
       rec->Value(value);
       rec->EndStatement();
@@ -945,7 +945,7 @@ OMR::IlBuilderRecorder::Transaction(TR::IlBuilder **persistentFailureBuilder, TR
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_TRANSACTION);
+      assertNotRecorded(rec, StatementName::STATEMENT_TRANSACTION);
    }
 
 void
@@ -953,7 +953,7 @@ OMR::IlBuilderRecorder::TransactionAbort()
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_TRANSACTIONABORT);
+      assertNotRecorded(rec, StatementName::STATEMENT_TRANSACTIONABORT);
    }
 
 void
@@ -962,7 +962,7 @@ OMR::IlBuilderRecorder::AppendBuilder(TR::IlBuilder *builder)
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_APPENDBUILDER);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_APPENDBUILDER);
       rec->Builder(builder);
       rec->EndStatement();
       }
@@ -979,7 +979,7 @@ OMR::IlBuilderRecorder::Call(const char *functionName, TR::DataType returnType, 
    TR::JitBuilderRecorder *rec = recorder();
    if (NULL != rec)
       {
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_CALL);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_CALL);
       rec->String(functionName);
       rec->Number(numArgs);
       for (int32_t v=0;v < numArgs;v++)
@@ -1000,7 +1000,7 @@ OMR::IlBuilderRecorder::ComputedCall(const char *functionName, int32_t numArgs, 
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_COMPUTEDCALL);
+      assertNotRecorded(rec, StatementName::STATEMENT_COMPUTEDCALL);
    return returnValue;
    }
 
@@ -1017,7 +1017,7 @@ OMR::IlBuilderRecorder::Goto(TR::IlBuilder *dest)
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_GOTO);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_GOTO);
       rec->Builder(dest);
       rec->EndStatement();
       }
@@ -1029,7 +1029,7 @@ OMR::IlBuilderRecorder::Return()
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_RETURN);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_RETURN);
       rec->EndStatement();
       }
    }
@@ -1040,7 +1040,7 @@ OMR::IlBuilderRecorder::Return(TR::IlValue *value)
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_RETURNVALUE);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_RETURNVALUE);
       rec->Value(value);
       rec->EndStatement();
       }
@@ -1059,7 +1059,7 @@ OMR::IlBuilderRecorder::ForLoop(bool countsUp,
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_FORLOOP);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_FORLOOP);
       if(countsUp)
          rec->Number(1); // True
       else
@@ -1113,7 +1113,7 @@ OMR::IlBuilderRecorder::DoWhileLoop(const char *whileCondition, TR::IlBuilder **
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_DOWHILELOOP);
+      assertNotRecorded(rec, StatementName::STATEMENT_DOWHILELOOP);
     }
 
 void 
@@ -1122,7 +1122,7 @@ OMR::IlBuilderRecorder::WhileDoLoop(const char *whileCondition, TR::IlBuilder **
    TR::IlValue *returnValue = newValue();
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_WHILEDOLOOP);
+      assertNotRecorded(rec, StatementName::STATEMENT_WHILEDOLOOP);
    }
 
 void
@@ -1130,7 +1130,7 @@ OMR::IlBuilderRecorder::IfAnd(TR::IlBuilder **allTrueBuilder, TR::IlBuilder **an
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_IFAND);
+      assertNotRecorded(rec, StatementName::STATEMENT_IFAND);
    }
 
 void
@@ -1138,7 +1138,7 @@ OMR::IlBuilderRecorder::IfOr(TR::IlBuilder **anyTrueBuilder, TR::IlBuilder **all
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_IFOR);
+      assertNotRecorded(rec, StatementName::STATEMENT_IFOR);
    }
 
 void
@@ -1146,7 +1146,7 @@ OMR::IlBuilderRecorder::IfCmpNotEqualZero(TR::IlBuilder *target, TR::IlValue *co
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_IFCMPNOTEQUALZERO);
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPNOTEQUALZERO);
    }
 
 void
@@ -1154,7 +1154,7 @@ OMR::IlBuilderRecorder::IfCmpNotEqual(TR::IlBuilder *target, TR::IlValue *left, 
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_IFCMPNOTEQUAL);
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPNOTEQUAL);
    }
 
 void
@@ -1164,7 +1164,7 @@ OMR::IlBuilderRecorder::IfCmpEqualZero(TR::IlBuilder *target, TR::IlValue *condi
 
    if(rec)
       {
-      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_IFCMPEQUALZERO);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_IFCMPEQUALZERO);
       rec->Builder(target);
       rec->Value(condition);
       rec->EndStatement();
@@ -1176,7 +1176,7 @@ OMR::IlBuilderRecorder::IfCmpEqual(TR::IlBuilder *target, TR::IlValue *left, TR:
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_IFCMPEQUAL);
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPEQUAL);
    }
 
 void
@@ -1184,7 +1184,7 @@ OMR::IlBuilderRecorder::IfCmpLessThan(TR::IlBuilder *target, TR::IlValue *left, 
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_IFCMPLESSTHAN);
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPLESSTHAN);
    }
 
 void
@@ -1192,7 +1192,7 @@ OMR::IlBuilderRecorder::IfCmpUnsignedLessThan(TR::IlBuilder *target, TR::IlValue
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_IFCMPUNSIGNEDLESSTHAN);
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPUNSIGNEDLESSTHAN);
    }
 
 void
@@ -1200,7 +1200,7 @@ OMR::IlBuilderRecorder::IfCmpLessOrEqual(TR::IlBuilder *target, TR::IlValue *lef
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_IFCMPLESSOREQUAL);
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPLESSOREQUAL);
    }
 
 void
@@ -1208,7 +1208,7 @@ OMR::IlBuilderRecorder::IfCmpUnsignedLessOrEqual(TR::IlBuilder *target, TR::IlVa
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_IFCMPUNSIGNEDLESSOREQUAL);
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPUNSIGNEDLESSOREQUAL);
    }
 
 void
@@ -1216,7 +1216,7 @@ OMR::IlBuilderRecorder::IfCmpGreaterThan(TR::IlBuilder *target, TR::IlValue *lef
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_IFCMPGREATERTHAN);
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPGREATERTHAN);
    }
 
 void
@@ -1224,7 +1224,7 @@ OMR::IlBuilderRecorder::IfCmpUnsignedGreaterThan(TR::IlBuilder *target, TR::IlVa
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_IFCMPUNSIGNEDGREATERTHAN);
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPUNSIGNEDGREATERTHAN);
    }
 
 void
@@ -1232,7 +1232,7 @@ OMR::IlBuilderRecorder::IfCmpGreaterOrEqual(TR::IlBuilder *target, TR::IlValue *
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_IFCMPGREATEROREQUAL);
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPGREATEROREQUAL);
    }
 
 void
@@ -1240,22 +1240,23 @@ OMR::IlBuilderRecorder::IfCmpUnsignedGreaterOrEqual(TR::IlBuilder *target, TR::I
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_IFCMPUNSIGNEDGREATEROREQUAL);
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPUNSIGNEDGREATEROREQUAL);
    }
 
 void
 OMR::IlBuilderRecorder::IfThenElse(TR::IlBuilder *thenPath, TR::IlBuilder *elsePath, TR::IlValue *condition)
    {
-   if (recorder())
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
       {
-      recorder()->BeginStatement(asIlBuilder(), recorder()->STATEMENT_IFTHENELSE);
-      recorder()->Builder(thenPath);
+      rec->BeginStatement(asIlBuilder(), StatementName::STATEMENT_IFTHENELSE);
+      rec->Builder(thenPath);
       if (elsePath)
-         recorder()->Builder(elsePath);
+         rec->Builder(elsePath);
       else
-         recorder()->Builder(NULL);
-      recorder()->Value(condition);
-      recorder()->EndStatement();
+         rec->Builder(NULL);
+      rec->Value(condition);
+      rec->EndStatement();
       }
    }
 
@@ -1283,5 +1284,5 @@ OMR::IlBuilderRecorder::Switch(const char *selectionVar,
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
-      assertNotRecorded(rec, rec->STATEMENT_SWITCH);
+      assertNotRecorded(rec, StatementName::STATEMENT_SWITCH);
    }

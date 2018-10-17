@@ -62,7 +62,7 @@ public:
 
    virtual void Record(TR::JitBuilderRecorder *recorder)
       {
-      recorder->BeginStatement(recorder->STATEMENT_PRIMITIVETYPE);
+      recorder->BeginStatement(StatementName::STATEMENT_PRIMITIVETYPE);
       recorder->Type(this);
       recorder->Number((int32_t)(getPrimitiveType()));
       recorder->EndStatement();
@@ -103,7 +103,7 @@ public:
    virtual void Record(TR::JitBuilderRecorder *recorder, const TR::IlType *myStruct)
       {
       _type->RecordFirstTime(recorder);
-      recorder->BeginStatement(recorder->STATEMENT_DEFINEFIELD);
+      recorder->BeginStatement(StatementName::STATEMENT_DEFINEFIELD);
       recorder->Type(myStruct);
       recorder->Type(_type);
       recorder->String(_name);
@@ -228,7 +228,7 @@ public:
    virtual void Record(TR::JitBuilderRecorder *recorder)
       {
       _baseType->RecordFirstTime(recorder);
-      recorder->BeginStatement(recorder->STATEMENT_POINTERTYPE);
+      recorder->BeginStatement(StatementName::STATEMENT_POINTERTYPE);
       recorder->Type(this);
       recorder->Type(_baseType);
       recorder->EndStatement();
@@ -360,7 +360,7 @@ OMR::StructType::clearSymRefs()
 void
 OMR::StructType::Record(TR::JitBuilderRecorder *recorder)
    {
-   recorder->BeginStatement(recorder->STATEMENT_DEFINESTRUCT);
+   recorder->BeginStatement(StatementName::STATEMENT_DEFINESTRUCT);
    recorder->Type(self());
    recorder->String(_name);
    recorder->EndStatement();
@@ -468,7 +468,7 @@ OMR::UnionType::clearSymRefs()
 void
 OMR::UnionType::Record(TR::JitBuilderRecorder *recorder)
    {
-   recorder->BeginStatement(recorder->STATEMENT_DEFINEUNION);
+   recorder->BeginStatement(StatementName::STATEMENT_DEFINEUNION);
    recorder->Type(self());
    recorder->String(_name);
    recorder->EndStatement();
