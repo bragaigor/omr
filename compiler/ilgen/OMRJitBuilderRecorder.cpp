@@ -45,10 +45,10 @@ OMR::JitBuilderRecorder::start()
    // another special reserved value, so do it first
    StoreID((const void *)1);
 
-   String(RECORDER_SIGNATURE);
-   Number(VERSION_MAJOR);
-   Number(VERSION_MINOR);
-   Number(VERSION_PATCH);
+   String(StatementName::RECORDER_SIGNATURE);
+   Number(StatementName::VERSION_MAJOR);
+   Number(StatementName::VERSION_MINOR);
+   Number(StatementName::VERSION_PATCH);
    EndStatement();
    }
 
@@ -63,12 +63,12 @@ OMR::JitBuilderRecorder::getNewID()
    if (_nextID == (1 << 8) - 2)
       {
       _idSize = 16;
-      Statement(STATEMENT_ID16BIT); // TODO
+      Statement(StatementName::STATEMENT_ID16BIT); // TODO
       }
    else if (_nextID == (1 << 16) - 2)
       {
       _idSize = 32;
-      Statement(STATEMENT_ID32BIT); // TODO
+      Statement(StatementName::STATEMENT_ID32BIT); // TODO
       }
 
    return _nextID++;
@@ -115,7 +115,7 @@ void
 OMR::JitBuilderRecorder::end()
    {
    ID(1);
-   String(JBIL_COMPLETE);
+   String(StatementName::JBIL_COMPLETE);
    }
 
 void

@@ -109,9 +109,6 @@
 
     uint32_t getNumberFromToken(char * token);
 
-    const char * SPACE = " ";
-    const char * NEW_LINE = "\r\n";
-
     private:
     std::fstream _file;
     std::istringstream _fileStream;

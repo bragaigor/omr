@@ -75,7 +75,7 @@ OMR::JitBuilderReplayTextFile::processFirstLineFromTextFile()
     token = getLineAsChar();
 
     while (token != NULL) {
-       token = std::strtok(NULL, SPACE);
+       token = std::strtok(NULL, StatementName::SPACE);
       }
    }
 
@@ -83,7 +83,7 @@ char *
 OMR::JitBuilderReplayTextFile::getTokensFromLine(std::string currentLine)
    {
       char * line = strdup(currentLine.c_str());
-      char * token = std::strtok(line, SPACE);
+      char * token = std::strtok(line, StatementName::SPACE);
 
       return token;
    }
@@ -116,11 +116,11 @@ void
 OMR::JitBuilderReplayTextFile::addIDPointerPairToMap(char * tokens)
    {
        // Tokens: "Def S3 [16 "DefileLineString"]"
-       tokens = std::strtok(NULL, SPACE);
+       tokens = std::strtok(NULL, StatementName::SPACE);
        uint32_t ID = getNumberFromToken(tokens);
-       tokens = std::strtok(NULL, SPACE);
+       tokens = std::strtok(NULL, StatementName::SPACE);
        uint32_t strLen = getNumberFromToken(tokens);
-       tokens = std::strtok(NULL, SPACE);
+       tokens = std::strtok(NULL, StatementName::SPACE);
 
        char * idPointer = getServiceStringFromToken(strLen, tokens);
 
@@ -128,7 +128,7 @@ OMR::JitBuilderReplayTextFile::addIDPointerPairToMap(char * tokens)
    }
 
 char *
-OMR::JitBuilderReplayTextFile::getServiceStringFromToken(uint32_t strLen, char * tokens)
+OMR::JitBuilderReplayTextFile::getServiceStringFromToken(const uint32_t strLen, char * tokens)
    {
      char idPointerStr[strLen];
      strncpy(idPointerStr, &tokens[1], sizeof(idPointerStr));
@@ -141,11 +141,11 @@ const char *
 OMR::JitBuilderReplayTextFile::getServiceStringFromMap(char ** tokens)
    {
      char * temp = *tokens;
-     temp = std::strtok(NULL, SPACE);
+     temp = std::strtok(NULL, StatementName::SPACE);
      uint32_t serviceID = getNumberFromToken(temp);
 
      const char * serviceString = static_cast<const char *>(lookupPointer(serviceID));
-     temp = std::strtok(NULL, SPACE);
+     temp = std::strtok(NULL, StatementName::SPACE);
 
      *tokens = temp;
 
@@ -183,55 +183,55 @@ OMR::JitBuilderReplayTextFile::handleServiceMethodBuilder(uint32_t mbID, char * 
 
    // Here we have the builder and the service to be called
    // Starting to check if else if statements to call each service
-   if(strcmp(serviceString, STATEMENT_NEWMETHODBUILDER) == 0)
+   if(strcmp(serviceString, StatementName::STATEMENT_NEWMETHODBUILDER) == 0)
       {
       handleMethodBuilder(mbID, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINELINESTRING) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINELINESTRING) == 0)
       {
       handleDefineLine(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINEFILE) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINEFILE) == 0)
       {
       handleDefineFile(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINENAME) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINENAME) == 0)
       {
       handleDefineName(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINEPARAMETER) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINEPARAMETER) == 0)
       {
       handleDefineParameter(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINEARRAYPARAMETER) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINEARRAYPARAMETER) == 0)
       {
       handleDefineArrayParameter(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINELOCAL) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINELOCAL) == 0)
       {
       handleDefineLocal(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_PRIMITIVETYPE) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_PRIMITIVETYPE) == 0)
       {
       handlePrimitiveType(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_POINTERTYPE) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_POINTERTYPE) == 0)
       {
       handlePointerType(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINERETURNTYPE) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINERETURNTYPE) == 0)
       {
       handleDefineReturnType(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINEFUNCTION) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINEFUNCTION) == 0)
       {
       handleDefineFunction(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_ALLLOCALSHAVEBEENDEFINED) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_ALLLOCALSHAVEBEENDEFINED) == 0)
       {
       handleAllLocalsHaveBeenDefined(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DONECONSTRUCTOR) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DONECONSTRUCTOR) == 0)
       {
       #ifdef DEBUG
       std::cout << "JitBuilderReplayTextFile: Finished constructor" << '\n';
@@ -254,139 +254,139 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
 
       const char * serviceString = getServiceStringFromMap(&tokens);
 
-      if(strcmp(serviceString, STATEMENT_DEFINELOCAL) == 0)
+      if(strcmp(serviceString, StatementName::STATEMENT_DEFINELOCAL) == 0)
          {
          handleDefineLocal(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_ALLLOCALSHAVEBEENDEFINED) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_ALLLOCALSHAVEBEENDEFINED) == 0)
          {
          handleAllLocalsHaveBeenDefined(static_cast<TR::MethodBuilder *>(ilmb), tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CONSTINT8) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CONSTINT8) == 0)
          {
          handleConstInt8(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CONSTINT32) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CONSTINT32) == 0)
          {
          handleConstInt32(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CONSTINT64) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CONSTINT64) == 0)
          {
          handleConstInt64(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CONSTDOUBLE) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CONSTDOUBLE) == 0)
          {
          handleConstDouble(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CONSTADDRESS) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CONSTADDRESS) == 0)
          {
          handleConstAddress(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_LOAD) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_LOAD) == 0)
          {
          handleLoad(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_LOADAT) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_LOADAT) == 0)
          {
          handleLoadAt(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_ADD) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_ADD) == 0)
          {
          handleAdd(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_RETURNVALUE) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_RETURNVALUE) == 0)
          {
          handleReturnValue(ilmb, tokens);
          }
-    else if(strcmp(serviceString, STATEMENT_RETURN) == 0)
+    else if(strcmp(serviceString, StatementName::STATEMENT_RETURN) == 0)
          {
          handleReturn(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_STORE) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_STORE) == 0)
          {
          handleStore(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_STOREAT) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_STOREAT) == 0)
          {
          handleStoreAt(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_SUB) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_SUB) == 0)
          {
          handleSub(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_MUL) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_MUL) == 0)
          {
          handleMul(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_DIV) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_DIV) == 0)
          {
          handleDiv(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_AND) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_AND) == 0)
          {
          handleAnd(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_OR) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_OR) == 0)
          {
          handleOr(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_XOR) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_XOR) == 0)
          {
          handleXor(ilmb, tokens);
          }
-      else if (strcmp(serviceString, STATEMENT_LESSTHAN) == 0)
+      else if (strcmp(serviceString, StatementName::STATEMENT_LESSTHAN) == 0)
          {
          handleLessThan(ilmb, tokens);
          }
-      else if (strcmp(serviceString, STATEMENT_GREATERTHAN) == 0)
+      else if (strcmp(serviceString, StatementName::STATEMENT_GREATERTHAN) == 0)
          {
          handleGreaterThan(ilmb, tokens);
          }
-      else if (strcmp(serviceString, STATEMENT_NOTEQUALTO) == 0)
+      else if (strcmp(serviceString, StatementName::STATEMENT_NOTEQUALTO) == 0)
          {
          handleNotEqualTo(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_NEWILBUILDER) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_NEWILBUILDER) == 0)
          {
          handleNewIlBuilder(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_IFTHENELSE) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_IFTHENELSE) == 0)
          {
          handleIfThenElse(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_FORLOOP) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_FORLOOP) == 0)
          {
          handleForLoop(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CALL) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CALL) == 0)
          {
          handleCall(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CONVERTTO) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CONVERTTO) == 0)
          {
          handleConvertTo(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_UNSIGNEDSHIFTR) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_UNSIGNEDSHIFTR) == 0)
          {
          handleUnsignedShiftR(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_IFCMPEQUALZERO) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_IFCMPEQUALZERO) == 0)
          {
          handleIfCmpEqualZero(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_INDEXAT) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_INDEXAT) == 0)
          {
          handleIndexAt(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CREATELOCALARRAY) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CREATELOCALARRAY) == 0)
          {
          handleCreateLocalArray(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_PRIMITIVETYPE) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_PRIMITIVETYPE) == 0)
          {
          handlePrimitiveType(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_POINTERTYPE) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_POINTERTYPE) == 0)
          {
          handlePointerType(ilmb, tokens);
          }
@@ -427,7 +427,7 @@ OMR::JitBuilderReplayTextFile::handleDefineLine(TR::MethodBuilder * mb, char * t
       #endif
 
       uint32_t strLen = getNumberFromToken(tokens);
-      tokens = std::strtok(NULL, SPACE);
+      tokens = std::strtok(NULL, StatementName::SPACE);
 
       const char * defineLineParam = getServiceStringFromToken(strLen, tokens);
 
@@ -442,7 +442,7 @@ OMR::JitBuilderReplayTextFile::handleDefineFile(TR::MethodBuilder * mb, char * t
       #endif
 
       uint32_t strLen = getNumberFromToken(tokens);
-      tokens = std::strtok(NULL, SPACE);
+      tokens = std::strtok(NULL, StatementName::SPACE);
 
       const char * defineFileParam = getServiceStringFromToken(strLen, tokens);
 
@@ -457,7 +457,7 @@ OMR::JitBuilderReplayTextFile::handleDefineName(TR::MethodBuilder * mb, char * t
      #endif
 
      uint32_t strLen = getNumberFromToken(tokens);
-     tokens = std::strtok(NULL, SPACE);
+     tokens = std::strtok(NULL, StatementName::SPACE);
 
      const char * defineNameParam = getServiceStringFromToken(strLen, tokens);
 
@@ -476,10 +476,10 @@ OMR::JitBuilderReplayTextFile::handleDefineParameter(TR::MethodBuilder * mb, cha
 
     uint32_t typeID = getNumberFromToken(tokens);
     TR::IlType *type = static_cast<TR::IlType *>(lookupPointer(typeID));
-    tokens = std::strtok(NULL, SPACE);
+    tokens = std::strtok(NULL, StatementName::SPACE);
 
     uint32_t strLen = getNumberFromToken(tokens);
-    tokens = std::strtok(NULL, SPACE);
+    tokens = std::strtok(NULL, StatementName::SPACE);
     const char * defineParameterParam = getServiceStringFromToken(strLen, tokens);
 
     mb->DefineParameter(defineParameterParam, type);
@@ -497,10 +497,10 @@ OMR::JitBuilderReplayTextFile::handleDefineArrayParameter(TR::MethodBuilder * mb
 
     uint32_t typeID = getNumberFromToken(tokens);
     TR::IlType *type = static_cast<TR::IlType *>(lookupPointer(typeID));
-    tokens = std::strtok(NULL, SPACE);
+    tokens = std::strtok(NULL, StatementName::SPACE);
 
     uint32_t strLen = getNumberFromToken(tokens);
-    tokens = std::strtok(NULL, SPACE);
+    tokens = std::strtok(NULL, StatementName::SPACE);
     const char * defineParameterParam = getServiceStringFromToken(strLen, tokens);
 
     mb->DefineArrayParameter(defineParameterParam, type);
@@ -516,7 +516,7 @@ void OMR::JitBuilderReplayTextFile::handlePrimitiveType(TR::IlBuilder * mb, char
     #endif
 
     uint32_t ID = getNumberFromToken(tokens);
-    tokens = std::strtok(NULL, SPACE);
+    tokens = std::strtok(NULL, StatementName::SPACE);
     uint32_t value = getNumberFromToken(tokens);
 
     TR::DataType dt((TR::DataTypes)value);
@@ -550,29 +550,29 @@ OMR::JitBuilderReplayTextFile::handleDefineFunction(TR::MethodBuilder * mb, char
    #endif
 
    uint32_t strLen = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    const char * functionName = getServiceStringFromToken(strLen, tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    strLen = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    const char * fileName = getServiceStringFromToken(strLen, tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    strLen = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    const char * lineNumber = getServiceStringFromToken(strLen, tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    int64_t entryPoint = strtol(tokens + 1, NULL, 16);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t returnTypeID = getNumberFromToken(tokens);
    TR::IlType * returnType = static_cast<TR::IlType *>(lookupPointer(returnTypeID));
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t paramCount = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    TR::IlType **paramTypes = (TR::IlType **)malloc(paramCount * sizeof(TR::IlType *));
    TR_ASSERT_FATAL(NULL != paramTypes, "Unable to allocate values array for handleDefineFunction");
@@ -581,7 +581,7 @@ OMR::JitBuilderReplayTextFile::handleDefineFunction(TR::MethodBuilder * mb, char
       {
       uint32_t valueID = getNumberFromToken(tokens);
       TR::IlType * value = static_cast<TR::IlType *>(lookupPointer(valueID));
-      tokens = std::strtok(NULL, SPACE);
+      tokens = std::strtok(NULL, StatementName::SPACE);
 
       paramTypes[i] = value;
       }
@@ -600,10 +600,10 @@ OMR::JitBuilderReplayTextFile::handleDefineLocal(TR::MethodBuilder *mb, char *to
 
    uint32_t typeID = getNumberFromToken(tokens);
    TR::IlType *type = static_cast<TR::IlType *>(lookupPointer(typeID));
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t strLen = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    const char * defineLocalParam = getServiceStringFromToken(strLen, tokens);
 
    mb->DefineLocal(defineLocalParam, type);
@@ -638,7 +638,7 @@ OMR::JitBuilderReplayTextFile::handleConstInt8(TR::IlBuilder * ilmb, char * toke
      #endif
 
      uint32_t ID = getNumberFromToken(tokens);
-     tokens = std::strtok(NULL, SPACE);
+     tokens = std::strtok(NULL, StatementName::SPACE);
 
      int8_t value = atoi(tokens);
      IlValue * val = ilmb->ConstInt8(value);
@@ -653,7 +653,7 @@ OMR::JitBuilderReplayTextFile::handleConstInt32(TR::IlBuilder * ilmb, char * tok
    #endif
 
    uint32_t ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    uint32_t value = getNumberFromToken(tokens);
 
    IlValue * val = ilmb->ConstInt32(value);
@@ -668,7 +668,7 @@ OMR::JitBuilderReplayTextFile::handleConstInt64(TR::IlBuilder * ilmb, char * tok
    #endif
 
    uint32_t ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    int64_t value = atol(tokens);
    IlValue * val = ilmb->ConstInt64(value);
@@ -683,7 +683,7 @@ OMR::JitBuilderReplayTextFile::handleConstDouble(TR::IlBuilder * ilmb, char * to
    #endif
 
    uint32_t ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    double value = atof(tokens);
    IlValue * val = ilmb->ConstDouble(value);
@@ -701,7 +701,7 @@ OMR::JitBuilderReplayTextFile::handleConstAddress(TR::IlBuilder * ilmb, char * t
    #endif
 
    uint32_t ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    uint64_t address = std::strtol(tokens+1, NULL, 16);
 
    void * value = (void *) address;
@@ -721,10 +721,10 @@ OMR::JitBuilderReplayTextFile::handleLoad(TR::IlBuilder * ilmb, char * tokens)
    #endif
 
    uint32_t ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t strLen = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    const char * defineLoadParam = getServiceStringFromToken(strLen, tokens);
 
    IlValue * loadVal = ilmb->Load(defineLoadParam);
@@ -742,10 +742,10 @@ OMR::JitBuilderReplayTextFile::handleLoadAt(TR::IlBuilder * ilmb, char * tokens)
    #endif
 
    uint32_t storeID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t typeID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    uint32_t valueID = getNumberFromToken(tokens);
 
    TR::IlType * param1 = static_cast<TR::IlType *>(lookupPointer(typeID));
@@ -767,9 +767,9 @@ OMR::JitBuilderReplayTextFile::handleStore(TR::IlBuilder * ilmb, char * tokens)
   #endif
 
   uint32_t strLen = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
   const char * defineStoreParam = getServiceStringFromToken(strLen, tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
   uint32_t valuetoStore = getNumberFromToken(tokens);
 
   TR::IlValue * paramIlValue = static_cast<TR::IlValue *>(lookupPointer(valuetoStore));
@@ -788,7 +788,7 @@ OMR::JitBuilderReplayTextFile::handleStoreAt(TR::IlBuilder * ilmb, char * tokens
   #endif
 
   uint32_t addressID = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
   uint32_t valuetoStore = getNumberFromToken(tokens);
 
   TR::IlValue * param1Value = static_cast<TR::IlValue *>(lookupPointer(addressID));
@@ -808,10 +808,10 @@ OMR::JitBuilderReplayTextFile::handleAdd(TR::IlBuilder * ilmb, char * tokens)
    #endif
 
    uint32_t IDtoStore = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t param1ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    uint32_t param2ID = getNumberFromToken(tokens);
 
    TR::IlValue * param1IlValue = static_cast<TR::IlValue *>(lookupPointer(param1ID));
@@ -833,10 +833,10 @@ OMR::JitBuilderReplayTextFile::handleSub(TR::IlBuilder * ilmb, char * tokens)
   #endif
 
   uint32_t IDtoStore = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
 
   uint32_t param1ID = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
   uint32_t param2ID = getNumberFromToken(tokens);
 
   TR::IlValue * param1IlValue = static_cast<TR::IlValue *>(lookupPointer(param1ID));
@@ -858,10 +858,10 @@ OMR::JitBuilderReplayTextFile::handleMul(TR::IlBuilder * ilmb, char * tokens)
   #endif
 
   uint32_t IDtoStore = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
 
   uint32_t param1ID = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
   uint32_t param2ID = getNumberFromToken(tokens);
 
   TR::IlValue * param1IlValue = static_cast<TR::IlValue *>(lookupPointer(param1ID));
@@ -879,10 +879,10 @@ OMR::JitBuilderReplayTextFile::handleDiv(TR::IlBuilder * ilmb, char * tokens)
   #endif
 
   uint32_t IDtoStore = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
 
   uint32_t param1ID = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
   uint32_t param2ID = getNumberFromToken(tokens);
 
   TR::IlValue * param1IlValue = static_cast<TR::IlValue *>(lookupPointer(param1ID));
@@ -901,10 +901,10 @@ OMR::JitBuilderReplayTextFile::handleAnd(TR::IlBuilder * ilmb, char * tokens)
    #endif
 
    uint32_t IDtoStore = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t param1ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    uint32_t param2ID = getNumberFromToken(tokens);
 
    TR::IlValue * param1IlValue = static_cast<TR::IlValue *>(lookupPointer(param1ID));
@@ -923,10 +923,10 @@ OMR::JitBuilderReplayTextFile::handleOr(TR::IlBuilder * ilmb, char * tokens)
    #endif
 
    uint32_t IDtoStore = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t param1ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    uint32_t param2ID = getNumberFromToken(tokens);
 
    TR::IlValue * param1IlValue = static_cast<TR::IlValue *>(lookupPointer(param1ID));
@@ -945,10 +945,10 @@ OMR::JitBuilderReplayTextFile::handleXor(TR::IlBuilder * ilmb, char * tokens)
    #endif
 
    uint32_t IDtoStore = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t param1ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    uint32_t param2ID = getNumberFromToken(tokens);
 
    TR::IlValue * param1IlValue = static_cast<TR::IlValue *>(lookupPointer(param1ID));
@@ -970,7 +970,7 @@ OMR::JitBuilderReplayTextFile::handleNewIlBuilder(TR::IlBuilder * ilmb, char * t
   #endif
 
   uint32_t IDtoStore = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
 
 
   TR::IlBuilder * newBuilder = ilmb->OrphanBuilder();//???error: cannot
@@ -990,10 +990,10 @@ OMR::JitBuilderReplayTextFile::handleLessThan(TR::IlBuilder * ilmb, char * token
   #endif
 
   uint32_t IDtoStore = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
 
   uint32_t param1ID = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
   uint32_t param2ID = getNumberFromToken(tokens);
 
   TR::IlValue * leftValue  = static_cast<TR::IlValue *>(lookupPointer(param1ID));
@@ -1015,10 +1015,10 @@ OMR::JitBuilderReplayTextFile::handleCreateLocalArray(TR::IlBuilder * ilmb, char
     #endif
 
     uint32_t IDtoStore = getNumberFromToken(tokens);
-    tokens = std::strtok(NULL, SPACE);
+    tokens = std::strtok(NULL, StatementName::SPACE);
 
     uint32_t param1 = getNumberFromToken(tokens);
-    tokens = std::strtok(NULL, SPACE);
+    tokens = std::strtok(NULL, StatementName::SPACE);
     uint32_t param2ID = getNumberFromToken(tokens);
 
     TR::IlType * param2 = static_cast<TR::IlType *>(lookupPointer(param2ID));
@@ -1035,10 +1035,10 @@ OMR::JitBuilderReplayTextFile::handleGreaterThan(TR::IlBuilder * ilmb, char * to
   #endif
 
   uint32_t IDtoStore = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
 
   uint32_t param1ID = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
   uint32_t param2ID = getNumberFromToken(tokens);
 
   TR::IlValue * leftValue  = static_cast<TR::IlValue *>(lookupPointer(param1ID));
@@ -1056,10 +1056,10 @@ OMR::JitBuilderReplayTextFile::handleNotEqualTo(TR::IlBuilder * ilmb, char * tok
   #endif
 
   uint32_t IDtoStore = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
 
   uint32_t param1ID = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
   uint32_t param2ID = getNumberFromToken(tokens);
 
   TR::IlValue * leftValue  = static_cast<TR::IlValue *>(lookupPointer(param1ID));
@@ -1086,10 +1086,10 @@ OMR::JitBuilderReplayTextFile::handleIfThenElse(TR::IlBuilder * ilmb, char * tok
   #endif
 
   uint32_t IfID = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
 
   uint32_t ElseID = getNumberFromToken(tokens);
-  tokens = std::strtok(NULL, SPACE);
+  tokens = std::strtok(NULL, StatementName::SPACE);
   uint32_t conditionID = getNumberFromToken(tokens);
 
   TR::IlBuilder * IfBlock   = static_cast<TR::IlBuilder *>(lookupPointer(IfID));
@@ -1122,32 +1122,32 @@ OMR::JitBuilderReplayTextFile::handleForLoop(TR::IlBuilder * ilmb, char * tokens
    else
        boolParam = false;
 
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    uint32_t strLen = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    char * indVar = getServiceStringFromToken(strLen, tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t builderID = getNumberFromToken(tokens);
    TR::IlBuilder * body = static_cast<TR::IlBuilder *>(lookupPointer(builderID));
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t breakID = getNumberFromToken(tokens);
 
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t continueID = getNumberFromToken(tokens);
 
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t initID = getNumberFromToken(tokens);
    TR::IlValue * initValue = static_cast<TR::IlValue *>(lookupPointer(initID));
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t iterateID = getNumberFromToken(tokens);
    TR::IlValue * iterateValue = static_cast<TR::IlValue *>(lookupPointer(iterateID));
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t incrementID = getNumberFromToken(tokens);
    TR::IlValue * incrementValue = static_cast<TR::IlValue *>(lookupPointer(incrementID));
@@ -1187,12 +1187,12 @@ OMR::JitBuilderReplayTextFile::handleCall(TR::IlBuilder * ilmb, char * tokens)
    #endif
 
    uint32_t strLen = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    const char * functionName = getServiceStringFromToken(strLen, tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t numberOfParams = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    TR::IlValue **values = (TR::IlValue **)malloc(numberOfParams * sizeof(TR::IlValue *));
    TR_ASSERT_FATAL(NULL != values, "Unable to allocate values array for handleCall");
@@ -1201,7 +1201,7 @@ OMR::JitBuilderReplayTextFile::handleCall(TR::IlBuilder * ilmb, char * tokens)
       {
       uint32_t valueID = getNumberFromToken(tokens);
       TR::IlValue * value = static_cast<TR::IlValue *>(lookupPointer(valueID));
-      tokens = std::strtok(NULL, SPACE);
+      tokens = std::strtok(NULL, StatementName::SPACE);
 
       values[i] = value;
       }
@@ -1231,10 +1231,10 @@ OMR::JitBuilderReplayTextFile::handleConvertTo(TR::IlBuilder * ilmb, char * toke
    #endif
 
    uint32_t IDtoStore = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t param1ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    uint32_t param2ID = getNumberFromToken(tokens);
 
    TR::IlType * param1IlValue = static_cast<TR::IlType *>(lookupPointer(param1ID));
@@ -1256,7 +1256,7 @@ OMR::JitBuilderReplayTextFile::handlePointerType(TR::IlBuilder * ilmb, char * to
    #endif
 
    uint32_t IDtoStore = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t param1ID = getNumberFromToken(tokens);
 
@@ -1298,10 +1298,10 @@ OMR::JitBuilderReplayTextFile::handleUnsignedShiftR(TR::IlBuilder * ilmb, char *
    #endif
 
    uint32_t IDtoStore = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t param1ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    uint32_t param2ID = getNumberFromToken(tokens);
 
    TR::IlValue * v  = static_cast<TR::IlValue *>(lookupPointer(param1ID));
@@ -1323,7 +1323,7 @@ OMR::JitBuilderReplayTextFile::handleIfCmpEqualZero(TR::IlBuilder * ilmb, char *
    #endif
 
    uint32_t param1ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    uint32_t param2ID = getNumberFromToken(tokens);
 
    TR::IlBuilder * target  = static_cast<TR::IlBuilder *>(lookupPointer(param1ID));
@@ -1340,12 +1340,12 @@ OMR::JitBuilderReplayTextFile::handleIndexAt(TR::IlBuilder * ilmb, char * tokens
    #endif
 
    uint32_t IDtoStore = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t param1ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    uint32_t param2ID = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
+   tokens = std::strtok(NULL, StatementName::SPACE);
    uint32_t param3ID = getNumberFromToken(tokens);
 
    TR::IlType * dt = static_cast<TR::IlType *>(lookupPointer(param1ID));
