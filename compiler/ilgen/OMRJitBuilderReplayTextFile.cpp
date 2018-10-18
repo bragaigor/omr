@@ -183,55 +183,55 @@ OMR::JitBuilderReplayTextFile::handleServiceMethodBuilder(uint32_t mbID, char * 
 
    // Here we have the builder and the service to be called
    // Starting to check if else if statements to call each service
-   if(strcmp(serviceString, STATEMENT_NEWMETHODBUILDER) == 0)
+   if(strcmp(serviceString, StatementName::STATEMENT_NEWMETHODBUILDER) == 0)
       {
       handleMethodBuilder(mbID, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINELINESTRING) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINELINESTRING) == 0)
       {
       handleDefineLine(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINEFILE) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINEFILE) == 0)
       {
       handleDefineFile(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINENAME) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINENAME) == 0)
       {
       handleDefineName(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINEPARAMETER) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINEPARAMETER) == 0)
       {
       handleDefineParameter(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINEARRAYPARAMETER) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINEARRAYPARAMETER) == 0)
       {
       handleDefineArrayParameter(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINELOCAL) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINELOCAL) == 0)
       {
       handleDefineLocal(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_PRIMITIVETYPE) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_PRIMITIVETYPE) == 0)
       {
       handlePrimitiveType(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_POINTERTYPE) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_POINTERTYPE) == 0)
       {
       handlePointerType(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINERETURNTYPE) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINERETURNTYPE) == 0)
       {
       handleDefineReturnType(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DEFINEFUNCTION) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DEFINEFUNCTION) == 0)
       {
       handleDefineFunction(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_ALLLOCALSHAVEBEENDEFINED) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_ALLLOCALSHAVEBEENDEFINED) == 0)
       {
       handleAllLocalsHaveBeenDefined(mb, tokens);
       }
-   else if(strcmp(serviceString, STATEMENT_DONECONSTRUCTOR) == 0)
+   else if(strcmp(serviceString, StatementName::STATEMENT_DONECONSTRUCTOR) == 0)
       {
       #ifdef DEBUG
       std::cout << "JitBuilderReplayTextFile: Finished constructor" << '\n';
@@ -254,139 +254,139 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
 
       const char * serviceString = getServiceStringFromMap(&tokens);
 
-      if(strcmp(serviceString, STATEMENT_DEFINELOCAL) == 0)
+      if(strcmp(serviceString, StatementName::STATEMENT_DEFINELOCAL) == 0)
          {
          handleDefineLocal(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_ALLLOCALSHAVEBEENDEFINED) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_ALLLOCALSHAVEBEENDEFINED) == 0)
          {
          handleAllLocalsHaveBeenDefined(static_cast<TR::MethodBuilder *>(ilmb), tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CONSTINT8) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CONSTINT8) == 0)
          {
          handleConstInt8(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CONSTINT32) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CONSTINT32) == 0)
          {
          handleConstInt32(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CONSTINT64) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CONSTINT64) == 0)
          {
          handleConstInt64(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CONSTDOUBLE) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CONSTDOUBLE) == 0)
          {
          handleConstDouble(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CONSTADDRESS) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CONSTADDRESS) == 0)
          {
          handleConstAddress(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_LOAD) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_LOAD) == 0)
          {
          handleLoad(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_LOADAT) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_LOADAT) == 0)
          {
          handleLoadAt(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_ADD) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_ADD) == 0)
          {
          handleAdd(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_RETURNVALUE) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_RETURNVALUE) == 0)
          {
          handleReturnValue(ilmb, tokens);
          }
-    else if(strcmp(serviceString, STATEMENT_RETURN) == 0)
+    else if(strcmp(serviceString, StatementName::STATEMENT_RETURN) == 0)
          {
          handleReturn(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_STORE) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_STORE) == 0)
          {
          handleStore(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_STOREAT) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_STOREAT) == 0)
          {
          handleStoreAt(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_SUB) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_SUB) == 0)
          {
          handleSub(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_MUL) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_MUL) == 0)
          {
          handleMul(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_DIV) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_DIV) == 0)
          {
          handleDiv(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_AND) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_AND) == 0)
          {
          handleAnd(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_OR) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_OR) == 0)
          {
          handleOr(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_XOR) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_XOR) == 0)
          {
          handleXor(ilmb, tokens);
          }
-      else if (strcmp(serviceString, STATEMENT_LESSTHAN) == 0)
+      else if (strcmp(serviceString, StatementName::STATEMENT_LESSTHAN) == 0)
          {
          handleLessThan(ilmb, tokens);
          }
-      else if (strcmp(serviceString, STATEMENT_GREATERTHAN) == 0)
+      else if (strcmp(serviceString, StatementName::STATEMENT_GREATERTHAN) == 0)
          {
          handleGreaterThan(ilmb, tokens);
          }
-      else if (strcmp(serviceString, STATEMENT_NOTEQUALTO) == 0)
+      else if (strcmp(serviceString, StatementName::STATEMENT_NOTEQUALTO) == 0)
          {
          handleNotEqualTo(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_NEWILBUILDER) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_NEWILBUILDER) == 0)
          {
          handleNewIlBuilder(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_IFTHENELSE) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_IFTHENELSE) == 0)
          {
          handleIfThenElse(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_FORLOOP) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_FORLOOP) == 0)
          {
          handleForLoop(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CALL) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CALL) == 0)
          {
          handleCall(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CONVERTTO) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CONVERTTO) == 0)
          {
          handleConvertTo(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_UNSIGNEDSHIFTR) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_UNSIGNEDSHIFTR) == 0)
          {
          handleUnsignedShiftR(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_IFCMPEQUALZERO) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_IFCMPEQUALZERO) == 0)
          {
          handleIfCmpEqualZero(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_INDEXAT) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_INDEXAT) == 0)
          {
          handleIndexAt(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_CREATELOCALARRAY) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_CREATELOCALARRAY) == 0)
          {
          handleCreateLocalArray(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_PRIMITIVETYPE) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_PRIMITIVETYPE) == 0)
          {
          handlePrimitiveType(ilmb, tokens);
          }
-      else if(strcmp(serviceString, STATEMENT_POINTERTYPE) == 0)
+      else if(strcmp(serviceString, StatementName::STATEMENT_POINTERTYPE) == 0)
          {
          handlePointerType(ilmb, tokens);
          }
