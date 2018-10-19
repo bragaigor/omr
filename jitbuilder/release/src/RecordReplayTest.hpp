@@ -26,7 +26,7 @@
 
 #include "ilgen/MethodBuilder.hpp"
 
-// #define REPLAY // Uncomment me to enable REPLAY functionality 
+#define REPLAY // Uncomment me to enable REPLAY functionality 
 
 typedef int32_t (RecordReplayMethodFunction)(int32_t, int32_t);
 
