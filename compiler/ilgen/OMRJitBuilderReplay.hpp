@@ -38,9 +38,7 @@ namespace OMR
 class JitBuilderReplay
    {
    public:
-
-   const char *RECORDER_SIGNATURE = "JBIL"; // JitBuilder IL
-   const char *JBIL_COMPLETE      = "Done";
+   
    enum MethodFlag { CONSTRUCTOR_FLAG, BUILDIL_FLAG };
 
    JitBuilderReplay();
