@@ -20,7 +20,7 @@
  *******************************************************************************/
 
  #include <stdint.h>
- #include <cstring>
+ #include <string>
  #include <iostream>
  #include <fstream>
 
@@ -130,10 +130,10 @@ OMR::JitBuilderReplayTextFile::addIDPointerPairToMap(char * tokens)
 char *
 OMR::JitBuilderReplayTextFile::getServiceStringFromToken(uint32_t strLen, char * tokens)
    {
-     char * dst;
-     dst = strndup(tokens+1, sizeof(char)*strLen);
+    std::string temp(tokens);
+    std::string service = temp.substr(1, temp.length()-3);
 
-     return dst;
+     return strdup(service.c_str());
    }
 
 const char *
