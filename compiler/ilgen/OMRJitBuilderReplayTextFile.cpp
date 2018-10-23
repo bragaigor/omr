@@ -130,10 +130,11 @@ OMR::JitBuilderReplayTextFile::addIDPointerPairToMap(char * tokens)
 char *
 OMR::JitBuilderReplayTextFile::getServiceStringFromToken(uint32_t strLen, char * tokens)
    {
-    std::string temp(tokens);
-    std::string service = temp.substr(1, temp.length()-3);
+    char* service = (char*)malloc(strLen);
+    strncpy(service, tokens+1, strLen);
+    service[strLen] = '\0';
 
-     return strdup(service.c_str());
+    return strdup(service);
    }
 
 const char *
