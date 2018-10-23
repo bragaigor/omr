@@ -27,6 +27,7 @@
 
  #include <iostream>
  #include <sstream>
+ #include <cstring>
  #include <fstream>
  #include <map>
 
@@ -51,7 +52,7 @@
     bool parseBuildIL();
 
     void addIDPointerPairToMap(char * tokens);
-    char * getServiceStringFromToken(uint32_t strLen, char * tokens);
+    char * getServiceStringFromToken(std::string tokens);
     const char * getServiceStringFromMap(char ** tokens);
 
     bool handleService(BuilderFlag builderFlag, char * tokens);

@@ -20,7 +20,6 @@
  *******************************************************************************/
 
  #include <stdint.h>
- #include <cstring>
  #include <iostream>
  #include <fstream>
 
@@ -122,19 +121,18 @@ OMR::JitBuilderReplayTextFile::addIDPointerPairToMap(char * tokens)
        uint32_t strLen = getNumberFromToken(tokens);
        tokens = std::strtok(NULL, StatementName::SPACE);
 
-       char * idPointer = getServiceStringFromToken(strLen, tokens);
+       char * idPointer = getServiceStringFromToken(std::string(tokens));
 
        StoreIDPointerPair(ID, idPointer);
    }
 
 char *
-OMR::JitBuilderReplayTextFile::getServiceStringFromToken(uint32_t strLen, char * tokens)
+OMR::JitBuilderReplayTextFile::getServiceStringFromToken(std::string tokens)
    {
-    char* service = (char*)malloc(strLen);
-    strncpy(service, tokens+1, strLen);
-    service[strLen] = '\0';
+    // tokens format: [stringToParse]" -> return stringToParse
+    std::string service = tokens.substr(1, tokens.length()-3);
 
-    return strdup(service);
+    return strdup(service.c_str());
    }
 
 const char *
@@ -429,7 +427,7 @@ OMR::JitBuilderReplayTextFile::handleDefineLine(TR::MethodBuilder * mb, char * t
       uint32_t strLen = getNumberFromToken(tokens);
       tokens = std::strtok(NULL, StatementName::SPACE);
 
-      const char * defineLineParam = getServiceStringFromToken(strLen, tokens);
+      const char * defineLineParam = getServiceStringFromToken(std::string(tokens));
 
       mb->DefineLine(defineLineParam);
    }
@@ -444,7 +442,7 @@ OMR::JitBuilderReplayTextFile::handleDefineFile(TR::MethodBuilder * mb, char * t
       uint32_t strLen = getNumberFromToken(tokens);
       tokens = std::strtok(NULL, StatementName::SPACE);
 
-      const char * defineFileParam = getServiceStringFromToken(strLen, tokens);
+      const char * defineFileParam = getServiceStringFromToken(std::string(tokens));
 
       mb->DefineFile(defineFileParam);
    }
@@ -459,7 +457,7 @@ OMR::JitBuilderReplayTextFile::handleDefineName(TR::MethodBuilder * mb, char * t
      uint32_t strLen = getNumberFromToken(tokens);
      tokens = std::strtok(NULL, StatementName::SPACE);
 
-     const char * defineNameParam = getServiceStringFromToken(strLen, tokens);
+     const char * defineNameParam = getServiceStringFromToken(std::string(tokens));
 
      mb->DefineName(defineNameParam);
    }
@@ -480,7 +478,7 @@ OMR::JitBuilderReplayTextFile::handleDefineParameter(TR::MethodBuilder * mb, cha
 
     uint32_t strLen = getNumberFromToken(tokens);
     tokens = std::strtok(NULL, StatementName::SPACE);
-    const char * defineParameterParam = getServiceStringFromToken(strLen, tokens);
+    const char * defineParameterParam = getServiceStringFromToken(std::string(tokens));
 
     mb->DefineParameter(defineParameterParam, type);
    }
@@ -501,7 +499,7 @@ OMR::JitBuilderReplayTextFile::handleDefineArrayParameter(TR::MethodBuilder * mb
 
     uint32_t strLen = getNumberFromToken(tokens);
     tokens = std::strtok(NULL, StatementName::SPACE);
-    const char * defineParameterParam = getServiceStringFromToken(strLen, tokens);
+    const char * defineParameterParam = getServiceStringFromToken(std::string(tokens));
 
     mb->DefineArrayParameter(defineParameterParam, type);
    }
@@ -551,17 +549,17 @@ OMR::JitBuilderReplayTextFile::handleDefineFunction(TR::MethodBuilder * mb, char
 
    uint32_t strLen = getNumberFromToken(tokens);
    tokens = std::strtok(NULL, StatementName::SPACE);
-   const char * functionName = getServiceStringFromToken(strLen, tokens);
+   const char * functionName = getServiceStringFromToken(std::string(tokens));
    tokens = std::strtok(NULL, StatementName::SPACE);
 
    strLen = getNumberFromToken(tokens);
    tokens = std::strtok(NULL, StatementName::SPACE);
-   const char * fileName = getServiceStringFromToken(strLen, tokens);
+   const char * fileName = getServiceStringFromToken(std::string(tokens));
    tokens = std::strtok(NULL, StatementName::SPACE);
 
    strLen = getNumberFromToken(tokens);
    tokens = std::strtok(NULL, StatementName::SPACE);
-   const char * lineNumber = getServiceStringFromToken(strLen, tokens);
+   const char * lineNumber = getServiceStringFromToken(std::string(tokens));
    tokens = std::strtok(NULL, StatementName::SPACE);
 
    int64_t entryPoint = strtol(tokens + 1, NULL, 16);
@@ -604,7 +602,7 @@ OMR::JitBuilderReplayTextFile::handleDefineLocal(TR::MethodBuilder *mb, char *to
 
    uint32_t strLen = getNumberFromToken(tokens);
    tokens = std::strtok(NULL, StatementName::SPACE);
-   const char * defineLocalParam = getServiceStringFromToken(strLen, tokens);
+   const char * defineLocalParam = getServiceStringFromToken(std::string(tokens));
 
    mb->DefineLocal(defineLocalParam, type);
    }
@@ -725,7 +723,7 @@ OMR::JitBuilderReplayTextFile::handleLoad(TR::IlBuilder * ilmb, char * tokens)
 
    uint32_t strLen = getNumberFromToken(tokens);
    tokens = std::strtok(NULL, StatementName::SPACE);
-   const char * defineLoadParam = getServiceStringFromToken(strLen, tokens);
+   const char * defineLoadParam = getServiceStringFromToken(std::string(tokens));
 
    IlValue * loadVal = ilmb->Load(defineLoadParam);
    StoreIDPointerPair(ID, loadVal);
@@ -768,7 +766,7 @@ OMR::JitBuilderReplayTextFile::handleStore(TR::IlBuilder * ilmb, char * tokens)
 
   uint32_t strLen = getNumberFromToken(tokens);
   tokens = std::strtok(NULL, StatementName::SPACE);
-  const char * defineStoreParam = getServiceStringFromToken(strLen, tokens);
+  const char * defineStoreParam = getServiceStringFromToken(std::string(tokens));
   tokens = std::strtok(NULL, StatementName::SPACE);
   uint32_t valuetoStore = getNumberFromToken(tokens);
 
@@ -1126,7 +1124,7 @@ OMR::JitBuilderReplayTextFile::handleForLoop(TR::IlBuilder * ilmb, char * tokens
    uint32_t strLen = getNumberFromToken(tokens);
    tokens = std::strtok(NULL, StatementName::SPACE);
 
-   char * indVar = getServiceStringFromToken(strLen, tokens);
+   char * indVar = getServiceStringFromToken(std::string(tokens));
    tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t builderID = getNumberFromToken(tokens);
@@ -1188,7 +1186,7 @@ OMR::JitBuilderReplayTextFile::handleCall(TR::IlBuilder * ilmb, char * tokens)
 
    uint32_t strLen = getNumberFromToken(tokens);
    tokens = std::strtok(NULL, StatementName::SPACE);
-   const char * functionName = getServiceStringFromToken(strLen, tokens);
+   const char * functionName = getServiceStringFromToken(std::string(tokens));
    tokens = std::strtok(NULL, StatementName::SPACE);
 
    uint32_t numberOfParams = getNumberFromToken(tokens);
