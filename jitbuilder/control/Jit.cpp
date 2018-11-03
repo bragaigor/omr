@@ -170,8 +170,6 @@ initializeJitBuilder(TR_RuntimeHelper *helperIDs, void **helperAddresses, int32_
 //
 
 
-
-
 bool
 internal_initializeJitWithOptions(char *options)
    {
@@ -190,7 +188,6 @@ internal_compileMethodBuilder(TR::MethodBuilder *m, void **entry)
    return m->Compile(entry);
    }
 
-extern "C"
 int32_t
 recordMethodBuilder(TR::MethodBuilder *m)
    {
@@ -203,7 +200,6 @@ recordMethodBuilder(TR::MethodBuilder *m)
    return rc;
    }
 
-extern "C"
 void
 internal_shutdownJit()
    {

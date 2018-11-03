@@ -27,9 +27,7 @@
 #include <string>
 #include <cstring>
 
-#include "Jit.hpp"
-#include "ilgen/TypeDictionary.hpp"
-#include "ilgen/JitBuilderRecorderTextFile.hpp"
+// #include "ilgen/JitBuilderRecorderTextFile.hpp"
 #include "RecordReplayTest.hpp"
 
 // Uncomment line on hpp file to enable REPLAY functionality 
@@ -53,9 +51,9 @@ main(int argc, char *argv[])
       }
 
    cout << "Step 2: define type dictionary\n";
-   TR::TypeDictionary types;
+   OMR::JitBuilder::TypeDictionary types;
    // Create a recorder so we can directly control the file for this particular test
-   TR::JitBuilderRecorderTextFile recorder(NULL, "recordReplayIL.ilt"); // .ilt (intermediate language text)
+   OMR::JitBuilder::JitBuilderRecorderTextFile recorder(NULL, "recordReplayIL.ilt"); // .ilt (intermediate language text)
 
    cout << "Step 3: compile method builder\n";
    RecordReplayTest method(&types, &recorder);
@@ -86,13 +84,13 @@ main(int argc, char *argv[])
    cout << "********** REPLAY ON **********\n";
    uint8_t *entry2 = 0;
    cout << "Step 4: Replay\n";
-   TR::JitBuilderReplayTextFile replay("recordReplayIL.ilt");
-   TR::JitBuilderRecorderTextFile recorder2(NULL, "recordReplayILReplay.ilt");
+   OMR::JitBuilder::JitBuilderReplayTextFile replay("recordReplayIL.ilt");
+   OMR::JitBuilder::JitBuilderRecorderTextFile recorder2(NULL, "recordReplayILReplay.ilt");
 
-   TR::TypeDictionary types2;
+   OMR::JitBuilder::TypeDictionary types2;
 
    cout << "Step 5: verify output file\n";
-   TR::MethodBuilderReplay mb(&types2, &replay, &recorder2); // Process Constructor
+   OMR::JitBuilder::MethodBuilderReplay mb(&types2, &replay, &recorder2); // Process Constructor
    rc = compileMethodBuilder(&mb, &entry2); // Process buildIL
 
    if (rc != 0)
@@ -132,8 +130,8 @@ main(int argc, char *argv[])
    }
 
 
-RecordReplayTest::RecordReplayTest(TR::TypeDictionary *d, TR::JitBuilderRecorder *recorder)
-   : MethodBuilder(d, NULL, recorder)
+RecordReplayTest::RecordReplayTest(OMR::JitBuilder::TypeDictionary *d, OMR::JitBuilder::JitBuilderRecorder *recorder)
+   : OMR::JitBuilder::MethodBuilder(d, NULL, recorder)
    {
 
    DefineLine(LINETOSTR(__LINE__));

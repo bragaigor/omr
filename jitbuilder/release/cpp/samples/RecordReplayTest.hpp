@@ -24,7 +24,7 @@
 #ifndef RECORDREPLAYTEST_INCL
 #define RECORDREPLAYTEST_INCL
 
-#include "ilgen/MethodBuilder.hpp"
+#include "JitBuilder.hpp"
 
 // #define REPLAY // Uncomment me to enable REPLAY functionality 
 
