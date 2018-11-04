@@ -53,6 +53,7 @@
 
 OMR::MethodBuilderRecorder::MethodBuilderRecorder(TR::TypeDictionary *types, TR::VirtualMachineState *vmState, TR::JitBuilderRecorder *recorder)
    : TR::IlBuilder(static_cast<TR::MethodBuilder *>(this), types),
+   _clientCallbackRequestFunction(0),
    _nextValueID(0),
    _useBytecodeBuilders(false),
    _vmState(vmState),
@@ -304,3 +305,14 @@ OMR::MethodBuilderRecorder::GetNextBytecodeFromWorklist()
       _bytecodeWorklist->reset(bci);
    return bci;
    }
+
+void *
+OMR::MethodBuilderRecorder::client()
+   {
+   if (_client == NULL && _clientAllocator != NULL)
+      _client = _clientAllocator(static_cast<TR::MethodBuilder *>(this));
+   return _client;
+   }
+
+ClientAllocator OMR::MethodBuilderRecorder::_clientAllocator = NULL;
+ClientAllocator OMR::MethodBuilderRecorder::_getImpl = NULL;

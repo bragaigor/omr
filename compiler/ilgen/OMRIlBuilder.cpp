@@ -88,8 +88,6 @@
 
 OMR::IlBuilder::IlBuilder(TR::IlBuilder *source)
    : TR::IlBuilderRecorder(source),
-   _client(0),
-   _clientCallbackBuildIL(0),
    _methodBuilder(source->_methodBuilder),
    _sequence(0),
    _sequenceAppender(0),
@@ -1717,14 +1715,14 @@ OMR::IlBuilder::IfAnd(TR::IlBuilder **allTrueBuilder, TR::IlBuilder **anyFalseBu
 void
 OMR::IlBuilder::IfAnd(TR::IlBuilder **allTrueBuilder, TR::IlBuilder **anyFalseBuilder, int32_t numTerms, ...)
    {
-   JBCondition **terms = (JBCondition **) _comp->trMemory()->allocateHeapMemory(numTerms * sizeof(JBCondition *));
+   OMR::IlBuilderRecorder::JBCondition **terms = (OMR::IlBuilderRecorder::JBCondition **) _comp->trMemory()->allocateHeapMemory(numTerms * sizeof(OMR::IlBuilderRecorder::JBCondition *));
    TR_ASSERT(NULL != terms, "out of memory");
 
    va_list args;
    va_start(args, numTerms);
    for (int32_t c = 0; c < numTerms; ++c)
       {
-      terms[c] = va_arg(args, JBCondition *);
+      terms[c] = va_arg(args, OMR::IlBuilderRecorder::JBCondition *);
       }
    va_end(args);
 
@@ -1754,7 +1752,7 @@ OMR::IlBuilder::IfAnd(TR::IlBuilder **allTrueBuilder, TR::IlBuilder **anyFalseBu
  * IfOr(&outOfRange, &inRange, 2, conditions);
  */
 void
-OMR::IlBuilder::IfOr(TR::IlBuilder **anyTrueBuilder, TR::IlBuilder **allFalseBuilder, int32_t numTerms, JBCondition **terms)
+OMR::IlBuilder::IfOr(TR::IlBuilder **anyTrueBuilder, TR::IlBuilder **allFalseBuilder, int32_t numTerms, OMR::IlBuilderRecorder::JBCondition **terms)
    {
    TR::IlBuilder *mergePoint = OrphanBuilder();
    *anyTrueBuilder = createBuilderIfNeeded(*anyTrueBuilder);
@@ -1816,26 +1814,26 @@ OMR::IlBuilder::IfOr(TR::IlBuilder **anyTrueBuilder, TR::IlBuilder **allFalseBui
 void
 OMR::IlBuilder::IfOr(TR::IlBuilder **anyTrueBuilder, TR::IlBuilder **allFalseBuilder, int32_t numTerms, ...)
    {
-   JBCondition **terms = (JBCondition **) _comp->trMemory()->allocateHeapMemory(numTerms * sizeof(JBCondition *));
+   OMR::IlBuilderRecorder::JBCondition **terms = (OMR::IlBuilderRecorder::JBCondition **) _comp->trMemory()->allocateHeapMemory(numTerms * sizeof(OMR::IlBuilderRecorder::JBCondition *));
    TR_ASSERT(NULL != terms, "out of memory");
 
    va_list args;
    va_start(args, numTerms);
    for (int32_t c = 0; c < numTerms; ++c)
       {
-      terms[c] = va_arg(args, JBCondition *);
+      terms[c] = va_arg(args, OMR::IlBuilderRecorder::JBCondition *);
       }
    va_end(args);
 
    IfOr(anyTrueBuilder, allFalseBuilder, numTerms, terms);
    }
 
-TR::IlBuilder::JBCondition *
+TR::IlBuilderRecorder::JBCondition *
 OMR::IlBuilder::MakeCondition(TR::IlBuilder *conditionBuilder, TR::IlValue *conditionValue)
    {
    TR_ASSERT(conditionBuilder != NULL, "MakeCondition needs to have non-null conditionBuilder");
    TR_ASSERT(conditionValue != NULL, "MakeCondition needs to have non-null conditionValue");
-   return new (_comp->trHeapMemory()) JBCondition(conditionBuilder, conditionValue);
+   return new (_comp->trHeapMemory()) OMR::IlBuilderRecorder::JBCondition(conditionBuilder, conditionValue);
    }
 
 TR::IlValue *
@@ -2097,7 +2095,7 @@ OMR::IlBuilder::Call(const char *functionName, int32_t numArgs, ...)
    TR_ASSERT(resolvedMethod, "Could not identify function %s\n", functionName);
 
    TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateStaticMethodSymbol(JITTED_METHOD_INDEX, -1, resolvedMethod);
-   TR::IlValue *returnValue = TR::IlBuilderRecorder::Call(functionName, resolvedMethod->returnType(), numArgs, argValues);
+   TR::IlValue *returnValue = TR::IlBuilderRecorder::Call(functionName, resolvedMethod->returnIlType(), numArgs, argValues);
    genCall(returnValue, methodSymRef, numArgs, argValues);
    return returnValue;
    }
@@ -2112,7 +2110,7 @@ OMR::IlBuilder::Call(const char *functionName, int32_t numArgs, TR::IlValue ** a
    TR_ASSERT(resolvedMethod, "Could not identify function %s\n", functionName);
 
    TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateStaticMethodSymbol(JITTED_METHOD_INDEX, -1, resolvedMethod);
-   TR::IlValue *returnValue = TR::IlBuilderRecorder::Call(functionName, resolvedMethod->returnType(), numArgs, argValues);
+   TR::IlValue *returnValue = TR::IlBuilderRecorder::Call(functionName, resolvedMethod->returnIlType(), numArgs, argValues);
    genCall(returnValue, methodSymRef, numArgs, argValues);
    return returnValue;
    }
@@ -2888,18 +2886,10 @@ OMR::IlBuilder::WhileDoLoop(const char *whileCondition, TR::IlBuilder **body, TR
    }
 
 void *
-OMR::IlBuilder::client()
-   {
-   if (_client == NULL && _clientAllocator != NULL)
-      _client = _clientAllocator(static_cast<TR::IlBuilder *>(this));
-   return _client;
-   }
-
-void *
 OMR::IlBuilder::JBCase::client()
    {
    if (_client == NULL && _clientAllocator != NULL)
-      _client = _clientAllocator(static_cast<TR::IlBuilder::JBCase *>(this));
+      _client = _clientAllocator(static_cast<TR::IlBuilderRecorder::JBCase *>(this));
    return _client;
    }
 
@@ -2907,13 +2897,13 @@ void *
 OMR::IlBuilder::JBCondition::client()
    {
    if (_client == NULL && _clientAllocator != NULL)
-      _client = _clientAllocator(static_cast<TR::IlBuilder::JBCondition *>(this));
+      _client = _clientAllocator(static_cast<TR::IlBuilderRecorder::JBCondition *>(this));
    return _client;
    }
 
-ClientAllocator OMR::IlBuilder::_clientAllocator = NULL;
-ClientAllocator OMR::IlBuilder::_getImpl = NULL;
-ClientAllocator OMR::IlBuilder::JBCase::_clientAllocator = NULL;
-ClientAllocator OMR::IlBuilder::JBCase::_getImpl = NULL;
-ClientAllocator OMR::IlBuilder::JBCondition::_clientAllocator = NULL;
-ClientAllocator OMR::IlBuilder::JBCondition::_getImpl = NULL;
+ClientAllocator OMR::IlBuilderRecorder::_clientAllocator = NULL;
+ClientAllocator OMR::IlBuilderRecorder::_getImpl = NULL;
+ClientAllocator OMR::IlBuilderRecorder::JBCase::_clientAllocator = NULL;
+ClientAllocator OMR::IlBuilderRecorder::JBCase::_getImpl = NULL;
+ClientAllocator OMR::IlBuilderRecorder::JBCondition::_clientAllocator = NULL;
+ClientAllocator OMR::IlBuilderRecorder::JBCondition::_getImpl = NULL;

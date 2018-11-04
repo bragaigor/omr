@@ -189,7 +189,7 @@ internal_compileMethodBuilder(TR::MethodBuilder *m, void **entry)
    }
 
 int32_t
-recordMethodBuilder(TR::MethodBuilder *m)
+internal_recordMethodBuilder(TR::MethodBuilder *m)
    {
    TR::ResolvedMethod resolvedMethod(m);
    TR::IlGeneratorMethodDetails details(&resolvedMethod);

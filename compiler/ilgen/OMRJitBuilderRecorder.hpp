@@ -26,6 +26,7 @@
 #include <fstream>
 #include <map>
 #include "ilgen/StatementNames.hpp"
+#include "ilgen/VirtualMachineState.hpp"
 
 namespace TR { class IlBuilderRecorder; }
 namespace TR { class MethodBuilderRecorder; }
@@ -69,6 +70,14 @@ class JitBuilderRecorder
    virtual void BeginStatement(const char *s);
    virtual void EndStatement()                                { }
 
+   /**
+    * @brief Set the Client Allocator function
+    */
+   static void setClientAllocator(ClientAllocator allocator)
+      {
+      _clientAllocator = allocator;
+      }
+
    void StoreID(const void *ptr);
    bool EnsureAvailableID(const void *ptr);
 
@@ -87,6 +96,8 @@ class JitBuilderRecorder
    TypeID                            _nextID;
    TypeMapID                         _idMap;
    uint8_t                           _idSize;
+
+   static ClientAllocator      _clientAllocator;
    };
 
 } // namespace OMR

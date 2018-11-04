@@ -27,6 +27,11 @@
 // Maximum length of _definingLine string (including null terminator)
 #define MAX_LINE_NUM_LEN 7
 
+extern "C"
+{
+typedef bool (*RequestFunctionCallback)(void *client, const char *name);
+}
+
 class TR_BitVector;
 namespace TR { class BytecodeBuilder; }
 namespace OMR { class VirtualMachineState; }
@@ -100,6 +105,32 @@ class MethodBuilderRecorder : public TR::IlBuilder
     */
    void addBytecodeBuilderToWorklist(TR::BytecodeBuilder *bcBuilder);
 
+     /**
+    * @brief returns the client object associated with this object, allocating it if necessary
+    */
+   void *client();
+
+   /**
+    * @brief Store callback function to be called on client when RequestFunction is called
+    */
+   void setClientCallback_RequestFunction(void *callback)
+      {
+      _clientCallbackRequestFunction = (RequestFunctionCallback) callback;
+      }
+
+   /**
+    * @brief Set the Client Allocator function
+    */
+   static void setClientAllocator(ClientAllocator allocator)
+      {
+      _clientAllocator = allocator;
+      }
+
+   /**
+    * @brief client callback function to call when RequestFunction is called
+    */
+   RequestFunctionCallback     _clientCallbackRequestFunction;
+
    /**
     * @brief get lowest index bytecode from the worklist
     * @returns lowest bytecode index or -1 if worklist is empty
@@ -125,6 +156,9 @@ class MethodBuilderRecorder : public TR::IlBuilder
    TR::JitBuilderRecorder         * _recorder;
 
    TR::MethodBuilder *asMethodBuilder();
+
+   static ClientAllocator      _clientAllocator;
+   static ImplGetter _getImpl;
    };
 
 } // namespace OMR

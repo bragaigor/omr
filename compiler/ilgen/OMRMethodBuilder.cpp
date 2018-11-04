@@ -99,7 +99,6 @@ OMR::MethodBuilder::MemoryManager::~MemoryManager()
 
 OMR::MethodBuilder::MethodBuilder(TR::TypeDictionary *types, TR::VirtualMachineState *vmState, TR::JitBuilderRecorder  *recorder)
    : TR::MethodBuilderRecorder(types, vmState, recorder),
-   _clientCallbackRequestFunction(0),
    _methodName("NoName"),
    _returnType(NoType),
    _numParameters(0),
@@ -726,14 +725,3 @@ OMR::MethodBuilder::Compile(void **entry)
    typeDictionary()->NotifyCompilationDone();
    return rc;
    }
-
-void *
-OMR::MethodBuilder::client()
-   {
-   if (_client == NULL && _clientAllocator != NULL)
-      _client = _clientAllocator(static_cast<TR::MethodBuilder *>(this));
-   return _client;
-   }
-
-ClientAllocator OMR::MethodBuilder::_clientAllocator = NULL;
-ClientAllocator OMR::MethodBuilder::_getImpl = NULL;

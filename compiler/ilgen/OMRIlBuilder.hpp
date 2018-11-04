@@ -32,6 +32,7 @@
 
 namespace OMR { class MethodBuilder; }
 namespace OMR { class JitBuilderWriter; }
+namespace OMR { class JBCase; }
 
 namespace TR { class Block; }
 namespace TR { class BytecodeBuilder; }
@@ -47,13 +48,6 @@ namespace TR { class TypeDictionary; }
 
 template <class T> class List;
 template <class T> class ListAppender;
-
-extern "C"
-{
-typedef bool (*ClientBuildILCallback)(void *clientObject);
-typedef void * (*ClientAllocator)(void *implObject);
-typedef void * (*ImplGetter)(void *client);
-}
 
 namespace OMR
 {
@@ -93,87 +87,10 @@ protected:
 public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
-   /**
-    * @brief A class encapsulating the information needed for a switch-case
-    *
-    * This class encapsulates the different pieces needed to construct a Case
-    * for IlBuilder's Switch() service. It's constructor is private, so instances
-    * can only be created by calling IlBuilder::MakeCase().
-    */
-   class JBCase
-      {
-      public:
-         void * client();
-         void setClient(void * client) { _client = client; }
-         static void setClientAllocator(ClientAllocator allocator) { _clientAllocator = allocator; }
-         static void setGetImpl(ImplGetter getter) { _getImpl = getter; }
-
-         /**
-          * @brief Construct a new JBCase object.
-          *
-          * This constructor should not be called directly outside of this classs.
-          * A call to `MakeCase()` should be used instead.
-          *
-          * @param v the value matched by the case
-          * @param b the builder implementing the case body
-          * @param f whether the case falls-through or not
-          */
-         JBCase(int32_t v, TR::IlBuilder *b, int32_t f)
-             : _value(v), _builder(b), _fallsThrough(f), _client(NULL) {}
-
-      private:
-         int32_t _value;          // value matched by the case
-         TR::IlBuilder *_builder; // builder for the case body
-         int32_t _fallsThrough;   // whether the case falls-through
-         void * _client;
-         static ClientAllocator _clientAllocator;
-         static ImplGetter _getImpl;
-
-         friend class OMR::IlBuilder;
-      };
-
-   /**
-    * @brief A class encapsulating the information needed for IfAnd and IfOr.
-    *
-    * This class encapsulates the value of the condition and the builder
-    * object used generate the value (used to evaluate the condition).
-    */
-   class JBCondition
-      {
-      public:
-         void * client();
-         void setClient(void * client) { _client = client; }
-         static void setClientAllocator(ClientAllocator allocator) { _clientAllocator = allocator; }
-         static void setGetImpl(ImplGetter getter) { _getImpl = getter; }
-
-         /**
-          * @brief Construct a new JBCondition object.
-          *
-          * This constructor should not be called directly outside of the JitBuilder
-          * implementation. A call to `MakeCondition()` should be used instead.
-          *
-          * @param conditionBuilder pointer to the builder used to generate the condition value
-          * @param conditionValue the IlValue representing value for the condition
-          */
-         JBCondition(TR::IlBuilder *conditionBuilder, TR::IlValue *conditionValue)
-            : _builder(conditionBuilder), _condition(conditionValue), _client(NULL) {}
-
-      private:
-         TR::IlBuilder *_builder; // builder used to generate the condition value
-         TR::IlValue *_condition; // value for the condition
-         void * _client;
-         static ClientAllocator _clientAllocator;
-         static ImplGetter _getImpl;
-
-         friend class OMR::IlBuilder;
-      };
-
    friend class OMR::MethodBuilder;
 
    IlBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types)
       : TR::IlBuilderRecorder(methodBuilder, types),
-      _client(0),
-      _clientCallbackBuildIL(0),
       _methodBuilder(methodBuilder),
       _sequence(0),
       _sequenceAppender(0),
@@ -460,10 +377,10 @@ public:
       }
 
    /* @brief creates an AND nest of short-circuited conditions, for each term pass a JBCondition instance */
-   void IfAnd(TR::IlBuilder **allTrueBuilder, TR::IlBuilder **anyFalseBuilder, int32_t numTerms, JBCondition **terms);
+   void IfAnd(TR::IlBuilder **allTrueBuilder, TR::IlBuilder **anyFalseBuilder, int32_t numTerms, OMR::IlBuilderRecorder::JBCondition **terms);
    void IfAnd(TR::IlBuilder **allTrueBuilder, TR::IlBuilder **anyFalseBuilder, int32_t numTerms, ... );
    /* @brief creates an OR nest of short-circuited conditions, for each term pass a JBCondition instance */
-   void IfOr(TR::IlBuilder **anyTrueBuilder, TR::IlBuilder **allFalseBuilder, int32_t numTerms, JBCondition **terms);
+   void IfOr(TR::IlBuilder **anyTrueBuilder, TR::IlBuilder **allFalseBuilder, int32_t numTerms, OMR::IlBuilderRecorder::JBCondition **terms);
    void IfOr(TR::IlBuilder **anyTrueBuilder, TR::IlBuilder **allFalseBuilder, int32_t numTerms, ... );
 
    /**
@@ -473,7 +390,7 @@ public:
     * @param conditionValue the IlValue instance representing the condition value
     * @return JBCondition* pointer to the constructed JBCondition instance
     */
-   JBCondition * MakeCondition(TR::IlBuilder *conditionBuilder, TR::IlValue *conditionValue);
+   OMR::IlBuilderRecorder::JBCondition * MakeCondition(TR::IlBuilder *conditionBuilder, TR::IlValue *conditionValue);
 
    void IfCmpNotEqualZero(TR::IlBuilder **target, TR::IlValue *condition);
    void IfCmpNotEqualZero(TR::IlBuilder *target, TR::IlValue *condition);
@@ -548,88 +465,12 @@ public:
    JBCase * MakeCase(int32_t caseValue,
                      TR::IlBuilder **caseBuilder,
                      int32_t caseFallsThrough);
-
-   /**
-    * @brief associates this object with a particular client object
-    */
-   void setClient(void *client)
-      {
-      _client = client;
-      }
-
-   /**
-    * @brief returns the client object associated with this object, allocating it if necessary
-    */
-   void *client();
-
-   /**
-    * @brief Set the ClientCallback buildIL function
-    * 
-    * @param callback function pointer to the buildIL() callback for the client
-    */
-   void setClientCallback_buildIL(void *callback)
-      {
-      _clientCallbackBuildIL = (ClientBuildILCallback)callback;
-      }
-
-   /**
-    * @brief Set the Client Allocator function
-    * 
-    * @param allocator function pointer to the client object allocator
-    */
-   static void setClientAllocator(ClientAllocator allocator)
-      {
-      _clientAllocator = allocator;
-      }
-
-   /**
-    * @brief Set the Get Impl function
-    *
-    * @param getter function pointer to the impl getter
-    */
-   static void setGetImpl(ImplGetter getter)
-      {
-      _getImpl = getter;
-      }
       
    void defineSymbol(const char *name, TR::SymbolReference *v);
 
    TR::MethodBuilder * methodBuilder() { return _methodBuilder;}
 
 protected:
-
-   /**
-    * @brief pointer to a client object that corresponds to this object
-    */
-   void                        * _client;
- 
-   /**
-    * @brief pointer to buildIL callback function for this object
-    * usually NULL, but client objects can set this via setBuildILCallback() to be called
-    * when buildIL is called on this object
-    */
-   ClientBuildILCallback         _clientCallbackBuildIL;
-
-   /**
-    * @brief pointer to allocator function for this object.
-    *
-    * Clients must set this pointer using setClientAllocator().
-    * When this allocator is called, a pointer to the current
-    * class (this) will be passed as argument. The expected
-    * returned value is a pointer to the base type of the
-    * client object.
-    */
-   static ClientAllocator        _clientAllocator;
-
-   /**
-    * @brief pointer to impl getter function
-    *
-    * Clients must set this pointer using setImplGetter().
-    * When called with an instance of a client object,
-    * the function must return the corresponding
-    * implementation object
-    */
-   static ImplGetter             _getImpl;
 
    /**
     * @brief MethodBuilder parent for this IlBuilder object
@@ -683,8 +524,8 @@ protected:
 
    virtual bool buildIL()
       {
-      if (_clientCallbackBuildIL)
-         return (*_clientCallbackBuildIL)(client());
+      if (OMR::IlBuilderRecorder::_clientCallbackBuildIL)
+         return (*_clientCallbackBuildIL)(OMR::IlBuilderRecorder::client());
       return true;
       }
 

@@ -48,11 +48,6 @@ class TR_Memory;
 #endif
 
 
-extern "C"
-{
-typedef bool (*RequestFunctionCallback)(void *client, const char *name);
-}
-
 namespace OMR
 {
 
@@ -239,27 +234,6 @@ class MethodBuilder : public TR::MethodBuilderRecorder
     * @returns the directly inlining MethodBuilder or NULL if no MethodBuilder inlined this one
     */
    TR::MethodBuilder *callerMethodBuilder();
-   
-   /**
-    * @brief returns the client object associated with this object, allocating it if necessary
-    */
-   void *client();
-
-   /**
-    * @brief Store callback function to be called on client when RequestFunction is called
-    */
-   void setClientCallback_RequestFunction(void *callback)
-      {
-      _clientCallbackRequestFunction = (RequestFunctionCallback) callback;
-      }
-
-   /**
-    * @brief Set the Client Allocator function
-    */
-   static void setClientAllocator(ClientAllocator allocator)
-      {
-      _clientAllocator = allocator;
-      }
 
    /**
     * @brief Set the Get Impl function
@@ -298,11 +272,6 @@ class MethodBuilder : public TR::MethodBuilderRecorder
       } MemoryManager;
 
    MemoryManager memoryManager;
-
-   /**
-    * @brief client callback function to call when RequestFunction is called
-    */
-   RequestFunctionCallback     _clientCallbackRequestFunction;
 
    // These values are typically defined outside of a compilation
    const char                * _methodName;
@@ -360,9 +329,6 @@ class MethodBuilder : public TR::MethodBuilderRecorder
    TR::IlBuilder             * _returnBuilder;
    const char                * _returnSymbolName;
 
-private:
-   static ClientAllocator      _clientAllocator;
-   static ImplGetter _getImpl;
    };
 
 } // namespace OMR

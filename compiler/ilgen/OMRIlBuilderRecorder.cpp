@@ -35,13 +35,17 @@
 
 OMR::IlBuilderRecorder::IlBuilderRecorder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types)
       : TR::IlInjector(types),
-      _methodBuilder(methodBuilder)
+      _methodBuilder(methodBuilder),
+      _client(0),
+      _clientCallbackBuildIL(0)
    {
    }
 
 OMR::IlBuilderRecorder::IlBuilderRecorder(TR::IlBuilder *source)
       : TR::IlInjector(source),
-      _methodBuilder(source->methodBuilder())
+      _methodBuilder(source->methodBuilder()),
+      _client(0),
+      _clientCallbackBuildIL(0)
    {
    }
 
@@ -967,10 +971,10 @@ OMR::IlBuilderRecorder::AppendBuilder(TR::IlBuilder *builder)
    }
 
 TR::IlValue *
-OMR::IlBuilderRecorder::Call(const char *functionName, TR::DataType returnType, int32_t numArgs, TR::IlValue ** argValues)
+OMR::IlBuilderRecorder::Call(const char *functionName, TR::IlType *returnType, int32_t numArgs, TR::IlValue ** argValues)
    {
    TR::IlValue *returnValue = NULL;
-   if (returnType != TR::NoType)
+   if (returnType->getPrimitiveType() != TR::NoType)
       {
       returnValue = newValue();
       }
@@ -982,7 +986,7 @@ OMR::IlBuilderRecorder::Call(const char *functionName, TR::DataType returnType, 
       rec->Number(numArgs);
       for (int32_t v=0;v < numArgs;v++)
          rec->Value(argValues[v]);
-      if (returnType != TR::NoType)
+      if (returnType->getPrimitiveType() != TR::NoType)
          {
          rec->StoreID(returnValue);
          rec->Value(returnValue);
@@ -1283,4 +1287,23 @@ OMR::IlBuilderRecorder::Switch(const char *selectionVar,
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       assertNotRecorded(rec, StatementName::STATEMENT_SWITCH);
+   }
+
+void
+OMR::IlBuilderRecorder::Switch(const char *selectionVar,
+                  TR::IlBuilder **defaultBuilder,
+                  uint32_t numCases,
+                  JBCase **cases)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      assertNotRecorded(rec, StatementName::STATEMENT_SWITCH);
+   }
+
+void *
+OMR::IlBuilderRecorder::client()
+   {
+   if (_client == NULL && _clientAllocator != NULL)
+      _client = _clientAllocator(static_cast<TR::IlBuilder *>(this));
+   return _client;
    }
