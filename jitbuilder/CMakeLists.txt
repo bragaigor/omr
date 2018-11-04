@@ -63,10 +63,13 @@ set(JITBUILDER_API_DESCRIPTION ${CMAKE_CURRENT_SOURCE_DIR}/apigen/jitbuilder.api
 
 set(JITBUILDER_API_SOURCES
 	${JITBUILDER_CPP_API_SOURCE_DIR}/BytecodeBuilder.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/BytecodeBuilderRecorder.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/IlBuilder.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/IlBuilderRecorder.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/IlType.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/IlValue.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/MethodBuilder.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/MethodBuilderRecorder.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/ThunkBuilder.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/TypeDictionary.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineOperandArray.cpp
@@ -75,14 +78,18 @@ set(JITBUILDER_API_SOURCES
 	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineRegisterInStruct.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineState.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/JitBuilder.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/JitBuilderRecorder.cpp
 )
 
 set(JITBUILDER_API_HEADERS
 	${JITBUILDER_CPP_API_HEADER_DIR}/BytecodeBuilder.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/BytecodeBuilderRecorder.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/IlBuilder.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/IlBuilderRecorder.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/IlType.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/IlValue.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/MethodBuilder.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/MethodBuilderRecorder.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/ThunkBuilder.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/TypeDictionary.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineOperandArray.hpp
@@ -91,6 +98,10 @@ set(JITBUILDER_API_HEADERS
 	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineRegisterInStruct.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineState.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/JitBuilder.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/JitBuilderRecorder.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/JitBuilderRecorderBinaryBuffer.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/JitBuilderRecorderBinaryFile.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/JitBuilderRecorderTextFile.hpp
 )
 
 add_custom_command(

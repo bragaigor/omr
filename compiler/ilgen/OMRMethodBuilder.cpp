@@ -474,29 +474,11 @@ OMR::MethodBuilder::AllLocalsHaveBeenDefined()
    _newSymbolsAreTemps = true;
    }
 
-TR::BytecodeBuilder *
-OMR::MethodBuilder::OrphanBytecodeBuilder(int32_t bcIndex, char *name)
-   {
-   TR::BytecodeBuilder *orphan = new (comp()->trHeapMemory()) TR::BytecodeBuilder(_methodBuilder, bcIndex, name);
-   orphan->initialize(_details, _methodSymbol, _fe, _symRefTab);
-   orphan->setupForBuildIL();
-   return orphan;
-   }
-
 void
 OMR::MethodBuilder::DefineFile(const char *file)
    {
    TR::MethodBuilderRecorder::DefineFile(file);
    _definingFile = file;
-   }
-
-void
-OMR::MethodBuilder::AppendBuilder(TR::BytecodeBuilder *bb)
-   {
-   this->OMR::IlBuilder::AppendBuilder(bb);
-   if (_vmState)
-      bb->propagateVMState(_vmState);
-   addBytecodeBuilderToWorklist(bb);
    }
 
 void

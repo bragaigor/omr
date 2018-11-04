@@ -254,7 +254,6 @@ JIT_PRODUCT_SOURCE_FILES+=\
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRIlValue.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/IlInjector.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRBytecodeBuilder.cpp \
-    $(JIT_OMR_DIRTY_DIR)/ilgen/OMRIlBuilder.cpp \
 	 $(JIT_OMR_DIRTY_DIR)/ilgen/OMRBytecodeBuilderRecorder.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRIlType.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/OMRIlValue.cpp \

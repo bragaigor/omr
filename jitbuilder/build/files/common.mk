@@ -257,10 +257,13 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
 CPP_GENERATED_SOURCE_DIR=$(JIT_PRODUCT_DIR)/client/cpp
 CPP_GENERATED_API_SOURCES+=\
     $(CPP_GENERATED_SOURCE_DIR)/BytecodeBuilder.cpp \
+    $(CPP_GENERATED_SOURCE_DIR)/BytecodeBuilderRecorder.cpp \
     $(CPP_GENERATED_SOURCE_DIR)/IlBuilder.cpp \
+    $(CPP_GENERATED_SOURCE_DIR)/IlBuilderRecorder.cpp \
     $(CPP_GENERATED_SOURCE_DIR)/IlType.cpp \
     $(CPP_GENERATED_SOURCE_DIR)/IlValue.cpp \
     $(CPP_GENERATED_SOURCE_DIR)/MethodBuilder.cpp \
+    $(CPP_GENERATED_SOURCE_DIR)/MethodBuilderRecorder.cpp \
     $(CPP_GENERATED_SOURCE_DIR)/ThunkBuilder.cpp \
     $(CPP_GENERATED_SOURCE_DIR)/TypeDictionary.cpp \
     $(CPP_GENERATED_SOURCE_DIR)/VirtualMachineOperandArray.cpp \
@@ -268,15 +271,19 @@ CPP_GENERATED_API_SOURCES+=\
     $(CPP_GENERATED_SOURCE_DIR)/VirtualMachineRegister.cpp \
     $(CPP_GENERATED_SOURCE_DIR)/VirtualMachineRegisterInStruct.cpp \
     $(CPP_GENERATED_SOURCE_DIR)/VirtualMachineState.cpp \
-    $(CPP_GENERATED_SOURCE_DIR)/JitBuilder.cpp
+    $(CPP_GENERATED_SOURCE_DIR)/JitBuilder.cpp \
+    $(CPP_GENERATED_SOURCE_DIR)/JitBuilderRecorder.cpp
 
 CPP_GENERATED_HEADER_DIR=$(JIT_PRODUCT_DIR)/release/cpp/include
 CPP_GENERATED_API_HEADERS+=\
     $(CPP_GENERATED_HEADER_DIR)/BytecodeBuilder.hpp \
+    $(CPP_GENERATED_HEADER_DIR)/BytecodeBuilderRecorder.hpp \
     $(CPP_GENERATED_HEADER_DIR)/IlBuilder.hpp \
+    $(CPP_GENERATED_HEADER_DIR)/IlBuilderRecorder.hpp \
     $(CPP_GENERATED_HEADER_DIR)/IlType.hpp \
     $(CPP_GENERATED_HEADER_DIR)/IlValue.hpp \
     $(CPP_GENERATED_HEADER_DIR)/MethodBuilder.hpp \
+    $(CPP_GENERATED_HEADER_DIR)/MethodBuilderRecorder.hpp \
     $(CPP_GENERATED_HEADER_DIR)/ThunkBuilder.hpp \
     $(CPP_GENERATED_HEADER_DIR)/TypeDictionary.hpp \
     $(CPP_GENERATED_HEADER_DIR)/VirtualMachineOperandArray.hpp \
@@ -284,7 +291,8 @@ CPP_GENERATED_API_HEADERS+=\
     $(CPP_GENERATED_HEADER_DIR)/VirtualMachineRegister.hpp \
     $(CPP_GENERATED_HEADER_DIR)/VirtualMachineRegisterInStruct.hpp \
     $(CPP_GENERATED_HEADER_DIR)/VirtualMachineState.hpp \
-    $(CPP_GENERATED_HEADER_DIR)/JitBuilder.hpp
+    $(CPP_GENERATED_HEADER_DIR)/JitBuilder.hpp \
+    $(CPP_GENERATED_HEADER_DIR)/JitBuilderRecorder.hpp 
 
 CPP_API_GENERATOR=$(JIT_PRODUCT_DIR)/apigen/cppgen.py
 JITBUILDER_API_DESCRIPTION=$(JIT_PRODUCT_DIR)/apigen/jitbuilder.api.json

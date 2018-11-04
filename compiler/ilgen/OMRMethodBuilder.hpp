@@ -83,7 +83,7 @@ class MethodBuilder : public TR::MethodBuilderRecorder
    const char *getDefiningLine()                             { return _definingLine; }
 
    const char *GetMethodName()                               { return _methodName; }
-   void AllLocalsHaveBeenDefined()                           { _newSymbolsAreTemps = true; }
+   void AllLocalsHaveBeenDefined();
 
    TR::IlType *getReturnType()                               { return _returnType; }
    int32_t getNumParameters()                                { return _numParameters; }

@@ -19,7 +19,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include "ilgen/IlBuilderRecorder.hpp"
 #include "ilgen/IlBuilder.hpp"
 
 #include <stdint.h>
@@ -31,7 +30,6 @@
 #include "ilgen/JitBuilderRecorder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/MethodBuilder.hpp"
-#include "ilgen/IlValue.hpp"
 
 #include "ilgen/JitBuilderRecorderTextFile.hpp"
 
