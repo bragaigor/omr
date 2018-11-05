@@ -35,14 +35,14 @@ macro(create_jitbuilder_test target)
 endmacro(create_jitbuilder_test)
 
 # Basic Tests: These should run properly on all platforms.
-create_jitbuilder_test(conditionals    src/Conditionals.cpp)
-create_jitbuilder_test(isSupportedType src/IsSupportedType.cpp)
-create_jitbuilder_test(iterfib         src/IterativeFib.cpp)
-create_jitbuilder_test(nestedloop      src/NestedLoop.cpp)
-create_jitbuilder_test(pow2            src/Pow2.cpp)
-create_jitbuilder_test(simple          src/Simple.cpp)
-create_jitbuilder_test(recordReplayTest  src/RecordReplayTest.cpp)
-create_jitbuilder_test(worklist        src/Worklist.cpp)
+create_jitbuilder_test(conditionals    cpp/samples/Conditionals.cpp)
+create_jitbuilder_test(isSupportedType cpp/samples/IsSupportedType.cpp)
+create_jitbuilder_test(iterfib         cpp/samples/IterativeFib.cpp)
+create_jitbuilder_test(nestedloop      cpp/samples/NestedLoop.cpp)
+create_jitbuilder_test(pow2            cpp/samples/Pow2.cpp)
+create_jitbuilder_test(simple          cpp/samples/Simple.cpp)
+create_jitbuilder_test(recordReplayTest  cpp/samples/RecordReplayTest.cpp)
+create_jitbuilder_test(worklist        cpp/samples/Worklist.cpp)
 
 # Additional Tests: These may not run properly on all platforms
 # Opt in by setting OMR_JITBUILDER_ADDITIONAL

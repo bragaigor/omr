@@ -29,6 +29,16 @@
 #include "ilgen/IlValue.hpp" // must follow include for compile/Compilation.hpp for TR_Memory
 #include "ilgen/MethodBuilderRecorder.hpp"
 
+OMR::IlValue::IlValue(TR::MethodBuilderRecorder *methodBuilder)
+   : _client(0),
+     _id(methodBuilder->getNextValueID()),
+     _nodeThatComputesValue(0),
+     _treeTopThatAnchorsValue(0),
+     _blockThatComputesValue(0),
+     _methodBuilder(methodBuilder),
+     _symRefThatCanBeUsedInOtherBlocks(0)
+   {
+   }
 
 OMR::IlValue::IlValue(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block, TR::MethodBuilderRecorder *methodBuilder)
    : _client(0),
