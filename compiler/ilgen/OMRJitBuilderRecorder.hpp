@@ -38,6 +38,7 @@ extern "C"
 {
 typedef void * (*ClientAllocator)(void *implObject);
 typedef void * (*ImplGetter)(void *client);
+typedef bool (*RequestFunctionCallback)(void *client, const char *name);
 }
 
 namespace OMR
@@ -98,7 +99,7 @@ class JitBuilderRecorder
    /**
     * @brief Set the Client Allocator function
     */
-   static void setClientAllocator(ClientAllocator allocator)
+    static void setClientAllocator(ClientAllocator allocator)
       {
       _clientAllocator = allocator;
       }
@@ -127,7 +128,9 @@ class JitBuilderRecorder
     */
    void                        * _client;
 
-   private:
+   RequestFunctionCallback     _clientCallbackRequestFunction;
+
+   protected:
 
    static ClientAllocator        _clientAllocator;
    static ImplGetter             _getImpl;

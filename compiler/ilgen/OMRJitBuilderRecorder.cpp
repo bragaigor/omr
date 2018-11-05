@@ -156,3 +156,6 @@ OMR::JitBuilderRecorder::EnsureAvailableID(const void *ptr)
    StoreID(ptr);
    return false; // ID was not available, but is now
    }
+
+ClientAllocator OMR::JitBuilderRecorder::_clientAllocator = NULL;
+ClientAllocator OMR::JitBuilderRecorder::_getImpl = NULL;

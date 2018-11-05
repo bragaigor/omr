@@ -51,7 +51,16 @@
             "short-name": "JBR",
             "types": [],
             "fields": [],
-            "constructors": [],
+            "constructors": [
+                { "name": ""
+                    , "overloadsuffix": ""
+                    , "flags": []
+                    , "return": "none"
+                    , "parms": [
+                        {"name":"mb","type":"MethodBuilderRecorder"}
+                        ]
+                    }
+            ],
             "callbacks": [],
             "services": []
         },
@@ -77,7 +86,7 @@
         },
         {
             "name":"JitBuilderRecorderBinaryBuffer",
-            "short-name": "JBRTF",
+            "short-name": "JBRBB",
             "extends": "JitBuilderRecorder",
             "types": [],
             "fields": [],
@@ -96,7 +105,7 @@
         },
         {
             "name":"JitBuilderRecorderBinaryFile",
-            "short-name": "JBRTF",
+            "short-name": "JBRBF",
             "extends": "JitBuilderRecorder",
             "types": [],
             "fields": [],

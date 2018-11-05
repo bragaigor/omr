@@ -79,6 +79,9 @@ set(JITBUILDER_API_SOURCES
 	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineState.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/JitBuilder.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/JitBuilderRecorder.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/JitBuilderRecorderBinaryBuffer.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/JitBuilderRecorderBinaryFile.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/JitBuilderRecorderTextFile.cpp
 )
 
 set(JITBUILDER_API_HEADERS
