@@ -30,10 +30,10 @@
 
 typedef int32_t (RecordReplayMethodFunction)(int32_t, int32_t);
 
-class RecordReplayTest : public TR::MethodBuilder
+class RecordReplayTest : public OMR::JitBuilder::MethodBuilder
    {
    public:
-   RecordReplayTest(TR::TypeDictionary *, TR::JitBuilderRecorder *recorder);
+   RecordReplayTest(OMR::JitBuilder::TypeDictionary *, OMR::JitBuilder::JitBuilderRecorder *recorder);
    virtual bool buildIL();
    };
 

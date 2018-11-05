@@ -56,6 +56,65 @@
             "services": []
         },
         {
+            "name":"JitBuilderRecorderTextFile",
+            "short-name": "JBRTF",
+            "extends": "JitBuilderRecorder",
+            "types": [],
+            "fields": [],
+            "constructors": [
+                { "name": ""
+                    , "overloadsuffix": ""
+                    , "flags": []
+                    , "return": "none"
+                    , "parms": [
+                        {"name":"mb","type":"MethodBuilderRecorder"},
+                        {"name":"fileName","type":"constString"}
+                        ]
+                    }
+            ],
+            "callbacks": [],
+            "services": []
+        },
+        {
+            "name":"JitBuilderRecorderBinaryBuffer",
+            "short-name": "JBRTF",
+            "extends": "JitBuilderRecorder",
+            "types": [],
+            "fields": [],
+            "constructors": [
+                { "name": ""
+                    , "overloadsuffix": ""
+                    , "flags": []
+                    , "return": "none"
+                    , "parms": [
+                        {"name":"mb","type":"MethodBuilderRecorder"}
+                        ]
+                    }
+            ],
+            "callbacks": [],
+            "services": []
+        },
+        {
+            "name":"JitBuilderRecorderBinaryFile",
+            "short-name": "JBRTF",
+            "extends": "JitBuilderRecorder",
+            "types": [],
+            "fields": [],
+            "constructors": [
+                { "name": ""
+                    , "overloadsuffix": ""
+                    , "flags": []
+                    , "return": "none"
+                    , "parms": [
+                        {"name":"mb","type":"MethodBuilderRecorder"},
+                        {"name":"fileName","type":"constString"}
+                        ]
+                    }
+            ],
+            "callbacks": [],
+            "services": []
+        },
+        {
             "name":"BytecodeBuilder",
             "short-name": "BB",
             "extends": "BytecodeBuilderRecorder",

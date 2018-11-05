@@ -26,12 +26,19 @@
 #include <fstream>
 #include <map>
 #include "ilgen/StatementNames.hpp"
-#include "ilgen/VirtualMachineState.hpp"
+// #include "ilgen/VirtualMachineState.hpp"
+#include "ilgen/IlInjector.hpp"
 
 namespace TR { class IlBuilderRecorder; }
 namespace TR { class MethodBuilderRecorder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
+
+extern "C"
+{
+typedef void * (*ClientAllocator)(void *implObject);
+typedef void * (*ImplGetter)(void *client);
+}
 
 namespace OMR
 {
@@ -70,6 +77,24 @@ class JitBuilderRecorder
    virtual void BeginStatement(const char *s);
    virtual void EndStatement()                                { }
 
+    /**
+    * @brief associates this object with a particular client object
+    */
+   void setClient(void *client)
+      {
+      _client = client;
+      }
+
+   /**
+    * @brief Set the Get Impl function
+    *
+    * @param getter function pointer to the impl getter
+    */
+   static void setGetImpl(ImplGetter getter)
+      {
+      _getImpl = getter;
+      }
+
    /**
     * @brief Set the Client Allocator function
     */
@@ -97,7 +122,16 @@ class JitBuilderRecorder
    TypeMapID                         _idMap;
    uint8_t                           _idSize;
 
-   static ClientAllocator      _clientAllocator;
+   /**
+    * @brief pointer to a client object that corresponds to this object
+    */
+   void                        * _client;
+
+   private:
+
+   static ClientAllocator        _clientAllocator;
+   static ImplGetter             _getImpl;
+   
    };
 
 } // namespace OMR

@@ -63,7 +63,7 @@ main(int argc, char *argv[])
    #endif
 
    #ifndef REPLAY 
-   uint8_t *entry1 = 0;
+   void *entry1 = 0;
    int32_t rc = compileMethodBuilder(&method, &entry1); // Process buildIL
    #endif
 
@@ -82,7 +82,7 @@ main(int argc, char *argv[])
    #ifdef REPLAY
 
    cout << "********** REPLAY ON **********\n";
-   uint8_t *entry2 = 0;
+   void *entry2 = 0;
    cout << "Step 4: Replay\n";
    OMR::JitBuilder::JitBuilderReplayTextFile replay("recordReplayIL.ilt");
    OMR::JitBuilder::JitBuilderRecorderTextFile recorder2(NULL, "recordReplayILReplay.ilt");

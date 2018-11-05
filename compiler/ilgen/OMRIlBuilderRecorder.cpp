@@ -1152,7 +1152,23 @@ OMR::IlBuilderRecorder::IfCmpNotEqualZero(TR::IlBuilder *target, TR::IlValue *co
    }
 
 void
+OMR::IlBuilderRecorder::IfCmpNotEqualZero(TR::IlBuilder **target, TR::IlValue *condition)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPNOTEQUALZERO);
+   }
+
+void
 OMR::IlBuilderRecorder::IfCmpNotEqual(TR::IlBuilder *target, TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPNOTEQUAL);
+   }
+
+void
+OMR::IlBuilderRecorder::IfCmpNotEqual(TR::IlBuilder **target, TR::IlValue *left, TR::IlValue *right)
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
@@ -1174,7 +1190,21 @@ OMR::IlBuilderRecorder::IfCmpEqualZero(TR::IlBuilder *target, TR::IlValue *condi
    }
 
 void
+OMR::IlBuilderRecorder::IfCmpEqualZero(TR::IlBuilder **target, TR::IlValue *condition)
+   {
+   IfCmpEqualZero(*target, condition);
+   }
+
+void
 OMR::IlBuilderRecorder::IfCmpEqual(TR::IlBuilder *target, TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPEQUAL);
+   }
+
+void
+OMR::IlBuilderRecorder::IfCmpEqual(TR::IlBuilder **target, TR::IlValue *left, TR::IlValue *right)
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
@@ -1190,7 +1220,23 @@ OMR::IlBuilderRecorder::IfCmpLessThan(TR::IlBuilder *target, TR::IlValue *left, 
    }
 
 void
+OMR::IlBuilderRecorder::IfCmpLessThan(TR::IlBuilder **target, TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPLESSTHAN);
+   }
+
+void
 OMR::IlBuilderRecorder::IfCmpUnsignedLessThan(TR::IlBuilder *target, TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPUNSIGNEDLESSTHAN);
+   }
+
+void
+OMR::IlBuilderRecorder::IfCmpUnsignedLessThan(TR::IlBuilder **target, TR::IlValue *left, TR::IlValue *right)
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
@@ -1206,7 +1252,23 @@ OMR::IlBuilderRecorder::IfCmpLessOrEqual(TR::IlBuilder *target, TR::IlValue *lef
    }
 
 void
+OMR::IlBuilderRecorder::IfCmpLessOrEqual(TR::IlBuilder **target, TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPLESSOREQUAL);
+   }
+
+void
 OMR::IlBuilderRecorder::IfCmpUnsignedLessOrEqual(TR::IlBuilder *target, TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPUNSIGNEDLESSOREQUAL);
+   }
+
+void
+OMR::IlBuilderRecorder::IfCmpUnsignedLessOrEqual(TR::IlBuilder **target, TR::IlValue *left, TR::IlValue *right)
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
@@ -1222,7 +1284,23 @@ OMR::IlBuilderRecorder::IfCmpGreaterThan(TR::IlBuilder *target, TR::IlValue *lef
    }
 
 void
+OMR::IlBuilderRecorder::IfCmpGreaterThan(TR::IlBuilder **target, TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPGREATERTHAN);
+   }
+
+void
 OMR::IlBuilderRecorder::IfCmpUnsignedGreaterThan(TR::IlBuilder *target, TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPUNSIGNEDGREATERTHAN);
+   }
+
+void
+OMR::IlBuilderRecorder::IfCmpUnsignedGreaterThan(TR::IlBuilder **target, TR::IlValue *left, TR::IlValue *right)
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
@@ -1238,7 +1316,23 @@ OMR::IlBuilderRecorder::IfCmpGreaterOrEqual(TR::IlBuilder *target, TR::IlValue *
    }
 
 void
+OMR::IlBuilderRecorder::IfCmpGreaterOrEqual(TR::IlBuilder **target, TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPGREATEROREQUAL);
+   }
+
+void
 OMR::IlBuilderRecorder::IfCmpUnsignedGreaterOrEqual(TR::IlBuilder *target, TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      assertNotRecorded(rec, StatementName::STATEMENT_IFCMPUNSIGNEDGREATEROREQUAL);
+   }
+
+void
+OMR::IlBuilderRecorder::IfCmpUnsignedGreaterOrEqual(TR::IlBuilder **target, TR::IlValue *left, TR::IlValue *right)
    {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
