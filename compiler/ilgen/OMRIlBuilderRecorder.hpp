@@ -374,6 +374,13 @@ public:
                uint32_t numCases,
                JBCase** cases);
 
+    virtual bool buildIL()
+      {
+      if (_clientCallbackBuildIL)
+         return (*_clientCallbackBuildIL)(client());
+      return true;
+      }
+
     /**
     * @brief associates this object with a particular client object
     */

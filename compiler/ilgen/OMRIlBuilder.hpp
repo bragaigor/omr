@@ -522,12 +522,12 @@ protected:
     */
    bool                          _isHandler;
 
-   virtual bool buildIL()
-      {
-      if (OMR::IlBuilderRecorder::_clientCallbackBuildIL)
-         return (*_clientCallbackBuildIL)(OMR::IlBuilderRecorder::client());
-      return true;
-      }
+//    virtual bool buildIL()
+//       {
+//       if (_clientCallbackBuildIL)
+//          return (*_clientCallbackBuildIL)(client());
+//       return true;
+//       }
 
    TR::SymbolReference *lookupSymbol(const char *name);
    TR::IlValue *newValue(TR::IlType *dt, TR::Node *n=NULL);
