@@ -1401,3 +1401,26 @@ OMR::IlBuilderRecorder::client()
       _client = _clientAllocator(static_cast<TR::IlBuilder *>(this));
    return _client;
    }
+
+void *
+OMR::IlBuilderRecorder::JBCase::client()
+   {
+   if (_client == NULL && _clientAllocator != NULL)
+      _client = _clientAllocator(static_cast<TR::IlBuilderRecorder::JBCase *>(this));
+   return _client;
+   }
+
+void *
+OMR::IlBuilderRecorder::JBCondition::client()
+   {
+   if (_client == NULL && _clientAllocator != NULL)
+      _client = _clientAllocator(static_cast<TR::IlBuilderRecorder::JBCondition *>(this));
+   return _client;
+   }
+
+ClientAllocator OMR::IlBuilderRecorder::_clientAllocator = NULL;
+ClientAllocator OMR::IlBuilderRecorder::_getImpl = NULL;
+ClientAllocator OMR::IlBuilderRecorder::JBCase::_clientAllocator = NULL;
+ClientAllocator OMR::IlBuilderRecorder::JBCase::_getImpl = NULL;
+ClientAllocator OMR::IlBuilderRecorder::JBCondition::_clientAllocator = NULL;
+ClientAllocator OMR::IlBuilderRecorder::JBCondition::_getImpl = NULL;

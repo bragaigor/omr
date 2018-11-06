@@ -2716,14 +2716,7 @@
                     ]
                 }
                 ],
-            "callbacks": [
-                { "name": "RequestFunction"
-                , "overloadsuffix": ""
-                , "flags": []
-                , "return": "boolean"
-                , "parms": [ {"name":"name","type":"constString"} ]
-                }
-                ],
+            "callbacks": [],
             "services": [
                 { "name": "AllLocalsHaveBeenDefined"
                 , "overloadsuffix": ""

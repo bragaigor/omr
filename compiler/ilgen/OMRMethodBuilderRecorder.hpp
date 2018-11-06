@@ -92,14 +92,6 @@ class MethodBuilderRecorder : public TR::IlBuilder
                        TR::IlType     ** parmTypes);
 
    /**
-    * @brief will be called if a Call is issued to a function that has not yet been defined, provides a
-    *        mechanism for MethodBuilder subclasses to provide method lookup on demand rather than all up
-    *        front via the constructor.
-    * @returns true if the function was found and DefineFunction has been called for it, otherwise false
-    */
-   virtual bool RequestFunction(const char *name) { return false; }
-
-   /**
     * @brief add a bytecode builder to the worklist
     * @param bcBuilder is the bytecode builder whose bytecode index will be added to the worklist
     */
@@ -116,6 +108,20 @@ class MethodBuilderRecorder : public TR::IlBuilder
    void setClientCallback_RequestFunction(void *callback)
       {
       _clientCallbackRequestFunction = (RequestFunctionCallback) callback;
+      }
+
+   /**
+    * @brief will be called if a Call is issued to a function that has not yet been defined, provides a
+    *        mechanism for MethodBuilder subclasses to provide method lookup on demand rather than all up
+    *        front via the constructor.
+    * @returns true if the function was found and DefineFunction has been called for it, otherwise false
+    */
+   virtual bool RequestFunction(const char *name)
+      {
+      if (_clientCallbackRequestFunction)
+         return _clientCallbackRequestFunction(_client, name);
+
+      return false;
       }
 
    /**

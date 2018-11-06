@@ -522,13 +522,6 @@ protected:
     */
    bool                          _isHandler;
 
-//    virtual bool buildIL()
-//       {
-//       if (_clientCallbackBuildIL)
-//          return (*_clientCallbackBuildIL)(client());
-//       return true;
-//       }
-
    TR::SymbolReference *lookupSymbol(const char *name);
    TR::IlValue *newValue(TR::IlType *dt, TR::Node *n=NULL);
    TR::IlValue *newValue(TR::DataType dt, TR::Node *n=NULL);
