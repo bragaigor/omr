@@ -55,7 +55,8 @@ TR::ARM64SystemLinkage::ARM64SystemLinkage(TR::CodeGenerator *cg)
 
    _properties._registerFlags[TR::RealRegister::x29]   = ARM64_Reserved; // FP
    _properties._registerFlags[TR::RealRegister::x30]   = ARM64_Reserved; // LR
-   _properties._registerFlags[TR::RealRegister::xzr]   = ARM64_Reserved; // zero or SP
+   _properties._registerFlags[TR::RealRegister::sp]    = ARM64_Reserved;
+   _properties._registerFlags[TR::RealRegister::xzr]   = ARM64_Reserved;
 
    _properties._registerFlags[TR::RealRegister::v0]    = FloatArgument|FloatReturn;
    _properties._registerFlags[TR::RealRegister::v1]    = FloatArgument;
@@ -142,7 +143,11 @@ TR::ARM64SystemLinkage::initARM64RealRegisterLinkage()
    reg->setState(TR::RealRegister::Locked);
    reg->setAssignedRegister(reg);
 
-   reg = machine->getARM64RealRegister(TR::RealRegister::RegNum::xzr); // zero or SP
+   reg = machine->getARM64RealRegister(TR::RealRegister::RegNum::sp); // SP
+   reg->setState(TR::RealRegister::Locked);
+   reg->setAssignedRegister(reg);
+
+   reg = machine->getARM64RealRegister(TR::RealRegister::RegNum::xzr); // zero
    reg->setState(TR::RealRegister::Locked);
    reg->setAssignedRegister(reg);
 
@@ -387,6 +392,8 @@ TR::ARM64SystemLinkage::createPrologue(TR::Instruction *cursor, List<TR::Paramet
         parameter = parameterIterator.getNext())
       {
       TR::MemoryReference *stackSlot = new (trHeapMemory()) TR::MemoryReference(sp, parameter->getParameterOffset(), codeGen);
+      TR::InstOpCode::Mnemonic op;
+
       switch (parameter->getDataType())
          {
          case TR::Int8:
@@ -396,7 +403,8 @@ TR::ARM64SystemLinkage::createPrologue(TR::Instruction *cursor, List<TR::Paramet
          case TR::Address:
             if (nextIntArgReg < getProperties().getNumIntArgRegs())
                {
-               cursor = generateMemSrc1Instruction(cg(), TR::InstOpCode::strimmx, firstNode, stackSlot, machine->getARM64RealRegister((TR::RealRegister::RegNum)(TR::RealRegister::x0 + nextIntArgReg)), cursor);
+               op = (parameter->getSize() == 8) ? TR::InstOpCode::strimmx : TR::InstOpCode::strimmw;
+               cursor = generateMemSrc1Instruction(cg(), op, firstNode, stackSlot, machine->getARM64RealRegister((TR::RealRegister::RegNum)(TR::RealRegister::x0 + nextIntArgReg)), cursor);
                nextIntArgReg++;
                }
             else
@@ -408,7 +416,8 @@ TR::ARM64SystemLinkage::createPrologue(TR::Instruction *cursor, List<TR::Paramet
          case TR::Double:
             if (nextFltArgReg < getProperties().getNumFloatArgRegs())
                {
-               cursor = generateMemSrc1Instruction(cg(), TR::InstOpCode::vstrimmd, firstNode, stackSlot, machine->getARM64RealRegister((TR::RealRegister::RegNum)(TR::RealRegister::v0 + nextFltArgReg)), cursor);
+               op = (parameter->getSize() == 8) ? TR::InstOpCode::vstrimmd : TR::InstOpCode::vstrimms;
+               cursor = generateMemSrc1Instruction(cg(), op, firstNode, stackSlot, machine->getARM64RealRegister((TR::RealRegister::RegNum)(TR::RealRegister::v0 + nextFltArgReg)), cursor);
                nextFltArgReg++;
                }
             else

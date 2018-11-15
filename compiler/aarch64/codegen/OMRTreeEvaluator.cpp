@@ -26,6 +26,7 @@
 #include "codegen/TreeEvaluator.hpp"
 #include "il/Node.hpp"
 #include "il/Node_inlines.hpp"
+#include "il/symbol/AutomaticSymbol.hpp"
 #include "il/symbol/LabelSymbol.hpp"
 #include "il/symbol/ParameterSymbol.hpp"
 
@@ -343,10 +344,11 @@ OMR::ARM64::TreeEvaluator::checkcastAndNULLCHKEvaluator(TR::Node *node, TR::Code
 
 TR::Register *
 OMR::ARM64::TreeEvaluator::treetopEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-	{
-	// TODO:ARM64: Enable TR::TreeEvaluator::treetopEvaluator in compiler/aarch64/codegen/TreeEvaluatorTable.hpp when Implemented.
-	return OMR::ARM64::TreeEvaluator::unImpOpEvaluator(node, cg);
-	}
+   {
+   TR::Register *tempReg = cg->evaluate(node->getFirstChild());
+   cg->decReferenceCount(node->getFirstChild());
+   return tempReg;
+   }
 
 TR::Register *
 OMR::ARM64::TreeEvaluator::exceptionRangeFenceEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -364,45 +366,67 @@ OMR::ARM64::TreeEvaluator::loadaddrEvaluator(TR::Node *node, TR::CodeGenerator *
 
 TR::Register *
 OMR::ARM64::TreeEvaluator::aRegLoadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-	{
-	// TODO:ARM64: Enable TR::TreeEvaluator::aRegLoadEvaluator in compiler/aarch64/codegen/TreeEvaluatorTable.hpp when Implemented.
-	return OMR::ARM64::TreeEvaluator::unImpOpEvaluator(node, cg);
-	}
+   {
+   TR::Register *globalReg = node->getRegister();
 
+   if (globalReg == NULL)
+      {
+      if (node->getRegLoadStoreSymbolReference()->getSymbol()->isNotCollected() ||
+          node->getRegLoadStoreSymbolReference()->getSymbol()->isInternalPointer())
+         {
+         globalReg = cg->allocateRegister();
+         if (node->getRegLoadStoreSymbolReference()->getSymbol()->isInternalPointer())
+            {
+            globalReg->setContainsInternalPointer();
+            globalReg->setPinningArrayPointer(node->getRegLoadStoreSymbolReference()->getSymbol()->castToInternalPointerAutoSymbol()->getPinningArrayPointer());
+            }
+         }
+      else
+         {
+         globalReg = cg->allocateCollectedReferenceRegister();
+         }
+
+      node->setRegister(globalReg);
+      }
+   return globalReg;
+   }
+
+// Also handles sRegLoad, bRegLoad, and lRegLoad
 TR::Register *
 OMR::ARM64::TreeEvaluator::iRegLoadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-	{
-	// TODO:ARM64: Enable TR::TreeEvaluator::iRegLoadEvaluator in compiler/aarch64/codegen/TreeEvaluatorTable.hpp when Implemented.
-	return OMR::ARM64::TreeEvaluator::unImpOpEvaluator(node, cg);
-	}
+   {
+   TR::Register *globalReg = node->getRegister();
 
-TR::Register *
-OMR::ARM64::TreeEvaluator::lRegLoadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-	{
-	// TODO:ARM64: Enable TR::TreeEvaluator::lRegLoadEvaluator in compiler/aarch64/codegen/TreeEvaluatorTable.hpp when Implemented.
-	return OMR::ARM64::TreeEvaluator::unImpOpEvaluator(node, cg);
-	}
+   if (globalReg == NULL)
+      {
+      globalReg = cg->allocateRegister();
+      node->setRegister(globalReg);
+      }
+   return(globalReg);
+   }
 
+// Also handles sRegStore, bRegStore, lRegStore, and aRegStore
 TR::Register *
 OMR::ARM64::TreeEvaluator::iRegStoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-	{
-	// TODO:ARM64: Enable TR::TreeEvaluator::iRegStoreEvaluator in compiler/aarch64/codegen/TreeEvaluatorTable.hpp when Implemented.
-	return OMR::ARM64::TreeEvaluator::unImpOpEvaluator(node, cg);
-	}
-
-TR::Register *
-OMR::ARM64::TreeEvaluator::lRegStoreEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-	{
-	// TODO:ARM64: Enable TR::TreeEvaluator::lRegStoreEvaluator in compiler/aarch64/codegen/TreeEvaluatorTable.hpp when Implemented.
-	return OMR::ARM64::TreeEvaluator::unImpOpEvaluator(node, cg);
-	}
+   {
+   TR::Node *child = node->getFirstChild();
+   TR::Register *globalReg = cg->evaluate(child);
+   cg->decReferenceCount(child);
+   return globalReg;
+   }
 
 TR::Register *
 OMR::ARM64::TreeEvaluator::GlRegDepsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-	{
-	// TODO:ARM64: Enable TR::TreeEvaluator::GlRegDepsEvaluator in compiler/aarch64/codegen/TreeEvaluatorTable.hpp when Implemented.
-	return OMR::ARM64::TreeEvaluator::unImpOpEvaluator(node, cg);
-	}
+   {
+   int32_t i;
+
+   for (i = 0; i < node->getNumChildren(); i++)
+      {
+      cg->evaluate(node->getChild(i));
+      cg->decReferenceCount(node->getChild(i));
+      }
+   return NULL;
+   }
 
 TR::Register *
 OMR::ARM64::TreeEvaluator::BBStartEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -447,6 +471,11 @@ OMR::ARM64::TreeEvaluator::BBStartEvaluator(TR::Node *node, TR::CodeGenerator *c
 
    TR::Node *fenceNode = TR::Node::createRelative32BitFenceNode(node, &block->getInstructionBoundaries()._startPC);
    TR::Instruction *fence = generateAdminInstruction(cg, TR::InstOpCode::fence, node, fenceNode);
+
+   if (block->isCatchBlock())
+      {
+      cg->generateCatchBlockBBStartPrologue(node, fence);
+      }
 
    return NULL;
    }

@@ -625,19 +625,6 @@ OMR::Z::CodeGenerator::CodeGenerator()
 
    self()->setMultiplyIsDestructive();
 
-   static char * noGraFIX= feGetEnv("TR_NOGRAFIX");
-   if (!noGraFIX)
-      {
-      if ( !comp->getOption(TR_DisableLongDispStackSlot) )
-         {
-         self()->setExtCodeBaseRegisterIsFree(true);
-         }
-      else
-         {
-         self()->setExtCodeBaseRegisterIsFree(false);
-         }
-      }
-
    self()->setIsOutOfLineHotPath(false);
 
    self()->setUsesRegisterPairsForLongs();
@@ -678,8 +665,6 @@ OMR::Z::CodeGenerator::CodeGenerator()
    self()->setSupportsTranslateAndTestCharString(); // CISC Transformation into TRTE loop - only on z6.
    self()->setSupportsBCDToDFPReduction();
    self()->setSupportsIntDFPConversions();
-
-   self()->setSupportsPostProcessArrayCopy();
 
    if (_processorInfo.supportsArch(TR_S390ProcessorInfo::TR_z10))
       {
@@ -853,20 +838,6 @@ bool OMR::Z::CodeGenerator::prepareForGRA()
 
    if (!_globalRegisterTable)
       {
-      // TBR
-      static char * noGraFIX= feGetEnv("TR_NOGRAFIX");
-      if (noGraFIX)
-         {
-         if ( !self()->comp()->getOption(TR_DisableLongDispStackSlot) )
-            {
-            self()->setExtCodeBaseRegisterIsFree(true);
-            }
-         else
-            {
-            self()->setExtCodeBaseRegisterIsFree(false);
-            }
-         }
-
       self()->machine()->initializeGlobalRegisterTable();
       self()->setGlobalRegisterTable(self()->machine()->getGlobalRegisterTable());
       self()->setFirstGlobalHPR(self()->machine()->getFirstGlobalHPRRegisterNumber());
@@ -1069,8 +1040,6 @@ TR::RealRegister * OMR::Z::CodeGenerator::getEntryPointRealRegister()
    {return self()->getS390Linkage()->getEntryPointRealRegister();}
 TR::RealRegister * OMR::Z::CodeGenerator::getReturnAddressRealRegister()
    {return self()->getS390Linkage()->getReturnAddressRealRegister();}
-TR::RealRegister * OMR::Z::CodeGenerator::getExtCodeBaseRealRegister()
-   {return self()->getS390Linkage()->getExtCodeBaseRealRegister();}
 TR::RealRegister * OMR::Z::CodeGenerator::getLitPoolRealRegister()
    {return self()->getS390Linkage()->getLitPoolRealRegister();}
 
@@ -1837,27 +1806,6 @@ OMR::Z::CodeGenerator::insertInstructionPrefetchesForCalls(TR_BranchPreloadCallD
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Do logic for determining if we want to make ext code base reg available
- */
-bool
-OMR::Z::CodeGenerator::isExtCodeBaseFreeForAssignment()
-   {
-   bool extCodeBaseIsFree = false;
-
-   // Codegen's extCodeBase flag has ultimate veto
-   // For N3+ we use a stack slot to spill the ExtCodeBase, compute the disp, use it, and unspill
-   //   when LongDispStackSlot is enabled
-   // (see TR::MemoryReference::generateBinaryEncoding(..)
-   //
-   if ( !self()->comp()->getOption(TR_DisableLongDispStackSlot) && self()->getExtCodeBaseRegisterIsFree())
-      {
-      extCodeBaseIsFree = true;
-      }
-
-   return extCodeBaseIsFree;
-   }
-
-/**
  * Do logic for determining if we want to make lit pool reg available
  */
 bool
@@ -2548,16 +2496,6 @@ OMR::Z::CodeGenerator::prepareRegistersForAssignment()
          if (s390PrivateLinkage->getPrivateStaticBaseRealRegister())
             s390PrivateLinkage->lockRegister(s390PrivateLinkage->getPrivateStaticBaseRealRegister());
          }
-
-      // Check to see if we need to lock the ext code base reg
-      if ( self()->isExtCodeBaseFreeForAssignment() )
-         {
-         s390PrivateLinkage->unlockRegister(s390PrivateLinkage->getExtCodeBaseRealRegister());
-         }
-      else
-         {
-         s390PrivateLinkage->lockRegister(s390PrivateLinkage->getExtCodeBaseRealRegister());
-         }
       }
 
    TR::Machine* machine = self()->machine();
@@ -3237,7 +3175,7 @@ OMR::Z::CodeGenerator::doBinaryEncoding()
                   if (s390Inst->getKind() == TR::Instruction::IsLabel)
                      {
                      if (self()->comp()->getOption(TR_TraceLabelTargetNOPs))
-                        traceMsg(self()->comp(),"\t\tepilogue inst %p (%s) setSkipForLabelTargetNOPs\n",s390Inst,self()->comp()->getDebug()->getOpCodeName(&s390Inst->getOpCode()));
+                        traceMsg(self()->comp(),"\t\tepilogue inst %p (%s) setSkipForLabelTargetNOPs\n",s390Inst,s390Inst->getOpCode().getMnemonicName());
                      TR::S390LabelInstruction *labelInst = (TR::S390LabelInstruction*)s390Inst;
                      labelInst->setSkipForLabelTargetNOPs();
                      }
@@ -3345,7 +3283,7 @@ OMR::Z::CodeGenerator::doBinaryEncoding()
       TR_ASSERT(data.cursorInstruction->getEstimatedBinaryLength() >= self()->getBinaryBufferCursor() - instructionStart,
               "\nInstruction length estimate must be conservatively large \n(instr=" POINTER_PRINTF_FORMAT ", opcode=%s, estimate=%d, actual=%d",
               data.cursorInstruction,
-              self()->getDebug()? self()->getDebug()->getOpCodeName(&data.cursorInstruction->getOpCode()) : "(unknown)",
+              data.cursorInstruction->getOpCode().getMnemonicName(),
               data.cursorInstruction->getEstimatedBinaryLength(),
               self()->getBinaryBufferCursor() - instructionStart);
 
@@ -3743,16 +3681,13 @@ OMR::Z::CodeGenerator::getMaximumNumberOfAssignableGPRs()
    //   ( JSP
    //     Native SP
    //     VMThread
-   //     Lit pool
-   //     extCode Base )
-   //   = 11 assignable regs
+   //     Lit pool)
+   //   = 12 assignable regs
    //
    int32_t maxGPRs = 0;
 
 
-   maxGPRs = 11 + (self()->isLiteralPoolOnDemandOn() ? 1 : 0)               // => Litpool ptr is available
-                + ((self()->getExtCodeBaseRegisterIsFree()                   &&
-                    !self()->comp()->getOption(TR_DisableLongDispStackSlot)     )? 1 : 0);  // => ExtCodeBase is free
+   maxGPRs = 12 + (self()->isLiteralPoolOnDemandOn() ? 1 : 0);
 
    //traceMsg(comp(), " getMaximumNumberOfAssignableGPRs: %d\n",  maxGPRs);
    return maxGPRs;
@@ -5729,7 +5664,7 @@ bool OMR::Z::CodeGenerator::isActiveCompareCC(TR::InstOpCode::Mnemonic opcd, TR:
 
       if (opcd == ccInst->getOpCodeValue() && tReg == ccTgtReg &&  sReg == ccSrcReg &&
           performTransformation(self()->comp(), "O^O isActiveCompareCC: RR Compare Op [%s\t %s, %s] can reuse CC from ccInstr [%p]\n",
-             self()->getDebug()->getOpCodeName(&ccInst->getOpCode()), self()->getDebug()->getName(tReg),self()->getDebug()->getName(sReg), ccInst))
+             ccInst->getOpCode().getMnemonicName(), self()->getDebug()->getName(tReg),self()->getDebug()->getName(sReg), ccInst))
          {
          return true;
          }
