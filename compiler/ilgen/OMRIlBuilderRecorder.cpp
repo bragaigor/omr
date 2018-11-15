@@ -1398,7 +1398,7 @@ void *
 OMR::IlBuilderRecorder::client()
    {
    if (_client == NULL && _clientAllocator != NULL)
-      _client = _clientAllocator(static_cast<TR::IlBuilder *>(this));
+      _client = _clientAllocator(static_cast<TR::IlBuilderRecorder *>(this));
    return _client;
    }
 
