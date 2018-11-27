@@ -22,7 +22,7 @@
 #ifndef OMR_BYTECODEBUILDER_INCL
 #define OMR_BYTECODEBUILDER_INCL
 
-#include "ilgen/BytecodeBuilderRecorder.hpp"
+#include "ilgen/IlBuilder.hpp"
 
 namespace TR { class BytecodeBuilder; }
 namespace TR { class MethodBuilder; }
@@ -31,15 +31,20 @@ namespace TR { class VirtualMachineState; }
 namespace OMR
 {
 
-class BytecodeBuilder : public TR::BytecodeBuilderRecorder
+class BytecodeBuilder : public TR::IlBuilder
    {
 public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
-   BytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name=NULL);
-   TR::BytecodeBuilder *self();
+   BytecodeBuilder(TR::MethodBuilder *methodBuilder, int32_t bcIndex, char *name=NULL, int32_t bcLength=-1);
 
    virtual bool isBytecodeBuilder() { return true; }
+
+   /**
+    * @brief bytecode index for this builder object
+    */
+   int32_t bcIndex() { return _bcIndex; }
+   virtual int32_t currentByteCodeIndex() { return _bcIndex; } // override from IlGenerator
 
    /* @brief after calling this, all IL nodes created will have this BytecodeBuilder's _bcIndex */
    void SetCurrentIlGenerator();
@@ -47,10 +52,10 @@ public:
    /* The name for this BytecodeBuilder. This can be very helpful for debug output */
    char *name() { return _name; }
 
-   void initialize(TR::IlGeneratorMethodDetails * details,
-                   TR::ResolvedMethodSymbol     * methodSymbol,
-                   TR::FrontEnd                 * fe,
-                   TR::SymbolReferenceTable     * symRefTab);
+   /**
+    * @brief bytecode length for this builder object
+    */
+   int32_t bcLength() { return _bcLength; }
 
    virtual uint32_t countBlocks();
 
@@ -59,6 +64,43 @@ public:
    void AddSuccessorBuilders(uint32_t numBuilders, ...);
    void AddSuccessorBuilder(TR::BytecodeBuilder **b) { AddSuccessorBuilders(1, b); }
 
+   virtual TR::VirtualMachineState *initialVMState()        { return _initialVMState; }
+   virtual TR::VirtualMachineState *vmState()               { return _vmState; }
+   void setVMState(TR::VirtualMachineState *vmState)        { _vmState = vmState; }
+
+   void propagateVMState(TR::VirtualMachineState *fromVMState);
+
+   // The following control flow services are meant to hide the similarly named services
+   // provided by the IlBuilder class. The reason these implementations exist is to
+   // automatically manage the propagation of virtual machine states between bytecode
+   // builders. By using these services, and AddFallthroughBuilder(), users do not have
+   // to do anything to propagate VM states; it's all just taken care of under the covers.
+   void Goto(TR::BytecodeBuilder **dest);
+   void Goto(TR::BytecodeBuilder *dest);
+   void IfCmpEqual(TR::BytecodeBuilder **dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpEqual(TR::BytecodeBuilder *dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpEqualZero(TR::BytecodeBuilder **dest, TR::IlValue *c);
+   void IfCmpEqualZero(TR::BytecodeBuilder *dest, TR::IlValue *c);
+   void IfCmpNotEqual(TR::BytecodeBuilder **dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpNotEqual(TR::BytecodeBuilder *dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpNotEqualZero(TR::BytecodeBuilder **dest, TR::IlValue *c);
+   void IfCmpNotEqualZero(TR::BytecodeBuilder *dest, TR::IlValue *c);
+   void IfCmpLessThan(TR::BytecodeBuilder **dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpLessThan(TR::BytecodeBuilder *dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpUnsignedLessThan(TR::BytecodeBuilder **dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpUnsignedLessThan(TR::BytecodeBuilder *dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpLessOrEqual(TR::BytecodeBuilder **dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpLessOrEqual(TR::BytecodeBuilder *dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpUnsignedLessOrEqual(TR::BytecodeBuilder **dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpUnsignedLessOrEqual(TR::BytecodeBuilder *dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpGreaterThan(TR::BytecodeBuilder **dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpGreaterThan(TR::BytecodeBuilder *dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpUnsignedGreaterThan(TR::BytecodeBuilder **dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpUnsignedGreaterThan(TR::BytecodeBuilder *dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpGreaterOrEqual(TR::BytecodeBuilder **dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpGreaterOrEqual(TR::BytecodeBuilder *dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpUnsignedGreaterOrEqual(TR::BytecodeBuilder **dest, TR::IlValue *v1, TR::IlValue *v2);
+   void IfCmpUnsignedGreaterOrEqual(TR::BytecodeBuilder *dest, TR::IlValue *v1, TR::IlValue *v2);
 
    /**
     * @brief returns the client object associated with this object, allocating it if necessary
@@ -83,6 +125,11 @@ public:
 protected:
    TR::BytecodeBuilder       * _fallThroughBuilder;
    List<TR::BytecodeBuilder> * _successorBuilders;
+   int32_t                     _bcIndex;
+   char                      * _name;
+   int32_t                     _bcLength;
+   TR::VirtualMachineState   * _initialVMState;
+   TR::VirtualMachineState   * _vmState;
 
    virtual void appendBlock(TR::Block *block = 0, bool addEdge=true);
    void addAllSuccessorBuildersToWorklist();

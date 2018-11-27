@@ -27,7 +27,6 @@
 #include "compile/Compilation.hpp"
 #include "env/FrontEnd.hpp"
 #include "ilgen/IlReference.hpp"
-#include "ilgen/JitBuilderRecorder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "env/Region.hpp"
 #include "env/SystemSegmentProvider.hpp"
@@ -60,14 +59,6 @@ public:
    virtual char *getSignatureName() { return (char *) signatureNameForType[_type]; }
 
    virtual size_t getSize() { return TR::DataType::getSize(_type); }
-
-   virtual void Record(TR::JitBuilderRecorder *recorder)
-      {
-      recorder->BeginStatement(StatementName::STATEMENT_PRIMITIVETYPE);
-      recorder->Type(this);
-      recorder->Number((int32_t)(getPrimitiveType()));
-      recorder->EndStatement();
-      }
 
 protected:
    TR::DataType _type;
@@ -102,17 +93,6 @@ public:
 
    FieldInfo *getNext()                             { return _next; }
    void setNext(FieldInfo *next)                    { _next = next; }
-
-   virtual void Record(TR::JitBuilderRecorder *recorder, const TR::IlType *myStruct)
-      {
-      _type->RecordFirstTime(recorder);
-      recorder->BeginStatement(StatementName::STATEMENT_DEFINEFIELD);
-      recorder->Type(myStruct);
-      recorder->Type(_type);
-      recorder->String(_name);
-      recorder->Number((int64_t)_offset);
-      recorder->EndStatement();
-      }
 
 //private:
    FieldInfo           * _next;
@@ -154,8 +134,6 @@ public:
 
    void clearSymRefs();
 
-   virtual void Record(TR::JitBuilderRecorder *recorder);
-
 protected:
    FieldInfo * findField(const char *fieldName);
 
@@ -194,7 +172,6 @@ public:
    virtual size_t getSize() { return _size; }
 
    void clearSymRefs();
-   virtual void Record(TR::JitBuilderRecorder *recorder);
 
 protected:
    FieldInfo *  findField(const char *fieldName);
@@ -230,15 +207,6 @@ public:
    virtual TR::DataType getPrimitiveType()                   { return TR::Address; }
 
    virtual size_t getSize() { return TR::DataType::getSize(TR::Address); }
-
-   virtual void Record(TR::JitBuilderRecorder *recorder)
-      {
-      _baseType->RecordFirstTime(recorder);
-      recorder->BeginStatement(StatementName::STATEMENT_POINTERTYPE);
-      recorder->Type(this);
-      recorder->Type(_baseType);
-      recorder->EndStatement();
-      }
 
 protected:
    TR::IlType          * _baseType;
@@ -363,21 +331,6 @@ OMR::StructType::clearSymRefs()
       }
    }
 
-void
-OMR::StructType::Record(TR::JitBuilderRecorder *recorder)
-   {
-   recorder->BeginStatement(StatementName::STATEMENT_DEFINESTRUCT);
-   recorder->Type(self());
-   recorder->String(_name);
-   recorder->EndStatement();
-
-   FieldInfo *field = _firstField;
-   while (field)
-      {
-      field->Record(recorder, self());
-      field = field->_next;
-      }
-   }
 
 void
 OMR::UnionType::AddField(const char *name, TR::IlType *typeInfo)
@@ -469,22 +422,6 @@ OMR::UnionType::clearSymRefs()
       field = field->_next;
       }
    _symRefBV.init(4, _trMemory);
-   }
-
-void
-OMR::UnionType::Record(TR::JitBuilderRecorder *recorder)
-   {
-   recorder->BeginStatement(StatementName::STATEMENT_DEFINEUNION);
-   recorder->Type(self());
-   recorder->String(_name);
-   recorder->EndStatement();
-
-   FieldInfo *field = _firstField;
-   while (field)
-      {
-      field->Record(recorder, self());
-      field = field->_next;
-      }
    }
 
 

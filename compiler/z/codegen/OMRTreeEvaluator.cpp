@@ -13483,7 +13483,7 @@ OMR::Z::TreeEvaluator::forwardArrayCopySequenceGenerator(TR::Node *node, TR::Cod
       // 2. byteLength > 256 && byteLength is not multiple of 256
       uint8_t residueLength = static_cast<uint8_t>(byteLen & 0xFF);
       if (byteLen <= 256 || residueLength != 0)
-         generateSS1Instruction(cg, TR::InstOpCode::MVC, node, residueLength-1, 
+         generateSS1Instruction(cg, TR::InstOpCode::MVC, node, static_cast<uint8_t>(residueLength-1), 
             generateS390MemoryReference(byteDstReg, 0, cg),
             generateS390MemoryReference(byteSrcReg, 0, cg)); 
       }
@@ -13656,28 +13656,30 @@ OMR::Z::TreeEvaluator::primitiveArraycopyEvaluator(TR::Node* node, TR::CodeGener
       }
    else if (node->isBackwardArrayCopy())
       {
+      if (byteLenReg == NULL)
+         byteLenReg = cg->gprClobberEvaluate(byteLenNode);
       deps = TR::TreeEvaluator::backwardArrayCopySequenceGenerator(node, cg, byteSrcReg, byteDstReg, byteLenReg, byteLenNode, srm, mergeLabel);
       }
    else
       {
       // We need to decide direction of array copy at runtime.
-      TR::LabelSymbol *forwardArrayCopyLabel = generateLabelSymbol(cg);
-      cursor = generateS390CompareAndBranchInstruction(cg, TR::InstOpCode::getCmpRegOpCode(), node, byteSrcReg, byteDstReg, TR::InstOpCode::COND_BNL, forwardArrayCopyLabel, false);
-      iComment("if byteSrcPointer >= byteDstPointer then GoTo forwardArrayCopy");
-      
       if (isConstantByteLen)
          {
          generateS390LabelInstruction(cg, TR::InstOpCode::LABEL, node, cFlowRegionStart);
          cFlowRegionStart->setStartInternalControlFlow();
          }
+      TR::LabelSymbol *forwardArrayCopyLabel = generateLabelSymbol(cg);
+      cursor = generateS390CompareAndBranchInstruction(cg, TR::InstOpCode::getCmpRegOpCode(), node, byteSrcReg, byteDstReg, TR::InstOpCode::COND_BNL, forwardArrayCopyLabel, false);
+      iComment("if byteSrcPointer >= byteDstPointer then GoTo forwardArrayCopy");
+      
 
       TR::Register *checkBoundReg = srm->findOrCreateScratchRegister();
       if (byteLenReg == NULL)
          {
          byteLenReg = cg->gprClobberEvaluate(byteLenNode);
          }
-      cursor = generateRRRInstruction(cg, TR::InstOpCode::getAddThreeRegOpCode(), node, checkBoundReg, byteSrcReg, byteLenReg); 
-      iComment("lastElementToCopy=byteSrcPointer+lengthInBytes");
+      cursor = generateRXInstruction(cg, TR::InstOpCode::LA, node, checkBoundReg, generateS390MemoryReference(byteSrcReg, byteLenReg, 0, cg));
+      iComment("nextPointerToLastElement=byteSrcPointer+lengthInBytes");
       
       TR::LabelSymbol *backwardArrayCopyLabel = generateLabelSymbol(cg);
       cursor = generateS390CompareAndBranchInstruction(cg, TR::InstOpCode::getCmpRegOpCode(), node, checkBoundReg, byteDstReg, TR::InstOpCode::COND_BH, backwardArrayCopyLabel, false);
@@ -13695,7 +13697,7 @@ OMR::Z::TreeEvaluator::primitiveArraycopyEvaluator(TR::Node* node, TR::CodeGener
       deps = TR::TreeEvaluator::backwardArrayCopySequenceGenerator(node, cg, byteSrcReg, byteDstReg, byteLenReg, byteLenNode, srm, mergeLabel);
       }
    cursor = generateS390LabelInstruction(cg, TR::InstOpCode::LABEL, node, mergeLabel);
-   if (!(isConstantByteLen && node->isForwardArrayCopy() && byteLenNode->getConst<int64_t>() < 256))
+   if (!(isConstantByteLen && node->isForwardArrayCopy() && byteLenNode->getConst<int64_t>() <= 256))
       {
       deps = new (cg->trHeapMemory()) TR::RegisterDependencyConditions(deps, 0, 3+srm->numAvailableRegisters(), cg);
       deps->addPostCondition(byteSrcReg, TR::RealRegister::AssignAny);

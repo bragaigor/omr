@@ -170,6 +170,8 @@ initializeJitBuilder(TR_RuntimeHelper *helperIDs, void **helperAddresses, int32_
 //
 
 
+
+
 bool
 internal_initializeJitWithOptions(char *options)
    {
@@ -186,18 +188,6 @@ int32_t
 internal_compileMethodBuilder(TR::MethodBuilder *m, void **entry)
    {
    return m->Compile(entry);
-   }
-
-int32_t
-internal_recordMethodBuilder(TR::MethodBuilder *m)
-   {
-   TR::ResolvedMethod resolvedMethod(m);
-   TR::IlGeneratorMethodDetails details(&resolvedMethod);
-
-   int32_t rc=0;
-   compileMethodFromDetails(NULL, details, warm, rc, false);
-   m->typeDictionary()->NotifyCompilationDone();
-   return rc;
    }
 
 void

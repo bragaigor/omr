@@ -63,13 +63,10 @@ set(JITBUILDER_API_DESCRIPTION ${CMAKE_CURRENT_SOURCE_DIR}/apigen/jitbuilder.api
 
 set(JITBUILDER_API_SOURCES
 	${JITBUILDER_CPP_API_SOURCE_DIR}/BytecodeBuilder.cpp
-	${JITBUILDER_CPP_API_SOURCE_DIR}/BytecodeBuilderRecorder.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/IlBuilder.cpp
-	${JITBUILDER_CPP_API_SOURCE_DIR}/IlBuilderRecorder.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/IlType.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/IlValue.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/MethodBuilder.cpp
-	${JITBUILDER_CPP_API_SOURCE_DIR}/MethodBuilderRecorder.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/ThunkBuilder.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/TypeDictionary.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineOperandArray.cpp
@@ -78,21 +75,14 @@ set(JITBUILDER_API_SOURCES
 	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineRegisterInStruct.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineState.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/JitBuilder.cpp
-	${JITBUILDER_CPP_API_SOURCE_DIR}/JitBuilderRecorder.cpp
-	${JITBUILDER_CPP_API_SOURCE_DIR}/JitBuilderRecorderBinaryBuffer.cpp
-	${JITBUILDER_CPP_API_SOURCE_DIR}/JitBuilderRecorderBinaryFile.cpp
-	${JITBUILDER_CPP_API_SOURCE_DIR}/JitBuilderRecorderTextFile.cpp
 )
 
 set(JITBUILDER_API_HEADERS
 	${JITBUILDER_CPP_API_HEADER_DIR}/BytecodeBuilder.hpp
-	${JITBUILDER_CPP_API_HEADER_DIR}/BytecodeBuilderRecorder.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/IlBuilder.hpp
-	${JITBUILDER_CPP_API_HEADER_DIR}/IlBuilderRecorder.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/IlType.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/IlValue.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/MethodBuilder.hpp
-	${JITBUILDER_CPP_API_HEADER_DIR}/MethodBuilderRecorder.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/ThunkBuilder.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/TypeDictionary.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineOperandArray.hpp
@@ -101,10 +91,6 @@ set(JITBUILDER_API_HEADERS
 	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineRegisterInStruct.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineState.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/JitBuilder.hpp
-	${JITBUILDER_CPP_API_HEADER_DIR}/JitBuilderRecorder.hpp
-	${JITBUILDER_CPP_API_HEADER_DIR}/JitBuilderRecorderBinaryBuffer.hpp
-	${JITBUILDER_CPP_API_HEADER_DIR}/JitBuilderRecorderBinaryFile.hpp
-	${JITBUILDER_CPP_API_HEADER_DIR}/JitBuilderRecorderTextFile.hpp
 )
 
 add_custom_command(
@@ -137,12 +123,21 @@ target_include_directories(jitbuilder
 )
 
 target_link_libraries(jitbuilder
-	${OMR_PORT_LIB}
+	PUBLIC
+		${OMR_PORT_LIB}
 )
 
 ## JitBuilder examples only work on 64 bit currently.
 if(OMR_JITBUILDER AND OMR_ENV_DATA64)
 	add_subdirectory(release)
+endif()
+
+if(OMR_JITBUILDER_TEST)
+	add_test(
+		NAME TestJitBuilderAPIGenerator
+		COMMAND ${PYTHON_EXECUTABLE} test.py
+		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/apigen
+	)
 endif()
 
 # install(TARGETS jitbuilder

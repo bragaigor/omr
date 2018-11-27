@@ -32,7 +32,6 @@
 #include "infra/Assert.hpp"
 #include "infra/BitVector.hpp"
 #include "infra/STLUtils.hpp"
-#include "ilgen/JitBuilderRecorder.hpp"
 
 #include "ilgen/IlType.hpp"
 
@@ -67,9 +66,9 @@ OMR::IlType::primitiveTypeAlignment[TR::NumOMRTypes] =
    4,  // Float
    8,  // Double
 #if TR_TARGET_64BIT // HOST?
-   4,  // Address/Word
-#else
    8,  // Address/Word
+#else
+   4,  // Address/Word
 #endif
    16, // VectorInt8
    16, // VectorInt16
@@ -111,21 +110,3 @@ OMR::IlType::client()
 
 ClientAllocator OMR::IlType::_clientAllocator = NULL;
 ClientAllocator OMR::IlType::_getImpl = NULL;
-void
-OMR::IlType::RecordFirstTime(TR::JitBuilderRecorder *recorder)
-   {
-   if (!recorder->EnsureAvailableID(self()))
-      Record(recorder);
-   }
-
-void
-OMR::IlType::Record(TR::JitBuilderRecorder *recorder)
-   {
-   TR_ASSERT(0, "This type cannot be written\n");
-   }
-
-const TR::IlType *
-OMR::IlType::self()
-   {
-   return static_cast<const TR::IlType *>(this);
-   }
