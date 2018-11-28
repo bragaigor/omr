@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2000, 2016 IBM Corp. and others
+ * Copyright (c) 2016, 2016 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -19,53 +19,32 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#ifndef TR_COMPILATION_INCL
-#define TR_COMPILATION_INCL
+#ifndef OMR_JITBUILDERRECORDER_BINARYFILE_INCL
+#define OMR_JITBUILDERRECORDER_BINARYFILE_INCL
 
-#include "compile/OMRCompilation.hpp"
+#include "ilgen/JitBuilderRecorderBinaryBuffer.hpp"
+#include <fstream>
 
-#include <stdint.h>  // for int32_t
+namespace TR { class IlBuilderRecorder; }
+namespace TR { class MethodBuilderRecorder; }
+namespace TR { class IlType; }
+namespace TR { class IlValue; }
 
-class TR_FrontEnd;
-class TR_Memory;
-class TR_OptimizationPlan;
-class TR_ResolvedMethod;
-namespace TR { class IlGenRequest; }
-namespace TR { class Options; }
-struct OMR_VMThread;
-
-namespace TR
+namespace OMR
 {
-class OMR_EXTENSIBLE Compilation : public OMR::CompilationConnector
+
+class JitBuilderRecorderBinaryFile : public TR::JitBuilderRecorderBinaryBuffer
    {
    public:
+   JitBuilderRecorderBinaryFile(const TR::MethodBuilderRecorder *mb, const char *fileName);
+   virtual ~JitBuilderRecorderBinaryFile() { }
 
-   Compilation(
-         int32_t compThreadId,
-         OMR_VMThread *omrVMThread,
-         TR_FrontEnd *fe,
-         TR_ResolvedMethod *method,
-         TR::IlGenRequest &request,
-         TR::Options &options,
-         TR::Region &heapMemoryRegion,
-         TR_Memory *memory,
-         TR_OptimizationPlan *optimizationPlan,
-         bool shouldCompile = true) :
-      OMR::CompilationConnector(
-         compThreadId,
-         omrVMThread,
-         fe,
-         method,
-         request,
-         options,
-         heapMemoryRegion,
-         memory,
-         optimizationPlan,
-         shouldCompile)
-      {}
+   virtual void Close();
 
-   ~Compilation() {}
+   private:
+   std::fstream _file;
    };
-}
 
-#endif
+} // namespace OMR
+
+#endif // !defined(OMR_JITBUILDERRECORDER_BINARYFILE_INCL)

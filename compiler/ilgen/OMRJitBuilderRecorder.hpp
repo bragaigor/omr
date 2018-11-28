@@ -1,0 +1,142 @@
+/*******************************************************************************
+ * Copyright (c) 2016, 2018 IBM Corp. and others
+ *
+ * This program and the accompanying materials are made available under
+ * the terms of the Eclipse Public License 2.0 which accompanies this
+ * distribution and is available at http://eclipse.org/legal/epl-2.0
+ * or the Apache License, Version 2.0 which accompanies this distribution
+ * and is available at https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the
+ * Eclipse Public License, v. 2.0 are satisfied: GNU General Public License,
+ * version 2 with the GNU Classpath Exception [1] and GNU General Public
+ * License, version 2 with the OpenJDK Assembly Exception [2].
+ *
+ * [1] https://www.gnu.org/software/classpath/license.html
+ * [2] http://openjdk.java.net/legal/assembly-exception.html
+ *
+ * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
+ *******************************************************************************/
+
+#ifndef OMR_JITBUILDERRECORDER_INCL
+#define OMR_JITBUILDERRECORDER_INCL
+
+#include <iostream>
+#include <fstream>
+#include <map>
+#include "ilgen/StatementNames.hpp"
+// #include "ilgen/VirtualMachineState.hpp"
+#include "ilgen/IlInjector.hpp"
+
+namespace TR { class IlBuilderRecorder; }
+namespace TR { class MethodBuilderRecorder; }
+namespace TR { class IlType; }
+namespace TR { class IlValue; }
+
+extern "C"
+{
+typedef void * (*ClientAllocator)(void *implObject);
+typedef void * (*ImplGetter)(void *client);
+typedef bool (*RequestFunctionCallback)(void *client, const char *name);
+}
+
+namespace OMR
+{
+
+class JitBuilderRecorder
+   {
+   public:
+
+   typedef uint32_t                      TypeID;
+   typedef std::map<const void *,TypeID> TypeMapID;
+
+   JitBuilderRecorder(const TR::MethodBuilderRecorder *mb);
+   virtual ~JitBuilderRecorder();
+
+   void setMethodBuilderRecorder(TR::MethodBuilderRecorder *mb) {_mb = mb;}
+
+   /**
+    * @brief Subclasses override these functions to record to different output formats
+    */
+   virtual void Close()                                       { }
+   virtual void String(const char * const string)             { }
+   virtual void Number(int8_t num)                            { }
+   virtual void Number(int16_t num)                           { }
+   virtual void Number(int32_t num)                           { }
+   virtual void Number(int64_t num)                           { }
+   virtual void Number(float num)                             { }
+   virtual void Number(double num)                            { }
+   virtual void ID(TypeID id)                                 { }
+   virtual void Statement(const char *s)                      { }
+   virtual void Type(const TR::IlType *type)                  { }
+   virtual void Value(const TR::IlValue *v)                   { }
+   virtual void Builder(const TR::IlBuilderRecorder *b)       { }
+   virtual void Location(const void * location)               { }
+
+   virtual void BeginStatement(const TR::IlBuilderRecorder *b, const char *s);
+   virtual void BeginStatement(const char *s);
+   virtual void EndStatement()                                { }
+
+    /**
+    * @brief associates this object with a particular client object
+    */
+   void setClient(void *client)
+      {
+      _client = client;
+      }
+
+   /**
+    * @brief Set the Get Impl function
+    *
+    * @param getter function pointer to the impl getter
+    */
+   static void setGetImpl(ImplGetter getter)
+      {
+      _getImpl = getter;
+      }
+
+   /**
+    * @brief Set the Client Allocator function
+    */
+    static void setClientAllocator(ClientAllocator allocator)
+      {
+      _clientAllocator = allocator;
+      }
+
+   void StoreID(const void *ptr);
+   bool EnsureAvailableID(const void *ptr);
+
+   protected:
+
+   void start();
+   bool knownID(const void *ptr);
+   TypeID lookupID(const void *ptr);
+   void ensureStatementDefined(const char *s);
+   void end();
+
+   TypeID getNewID();
+   TypeID myID();
+
+   const TR::MethodBuilderRecorder * _mb;
+   TypeID                            _nextID;
+   TypeMapID                         _idMap;
+   uint8_t                           _idSize;
+
+   /**
+    * @brief pointer to a client object that corresponds to this object
+    */
+   void                        * _client;
+
+   RequestFunctionCallback     _clientCallbackRequestFunction;
+
+   protected:
+
+   static ClientAllocator        _clientAllocator;
+   static ImplGetter             _getImpl;
+   
+   };
+
+} // namespace OMR
+
+#endif // !defined(OMR_JITBUILDERRECORDER_INCL)
