@@ -29,8 +29,10 @@ namespace TR
    class JitBuilderRecorderBinaryFile : public OMR::JitBuilderRecorderBinaryFile
       {
       public:
-         JitBuilderRecorderBinaryFile(const TR::MethodBuilderRecorder *mb, const char *fileName)
-            : OMR::JitBuilderRecorderBinaryFile(mb, fileName)
+      //    JitBuilderRecorderBinaryFile(const TR::MethodBuilderRecorder *mb, const char *fileName)
+      //       : OMR::JitBuilderRecorderBinaryFile(mb, fileName)
+        JitBuilderRecorderBinaryFile(const char *fileName)
+            : OMR::JitBuilderRecorderBinaryFile(fileName)
             { }
          virtual ~JitBuilderRecorderBinaryFile()
             { }

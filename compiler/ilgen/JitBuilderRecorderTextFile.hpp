@@ -29,8 +29,10 @@ namespace TR
    class JitBuilderRecorderTextFile : public OMR::JitBuilderRecorderTextFile
       {
       public:
-         JitBuilderRecorderTextFile(const TR::MethodBuilderRecorder *mb, const char *fileName)
-            : OMR::JitBuilderRecorderTextFile(mb, fileName)
+      //    JitBuilderRecorderTextFile(const TR::MethodBuilderRecorder *mb, const char *fileName)
+      //       : OMR::JitBuilderRecorderTextFile(mb, fileName)
+         JitBuilderRecorderTextFile(const char *fileName)
+            : OMR::JitBuilderRecorderTextFile(fileName)
             { }
          virtual ~JitBuilderRecorderTextFile()
             { }

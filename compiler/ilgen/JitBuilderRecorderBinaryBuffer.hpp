@@ -29,8 +29,10 @@ namespace TR
    class JitBuilderRecorderBinaryBuffer : public OMR::JitBuilderRecorderBinaryBuffer
       {
       public:
-         JitBuilderRecorderBinaryBuffer(const TR::MethodBuilderRecorder *mb)
-            : OMR::JitBuilderRecorderBinaryBuffer(mb)
+      //    JitBuilderRecorderBinaryBuffer(const TR::MethodBuilderRecorder *mb)
+      //       : OMR::JitBuilderRecorderBinaryBuffer(mb)
+         JitBuilderRecorderBinaryBuffer()
+            : OMR::JitBuilderRecorderBinaryBuffer()
             { }
          virtual ~JitBuilderRecorderBinaryBuffer()
             { }
