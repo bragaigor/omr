@@ -25,10 +25,10 @@
 
 #include "infra/Assert.hpp"
 #include "ilgen/JitBuilderRecorder.hpp"
-#include "ilgen/MethodBuilderRecorder.hpp"
+// #include "ilgen/MethodBuilderRecorder.hpp"
 
-OMR::JitBuilderRecorder::JitBuilderRecorder(const TR::MethodBuilderRecorder *mb)
-   : _mb(mb), _nextID(0), _idSize(8)
+OMR::JitBuilderRecorder::JitBuilderRecorder()
+   : _nextID(0), _idSize(8)
    {
    }
 
@@ -77,7 +77,8 @@ OMR::JitBuilderRecorder::getNewID()
 OMR::JitBuilderRecorder::TypeID
 OMR::JitBuilderRecorder::myID()
    {
-   return lookupID(_mb);
+//    return lookupID(_mb);
+      return lookupID((void*)0);
    }
 
 bool
@@ -105,7 +106,7 @@ OMR::JitBuilderRecorder::ensureStatementDefined(const char *s)
       return;
 
    StoreID(s);
-   Builder(0);
+   // Builder(0);
    Statement(s);
    String(s);
    EndStatement();
@@ -118,17 +119,18 @@ OMR::JitBuilderRecorder::end()
    String(StatementName::JBIL_COMPLETE);
    }
 
-void
-OMR::JitBuilderRecorder::BeginStatement(const char *s)
-   {
-   BeginStatement(_mb, s);
-   }
+// void
+// OMR::JitBuilderRecorder::BeginStatement(const char *s)
+//    {
+//    // BeginStatement(_mb, s);
+//    }
 
 void
-OMR::JitBuilderRecorder::BeginStatement(const TR::IlBuilderRecorder *b, const char *s)
+// OMR::JitBuilderRecorder::BeginStatement(const TR::IlBuilderRecorder *b, const char *s)
+OMR::JitBuilderRecorder::BeginStatement(const char *s)
    {
    ensureStatementDefined(s);
-   Builder(b);
+   // Builder(b);
    Statement(s);
    }
 
@@ -156,6 +158,3 @@ OMR::JitBuilderRecorder::EnsureAvailableID(const void *ptr)
    StoreID(ptr);
    return false; // ID was not available, but is now
    }
-
-ClientAllocator OMR::JitBuilderRecorder::_clientAllocator = NULL;
-ClientAllocator OMR::JitBuilderRecorder::_getImpl = NULL;

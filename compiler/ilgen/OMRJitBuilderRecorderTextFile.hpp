@@ -28,8 +28,8 @@
 #include <fstream>
 #include <map>
 
-namespace TR { class IlBuilderRecorder; }
-namespace TR { class MethodBuilderRecorder; }
+// namespace TR { class IlBuilderRecorder; }
+// namespace TR { class MethodBuilderRecorder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
 
@@ -39,7 +39,8 @@ namespace OMR
 class JitBuilderRecorderTextFile : public TR::JitBuilderRecorder
    {
    public:
-   JitBuilderRecorderTextFile(const TR::MethodBuilderRecorder *mb, const char *fileName);
+//    JitBuilderRecorderTextFile(const TR::MethodBuilderRecorder *mb, const char *fileName);
+   JitBuilderRecorderTextFile(const char *fileName);
    virtual ~JitBuilderRecorderTextFile() { }
 
    virtual void Close();
@@ -54,7 +55,7 @@ class JitBuilderRecorderTextFile : public TR::JitBuilderRecorder
    virtual void Statement(const char *s);
    virtual void Type(const TR::IlType *type);
    virtual void Value(const TR::IlValue *v);
-   virtual void Builder(const TR::IlBuilderRecorder *b);
+//    virtual void Builder(const TR::IlBuilderRecorder *b);
    virtual void Location(const void * location);
    virtual void EndStatement();
 

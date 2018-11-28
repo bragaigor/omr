@@ -26,7 +26,7 @@
 #include <vector>
 
 namespace TR { class IlBuilderRecorder; }
-namespace TR { class MethodBuilderRecorder; }
+// namespace TR { class MethodBuilderRecorder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
 
@@ -36,7 +36,8 @@ namespace OMR
 class JitBuilderRecorderBinaryBuffer : public TR::JitBuilderRecorder
    {
    public:
-   JitBuilderRecorderBinaryBuffer(const TR::MethodBuilderRecorder *mb);
+   // JitBuilderRecorderBinaryBuffer(const TR::MethodBuilderRecorder *mb);
+   JitBuilderRecorderBinaryBuffer();
    virtual ~JitBuilderRecorderBinaryBuffer() { }
 
    virtual void Close();
@@ -51,7 +52,7 @@ class JitBuilderRecorderBinaryBuffer : public TR::JitBuilderRecorder
    virtual void Statement(const char *s);
    virtual void Type(const TR::IlType *type);
    virtual void Value(const TR::IlValue *v);
-   virtual void Builder(const TR::IlBuilderRecorder *b);
+//    virtual void Builder(const TR::IlBuilderRecorder *b);
    virtual void Location(const void * location);
    virtual void EndStatement();
 

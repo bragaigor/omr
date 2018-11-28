@@ -25,8 +25,8 @@
 #include "ilgen/JitBuilderRecorderBinaryBuffer.hpp"
 #include <fstream>
 
-namespace TR { class IlBuilderRecorder; }
-namespace TR { class MethodBuilderRecorder; }
+// namespace TR { class IlBuilderRecorder; }
+// namespace TR { class MethodBuilderRecorder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
 
@@ -36,7 +36,8 @@ namespace OMR
 class JitBuilderRecorderBinaryFile : public TR::JitBuilderRecorderBinaryBuffer
    {
    public:
-   JitBuilderRecorderBinaryFile(const TR::MethodBuilderRecorder *mb, const char *fileName);
+//    JitBuilderRecorderBinaryFile(const TR::MethodBuilderRecorder *mb, const char *fileName);
+   JitBuilderRecorderBinaryFile(const char *fileName);
    virtual ~JitBuilderRecorderBinaryFile() { }
 
    virtual void Close();

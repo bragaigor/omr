@@ -25,8 +25,9 @@
 #include "ilgen/JitBuilderRecorderBinaryBuffer.hpp"
 #include "infra/Assert.hpp"
 
-OMR::JitBuilderRecorderBinaryBuffer::JitBuilderRecorderBinaryBuffer(const TR::MethodBuilderRecorder *mb)
-   : TR::JitBuilderRecorder(mb), _buf()
+// OMR::JitBuilderRecorderBinaryBuffer::JitBuilderRecorderBinaryBuffer(const TR::MethodBuilderRecorder *mb)
+OMR::JitBuilderRecorderBinaryBuffer::JitBuilderRecorderBinaryBuffer()
+   : TR::JitBuilderRecorder(), _buf()
    {
    start();
    }
@@ -159,11 +160,11 @@ OMR::JitBuilderRecorderBinaryBuffer::Value(const TR::IlValue *v)
    ID(lookupID(v));
    }
 
-void
-OMR::JitBuilderRecorderBinaryBuffer::Builder(const TR::IlBuilderRecorder *b)
-   {
-   ID(lookupID(b));
-   }
+// void
+// OMR::JitBuilderRecorderBinaryBuffer::Builder(const TR::IlBuilderRecorder *b)
+//    {
+//    ID(lookupID(b));
+//    }
 
 void
 OMR::JitBuilderRecorderBinaryBuffer::Location(const void *location)

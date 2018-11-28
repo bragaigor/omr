@@ -30,16 +30,8 @@
 #include "ilgen/IlInjector.hpp"
 
 namespace TR { class IlBuilderRecorder; }
-namespace TR { class MethodBuilderRecorder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
-
-extern "C"
-{
-typedef void * (*ClientAllocator)(void *implObject);
-typedef void * (*ImplGetter)(void *client);
-typedef bool (*RequestFunctionCallback)(void *client, const char *name);
-}
 
 namespace OMR
 {
@@ -51,10 +43,10 @@ class JitBuilderRecorder
    typedef uint32_t                      TypeID;
    typedef std::map<const void *,TypeID> TypeMapID;
 
-   JitBuilderRecorder(const TR::MethodBuilderRecorder *mb);
+   JitBuilderRecorder();
    virtual ~JitBuilderRecorder();
 
-   void setMethodBuilderRecorder(TR::MethodBuilderRecorder *mb) {_mb = mb;}
+  //  void setMethodBuilderRecorder(TR::MethodBuilderRecorder *mb) {_mb = mb;}
 
    /**
     * @brief Subclasses override these functions to record to different output formats
@@ -71,38 +63,13 @@ class JitBuilderRecorder
    virtual void Statement(const char *s)                      { }
    virtual void Type(const TR::IlType *type)                  { }
    virtual void Value(const TR::IlValue *v)                   { }
-   virtual void Builder(const TR::IlBuilderRecorder *b)       { }
+   // virtual void Builder(const TR::IlBuilderRecorder *b)       { }
+   virtual void Builder()       { }
    virtual void Location(const void * location)               { }
 
-   virtual void BeginStatement(const TR::IlBuilderRecorder *b, const char *s);
+   // virtual void BeginStatement(const TR::IlBuilderRecorder *b, const char *s);
    virtual void BeginStatement(const char *s);
    virtual void EndStatement()                                { }
-
-    /**
-    * @brief associates this object with a particular client object
-    */
-   void setClient(void *client)
-      {
-      _client = client;
-      }
-
-   /**
-    * @brief Set the Get Impl function
-    *
-    * @param getter function pointer to the impl getter
-    */
-   static void setGetImpl(ImplGetter getter)
-      {
-      _getImpl = getter;
-      }
-
-   /**
-    * @brief Set the Client Allocator function
-    */
-    static void setClientAllocator(ClientAllocator allocator)
-      {
-      _clientAllocator = allocator;
-      }
 
    void StoreID(const void *ptr);
    bool EnsureAvailableID(const void *ptr);
@@ -118,22 +85,10 @@ class JitBuilderRecorder
    TypeID getNewID();
    TypeID myID();
 
-   const TR::MethodBuilderRecorder * _mb;
+   // const TR::MethodBuilderRecorder * _mb;
    TypeID                            _nextID;
    TypeMapID                         _idMap;
    uint8_t                           _idSize;
-
-   /**
-    * @brief pointer to a client object that corresponds to this object
-    */
-   void                        * _client;
-
-   RequestFunctionCallback     _clientCallbackRequestFunction;
-
-   protected:
-
-   static ClientAllocator        _clientAllocator;
-   static ImplGetter             _getImpl;
    
    };
 
