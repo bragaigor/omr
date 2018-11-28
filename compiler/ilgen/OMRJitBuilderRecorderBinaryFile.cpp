@@ -25,8 +25,9 @@
 #include "ilgen/JitBuilderRecorderBinaryFile.hpp"
 #include "infra/Assert.hpp"
 
-OMR::JitBuilderRecorderBinaryFile::JitBuilderRecorderBinaryFile(const TR::MethodBuilderRecorder *mb, const char *fileName)
-   : TR::JitBuilderRecorderBinaryBuffer(mb), _file(fileName, std::fstream::out | std::fstream::app)
+// OMR::JitBuilderRecorderBinaryFile::JitBuilderRecorderBinaryFile(const TR::MethodBuilderRecorder *mb, const char *fileName)
+OMR::JitBuilderRecorderBinaryFile::JitBuilderRecorderBinaryFile(const char *fileName)
+   : TR::JitBuilderRecorderBinaryBuffer(), _file(fileName, std::fstream::out | std::fstream::app)
    {
    }
 
