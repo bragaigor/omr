@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -25,9 +25,8 @@
 #include "ilgen/JitBuilderRecorderBinaryFile.hpp"
 #include "infra/Assert.hpp"
 
-// OMR::JitBuilderRecorderBinaryFile::JitBuilderRecorderBinaryFile(const TR::MethodBuilderRecorder *mb, const char *fileName)
-OMR::JitBuilderRecorderBinaryFile::JitBuilderRecorderBinaryFile(const char *fileName)
-   : TR::JitBuilderRecorderBinaryBuffer(), _file(fileName, std::fstream::out | std::fstream::app)
+OMR::JitBuilderRecorderBinaryFile::JitBuilderRecorderBinaryFile(const TR::MethodBuilder *mb, const char *fileName)
+   : TR::JitBuilderRecorderBinaryBuffer(mb), _file(fileName, std::fstream::out | std::fstream::app)
    {
    }
 

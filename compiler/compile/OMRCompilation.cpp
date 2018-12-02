@@ -202,8 +202,7 @@ OMR::Compilation::Compilation(
       TR::Options &options,
       TR::Region &heapMemoryRegion,
       TR_Memory *m,
-      TR_OptimizationPlan *optimizationPlan,
-      bool shouldCompile) :
+      TR_OptimizationPlan *optimizationPlan) :
    _signature(compilee->signature(m)),
    _options(&options),
    _heapMemoryRegion(heapMemoryRegion),
@@ -295,7 +294,6 @@ OMR::Compilation::Compilation(
    _gpuKernelLineNumberList(m),
    _gpuPtxCount(0),
    _bitVectorPool(self()),
-   _shouldCompile(shouldCompile),
    _tlsManager(*self())
    {
 
@@ -372,6 +370,18 @@ OMR::Compilation::Compilation(
 #endif
          );
    _isServerInlining = !options.getOption(TR_NoOptServer);
+
+   // TR_DisableInternalPointers must be set before allocateCodeGenerator(self()) is called because
+   // CodeGenerator's _disableInternalPointers member is set in its constructor and this is one of
+   // options that is checked for
+   if (_isOptServer)
+      {
+      if(self()->getMethodHotness() <= warm)
+         {
+         if (!TR::Compiler->target.cpu.isPower()) // Temporarily exclude PPC due to perf regression
+            self()->setOption(TR_DisableInternalPointers);
+         }
+      }
 
    //_methodSymbol must be done after symRefTab, but before codegen
    // _methodSymbol must be initialized here because creating a jitted method symbol
@@ -931,15 +941,7 @@ int32_t OMR::Compilation::compile()
    bool printCodegenTime = self()->getOption(TR_CummTiming);
 
    if (self()->isOptServer())
-      {
-      // Temporarily exclude PPC due to perf regression
-      if( (self()->getMethodHotness() <= warm))
-         {
-         if (!TR::Compiler->target.cpu.isPower())
-            TR::Options::getCmdLineOptions()->setOption(TR_DisableInternalPointers);
-         }
-      self()->getOptions()->setOption(TR_DisablePartialInlining);
-      }
+      self()->setOption(TR_DisablePartialInlining);
 
 #ifdef J9_PROJECT_SPECIFIC
    if (self()->getOptions()->getDelayCompile())
@@ -1022,7 +1024,7 @@ int32_t OMR::Compilation::compile()
    LexicalTimer t("compile", self()->signature(), self()->phaseTimer());
    TR::LexicalMemProfiler mp("compile", self()->signature(), self()->phaseMemProfiler());
 
-   if (_ilGenSuccess && _shouldCompile)
+   if (_ilGenSuccess)
       {
       _methodSymbol->detectInternalCycles(_methodSymbol->getFlowGraph(), self());
 

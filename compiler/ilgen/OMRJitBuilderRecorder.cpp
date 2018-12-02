@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -25,10 +25,12 @@
 
 #include "infra/Assert.hpp"
 #include "ilgen/JitBuilderRecorder.hpp"
-// #include "ilgen/MethodBuilderRecorder.hpp"
+// #include "ilgen/MethodBuilder.hpp"
 
-OMR::JitBuilderRecorder::JitBuilderRecorder()
-   : _nextID(0), _idSize(8)
+namespace TR { class MethodBuilder; }
+
+OMR::JitBuilderRecorder::JitBuilderRecorder(const TR::MethodBuilder *mb)
+: _mb(mb), _nextID(0), _idSize(8)
    {
    }
 
@@ -63,12 +65,12 @@ OMR::JitBuilderRecorder::getNewID()
    if (_nextID == (1 << 8) - 2)
       {
       _idSize = 16;
-      Statement(StatementName::STATEMENT_ID16BIT); // TODO
+      Statement(StatementName::STATEMENT_ID16BIT);
       }
    else if (_nextID == (1 << 16) - 2)
       {
       _idSize = 32;
-      Statement(StatementName::STATEMENT_ID32BIT); // TODO
+      Statement(StatementName::STATEMENT_ID32BIT);
       }
 
    return _nextID++;
@@ -77,8 +79,7 @@ OMR::JitBuilderRecorder::getNewID()
 OMR::JitBuilderRecorder::TypeID
 OMR::JitBuilderRecorder::myID()
    {
-//    return lookupID(_mb);
-      return lookupID((void*)0);
+   return lookupID(_mb);
    }
 
 bool
@@ -106,7 +107,7 @@ OMR::JitBuilderRecorder::ensureStatementDefined(const char *s)
       return;
 
    StoreID(s);
-   // Builder(0);
+   Builder(0);
    Statement(s);
    String(s);
    EndStatement();
@@ -119,18 +120,17 @@ OMR::JitBuilderRecorder::end()
    String(StatementName::JBIL_COMPLETE);
    }
 
-// void
-// OMR::JitBuilderRecorder::BeginStatement(const char *s)
-//    {
-//    // BeginStatement(_mb, s);
-//    }
-
 void
-// OMR::JitBuilderRecorder::BeginStatement(const TR::IlBuilderRecorder *b, const char *s)
 OMR::JitBuilderRecorder::BeginStatement(const char *s)
    {
+   BeginStatement(_mb, s);
+   }
+
+void
+OMR::JitBuilderRecorder::BeginStatement(const TR::IlBuilder *b, const char *s)
+   {
    ensureStatementDefined(s);
-   // Builder(b);
+   Builder(b);
    Statement(s);
    }
 
@@ -142,11 +142,6 @@ OMR::JitBuilderRecorder::StoreID(const void *ptr)
       TR_ASSERT_FATAL(0, "Unexpected ID already defined for address %p", ptr);
 
    _idMap.insert(std::make_pair(ptr, getNewID()));
-   // std::cout << "map: " << _idMap << '\n';
-   // auto pair = std::make_pair(ptr, getNewID());
-   // _idMap.insert(pair);
-   // std::cout << "pointer: " << pair.first << '\n';
-   // std::cout << "id: " << pair.second << '\n';
    }
 
 bool

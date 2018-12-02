@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -25,9 +25,8 @@
 #include "ilgen/JitBuilderRecorderBinaryBuffer.hpp"
 #include "infra/Assert.hpp"
 
-// OMR::JitBuilderRecorderBinaryBuffer::JitBuilderRecorderBinaryBuffer(const TR::MethodBuilderRecorder *mb)
-OMR::JitBuilderRecorderBinaryBuffer::JitBuilderRecorderBinaryBuffer()
-   : TR::JitBuilderRecorder(), _buf()
+OMR::JitBuilderRecorderBinaryBuffer::JitBuilderRecorderBinaryBuffer(const TR::MethodBuilder *mb)
+   : TR::JitBuilderRecorder(mb), _buf()
    {
    start();
    }
@@ -160,11 +159,11 @@ OMR::JitBuilderRecorderBinaryBuffer::Value(const TR::IlValue *v)
    ID(lookupID(v));
    }
 
-// void
-// OMR::JitBuilderRecorderBinaryBuffer::Builder(const TR::IlBuilderRecorder *b)
-//    {
-//    ID(lookupID(b));
-//    }
+void
+OMR::JitBuilderRecorderBinaryBuffer::Builder(const TR::IlBuilder *b)
+   {
+   ID(lookupID(b));
+   }
 
 void
 OMR::JitBuilderRecorderBinaryBuffer::Location(const void *location)

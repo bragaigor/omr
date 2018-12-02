@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -27,8 +27,7 @@
 #include "infra/Assert.hpp"
 #include "ilgen/JitBuilderRecorderTextFile.hpp"
 
-// OMR::JitBuilderRecorderTextFile::JitBuilderRecorderTextFile(const TR::MethodBuilderRecorder *mb, const char *fileName)
-OMR::JitBuilderRecorderTextFile::JitBuilderRecorderTextFile(const char *fileName)
+OMR::JitBuilderRecorderTextFile::JitBuilderRecorderTextFile(const TR::MethodBuilder *mb, const char *fileName)
    : TR::JitBuilderRecorder(), _file(fileName, std::fstream::out | std::fstream::trunc)
    {
    start(); // initializes IDs 0 and 1 (reserved)
@@ -108,14 +107,14 @@ OMR::JitBuilderRecorderTextFile::Value(const TR::IlValue *v)
    _file << "V" << lookupID(v) << " ";
    }
 
-// void
-// OMR::JitBuilderRecorderTextFile::Builder(const TR::IlBuilderRecorder *b)
-//    {
-//    if (b)
-//       _file << "B" << lookupID(b) << " ";
-//    else
-//       _file << "Def ";
-//    }
+void
+OMR::JitBuilderRecorderTextFile::Builder(const TR::IlBuilder *b)
+   {
+   if (b)
+      _file << "B" << lookupID(b) << " ";
+   else
+      _file << "Def ";
+   }
 
 void
 OMR::JitBuilderRecorderTextFile::Location(const void *location)
