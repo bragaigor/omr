@@ -24,9 +24,6 @@
 
 #include "ilgen/JitBuilderRecorder.hpp"
 
-#include <iostream>
-#include <map>
-
 namespace TR { class IlBuilder; }
 namespace TR { class MethodBuilder; }
 namespace TR { class IlType; }

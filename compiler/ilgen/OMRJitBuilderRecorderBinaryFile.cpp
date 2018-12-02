@@ -20,7 +20,6 @@
  *******************************************************************************/
 
 #include <stdint.h>
-#include <fstream>
 
 #include "ilgen/JitBuilderRecorderBinaryFile.hpp"
 #include "infra/Assert.hpp"

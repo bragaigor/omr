@@ -50,11 +50,7 @@ class JitBuilderRecorder
    /**
     * @brief Subclasses override these functions to record to different output formats
     */
-   virtual void Close()                                       
-      { 
-      end();
-      EndStatement();
-      }
+   virtual void Close();
    virtual void String(const char * const string)             { }
    virtual void Number(int8_t num)                            { }
    virtual void Number(int16_t num)                           { }
@@ -66,8 +62,8 @@ class JitBuilderRecorder
    virtual void Statement(const char *s)                      { }
    virtual void Type(const TR::IlType *type)                  { }
    virtual void Value(const TR::IlValue *v)                   { }
-   virtual void Builder(const TR::MethodBuilder *b)       { }
-   virtual void Builder()       { }
+   virtual void Builder(const TR::MethodBuilder *b)           { }
+   virtual void Builder()                                     { }
    virtual void Location(const void * location)               { }
 
    virtual void BeginStatement(const TR::MethodBuilder *b, const char *s);

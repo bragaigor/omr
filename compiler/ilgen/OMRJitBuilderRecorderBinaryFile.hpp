@@ -23,7 +23,6 @@
 #define OMR_JITBUILDERRECORDER_BINARYFILE_INCL
 
 #include "ilgen/JitBuilderRecorderBinaryBuffer.hpp"
-#include <fstream>
 
 namespace TR { class IlBuilder; }
 namespace TR { class MethodBuilder; }

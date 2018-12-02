@@ -50,6 +50,13 @@ OMR::JitBuilderRecorder::start()
    EndStatement();
    }
 
+void 
+OMR::JitBuilderRecorder::Close()                                       
+   { 
+   end();
+   EndStatement();
+   }
+
 OMR::JitBuilderRecorder::TypeID
 OMR::JitBuilderRecorder::getNewID()
    {
