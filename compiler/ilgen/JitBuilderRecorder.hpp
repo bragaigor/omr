@@ -29,8 +29,8 @@ namespace TR
    class JitBuilderRecorder : public OMR::JitBuilderRecorder
       {
       public:
-         JitBuilderRecorder()
-            : OMR::JitBuilderRecorder()
+         JitBuilderRecorder(const TR::MethodBuilder *mb)
+            : OMR::JitBuilderRecorder(mb)
             { }
          virtual ~JitBuilderRecorder()
             { }
