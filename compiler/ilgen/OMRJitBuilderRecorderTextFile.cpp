@@ -20,24 +20,20 @@
  *******************************************************************************/
 
 #include <stdint.h>
-#include <iostream>
-#include <fstream>
 #include <cstring>
 
 #include "infra/Assert.hpp"
 #include "ilgen/JitBuilderRecorderTextFile.hpp"
 
 OMR::JitBuilderRecorderTextFile::JitBuilderRecorderTextFile(const TR::MethodBuilder *mb, const char *fileName)
-   : TR::JitBuilderRecorder(mb), _file(fileName, std::fstream::out | std::fstream::trunc)
+   : TR::JitBuilderRecorder(mb, fileName)
    {
-   start(); // initializes IDs 0 and 1 (reserved)
    }
 
 void
 OMR::JitBuilderRecorderTextFile::Close()
    {
-   end();
-   EndStatement();
+   TR::JitBuilderRecorder::Close();
    _file.close();
    }
 

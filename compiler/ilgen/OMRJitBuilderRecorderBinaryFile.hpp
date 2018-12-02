@@ -41,8 +41,6 @@ class JitBuilderRecorderBinaryFile : public TR::JitBuilderRecorderBinaryBuffer
 
    virtual void Close();
 
-   private:
-   std::fstream _file;
    };
 
 } // namespace OMR

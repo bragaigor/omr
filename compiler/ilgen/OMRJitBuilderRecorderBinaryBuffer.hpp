@@ -36,7 +36,7 @@ namespace OMR
 class JitBuilderRecorderBinaryBuffer : public TR::JitBuilderRecorder
    {
    public:
-   JitBuilderRecorderBinaryBuffer(const TR::MethodBuilder *mb);
+   JitBuilderRecorderBinaryBuffer(const TR::MethodBuilder *mb, const char *fileName);
    virtual ~JitBuilderRecorderBinaryBuffer() { }
 
    virtual void Close();

@@ -26,15 +26,14 @@
 #include "infra/Assert.hpp"
 
 OMR::JitBuilderRecorderBinaryFile::JitBuilderRecorderBinaryFile(const TR::MethodBuilder *mb, const char *fileName)
-   : TR::JitBuilderRecorderBinaryBuffer(mb), _file(fileName, std::fstream::out | std::fstream::app)
+   : TR::JitBuilderRecorderBinaryBuffer(mb, fileName)
    {
    }
 
 void
 OMR::JitBuilderRecorderBinaryFile::Close()
    {
-   end();
-   EndStatement();
+   TR::JitBuilderRecorder::Close();
 
    _file.write(reinterpret_cast<const char *>(&_buf[0]), _buf.size());
 

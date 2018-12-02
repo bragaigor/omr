@@ -19,19 +19,15 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include <stdint.h>
-#include <iostream>
-#include <fstream>
-
 #include "infra/Assert.hpp"
 #include "ilgen/JitBuilderRecorder.hpp"
-// #include "ilgen/MethodBuilder.hpp"
 
 namespace TR { class MethodBuilder; }
 
-OMR::JitBuilderRecorder::JitBuilderRecorder(const TR::MethodBuilder *mb)
-: _mb(mb), _nextID(0), _idSize(8)
+OMR::JitBuilderRecorder::JitBuilderRecorder(const TR::MethodBuilder *mb, const char *fileName)
+: _mb(mb), _nextID(0), _idSize(8),  _file(fileName, std::fstream::out | std::fstream::trunc)
    {
+       start(); // initializes IDs 0 and 1 (reserved)
    }
 
 OMR::JitBuilderRecorder::~JitBuilderRecorder()

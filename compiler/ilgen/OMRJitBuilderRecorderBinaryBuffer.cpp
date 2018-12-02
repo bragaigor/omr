@@ -25,17 +25,15 @@
 #include "ilgen/JitBuilderRecorderBinaryBuffer.hpp"
 #include "infra/Assert.hpp"
 
-OMR::JitBuilderRecorderBinaryBuffer::JitBuilderRecorderBinaryBuffer(const TR::MethodBuilder *mb)
-   : TR::JitBuilderRecorder(mb), _buf()
+OMR::JitBuilderRecorderBinaryBuffer::JitBuilderRecorderBinaryBuffer(const TR::MethodBuilder *mb, const char *fileName)
+   : TR::JitBuilderRecorder(mb, fileName), _buf()
    {
-   start();
    }
 
 void
 OMR::JitBuilderRecorderBinaryBuffer::Close()
    {
-   end();
-   EndStatement();
+   TR::JitBuilderRecorder::Close();
    }
 
 void

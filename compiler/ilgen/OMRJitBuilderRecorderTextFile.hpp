@@ -25,7 +25,6 @@
 #include "ilgen/JitBuilderRecorder.hpp"
 
 #include <iostream>
-#include <fstream>
 #include <map>
 
 namespace TR { class IlBuilder; }
@@ -58,8 +57,6 @@ class JitBuilderRecorderTextFile : public TR::JitBuilderRecorder
    virtual void Location(const void * location);
    virtual void EndStatement();
 
-   private:
-   std::fstream _file;
    };
 
 } // namespace OMR

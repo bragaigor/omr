@@ -26,7 +26,6 @@
 #include <fstream>
 #include <map>
 #include "ilgen/StatementNames.hpp"
-#include "ilgen/IlInjector.hpp"
 
 namespace TR { class IlBuilder; }
 namespace TR { class IlType; }
@@ -42,7 +41,7 @@ class JitBuilderRecorder
    typedef uint32_t                      TypeID;
    typedef std::map<const void *,TypeID> TypeMapID;
 
-   JitBuilderRecorder(const TR::MethodBuilder *mb);
+   JitBuilderRecorder(const TR::MethodBuilder *mb, const char *fileName);
    virtual ~JitBuilderRecorder();
 
    void setMethodBuilderRecorder(TR::MethodBuilder *mb) {_mb = mb;}
@@ -50,7 +49,11 @@ class JitBuilderRecorder
    /**
     * @brief Subclasses override these functions to record to different output formats
     */
-   virtual void Close()                                       { }
+   virtual void Close()                                       
+      { 
+      end();
+      EndStatement();
+      }
    virtual void String(const char * const string)             { }
    virtual void Number(int8_t num)                            { }
    virtual void Number(int16_t num)                           { }
@@ -88,6 +91,8 @@ class JitBuilderRecorder
    TypeID                            _nextID;
    TypeMapID                         _idMap;
    uint8_t                           _idSize;
+
+   std::fstream _file;
    
    };
 
