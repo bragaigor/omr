@@ -28,7 +28,7 @@
 #include "ilgen/JitBuilderRecorderTextFile.hpp"
 
 OMR::JitBuilderRecorderTextFile::JitBuilderRecorderTextFile(const TR::MethodBuilder *mb, const char *fileName)
-   : TR::JitBuilderRecorder(), _file(fileName, std::fstream::out | std::fstream::trunc)
+   : TR::JitBuilderRecorder(mb), _file(fileName, std::fstream::out | std::fstream::trunc)
    {
    start(); // initializes IDs 0 and 1 (reserved)
    }

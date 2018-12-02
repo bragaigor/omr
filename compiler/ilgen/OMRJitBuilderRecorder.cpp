@@ -127,7 +127,7 @@ OMR::JitBuilderRecorder::BeginStatement(const char *s)
    }
 
 void
-OMR::JitBuilderRecorder::BeginStatement(const TR::IlBuilder *b, const char *s)
+OMR::JitBuilderRecorder::BeginStatement(const TR::MethodBuilder *b, const char *s)
    {
    ensureStatementDefined(s);
    Builder(b);
