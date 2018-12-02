@@ -28,6 +28,7 @@
 #include "ilgen/StatementNames.hpp"
 
 namespace TR { class IlBuilder; }
+namespace TR { class MethodBuilder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
 
