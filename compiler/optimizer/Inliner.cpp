@@ -3805,8 +3805,6 @@ bool TR_IndirectCallSite::findCallTargetUsingArgumentPreexistence(TR_InlinerBase
       }
 
    TR_ResolvedMethod * targetMethod = getResolvedMethod(klass);
-   TR_ASSERT(targetMethod, "Couldn't resolve the method for klass %p", klass);
-
    if (!targetMethod)
       {
       heuristicTrace(inliner->tracer(), "ARGS PROPAGATION: couldn't get targetMethod\n");
@@ -4586,9 +4584,11 @@ void TR_InlinerBase::inlineFromGraph(TR_CallStack *prevCallStack, TR_CallTarget 
           tt->getNode()->getChild(0)->getVisitCount() != _visitCount &&
           tt->getNode()->getChild(0)->getInlinedSiteIndex() == thisSiteIndex &&
           !tt->getNode()->getChild(0)->getSymbolReference()->getSymbol()->castToMethodSymbol()->isInlinedByCG() &&
+          !tt->getNode()->getChild(0)->isPotentialOSRPointHelperCall() &&
+          !tt->getNode()->getChild(0)->isOSRFearPointHelperCall() &&
           //induceOSR has the same bcIndex and caller index of the call that follows it
           //the following conditions allows up to skip it
-          tt->getNode()->getChild(0)->getSymbolReference() != comp()->getSymRefTab()->element(TR_induceOSRAtCurrentPC)
+          !tt->getNode()->getChild(0)->getSymbolReference()->isOSRInductionHelper()
          )
          {
          TR::Node * node = parent->getChild(0);

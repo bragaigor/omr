@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -24,12 +24,8 @@
 
 #include "ilgen/JitBuilderRecorder.hpp"
 
-#include <iostream>
-#include <fstream>
-#include <map>
-
-namespace TR { class IlBuilderRecorder; }
-namespace TR { class MethodBuilderRecorder; }
+namespace TR { class IlBuilder; }
+namespace TR { class MethodBuilder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
 
@@ -39,7 +35,7 @@ namespace OMR
 class JitBuilderRecorderTextFile : public TR::JitBuilderRecorder
    {
    public:
-   JitBuilderRecorderTextFile(const TR::MethodBuilderRecorder *mb, const char *fileName);
+   JitBuilderRecorderTextFile(const TR::MethodBuilder *mb, const char *fileName);
    virtual ~JitBuilderRecorderTextFile() { }
 
    virtual void Close();
@@ -54,12 +50,10 @@ class JitBuilderRecorderTextFile : public TR::JitBuilderRecorder
    virtual void Statement(const char *s);
    virtual void Type(const TR::IlType *type);
    virtual void Value(const TR::IlValue *v);
-   virtual void Builder(const TR::IlBuilderRecorder *b);
+   virtual void Builder(const TR::IlBuilder *b);
    virtual void Location(const void * location);
    virtual void EndStatement();
 
-   private:
-   std::fstream _file;
    };
 
 } // namespace OMR

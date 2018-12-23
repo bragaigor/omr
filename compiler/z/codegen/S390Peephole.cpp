@@ -37,6 +37,7 @@
 #include "codegen/RegisterDependency.hpp"
 #include "codegen/RegisterPair.hpp"                 // for RegisterPair
 #include "codegen/Snippet.hpp"                      // for TR::S390Snippet, etc
+#include "il/symbol/LabelSymbol.hpp"                // for LabelSymbol
 #include "ras/Debug.hpp"                            // for TR_DebugBase, etc
 #include "ras/DebugCounter.hpp"
 #include "ras/Delimiter.hpp"                        // for Delimiter
@@ -309,7 +310,7 @@ TR_S390PostRAPeephole::AGIReduction()
    TR::Register *lgrTargetReg = ((TR::S390RRInstruction*)_cursor)->getRegisterOperand(1);
    TR::Register *lgrSourceReg = ((TR::S390RRInstruction*)_cursor)->getRegisterOperand(2);
 
-   TR::RealRegister *gpr0 = _cg->machine()->getS390RealRegister(TR::RealRegister::GPR0);
+   TR::RealRegister *gpr0 = _cg->machine()->getRealRegister(TR::RealRegister::GPR0);
 
    // no renaming possible if both target and source are the same
    // this can happend with LTR and LTGR
@@ -504,7 +505,7 @@ TR_S390PostRAPeephole::replaceGuardedLoadWithSoftwareReadBarrier()
    TR::MemoryReference *loadMemRef = generateS390MemoryReference(*load->getMemoryReference(), 0, _cg);
    TR::Register *loadTargetReg = _cursor->getRegisterOperand(1);
    TR::Register *vmReg = _cg->getLinkage()->getMethodMetaDataRealRegister();
-   TR::Register *raReg = _cg->machine()->getS390RealRegister(_cg->getReturnAddressRegister());
+   TR::Register *raReg = _cg->machine()->getRealRegister(_cg->getReturnAddressRegister());
    TR::Instruction* prev = load->getPrev();
 
    // If guarded load target and mem ref registers are the same,
@@ -532,11 +533,11 @@ TR_S390PostRAPeephole::replaceGuardedLoadWithSoftwareReadBarrier()
    _cursor = generateS390BranchInstruction(_cg, TR::InstOpCode::BRC, TR::InstOpCode::COND_CC0, load->getNode(), concurrentScavangeNotActiveLabel, _cursor);
 
    _cursor = generateRXInstruction(_cg, TR::InstOpCode::CG, load->getNode(), loadTargetReg,
-   		generateS390MemoryReference(vmReg, TR::Compiler->vm.thisThreadGetEvacuateBaseAddressOffset(comp()), _cg), _cursor);
+       generateS390MemoryReference(vmReg, TR::Compiler->vm.thisThreadGetEvacuateBaseAddressOffset(comp()), _cg), _cursor);
    _cursor = generateS390BranchInstruction(_cg, TR::InstOpCode::BRC, TR::InstOpCode::COND_CC1, load->getNode(), concurrentScavangeNotActiveLabel, _cursor);
 
    _cursor = generateRXInstruction(_cg, TR::InstOpCode::CG, load->getNode(), loadTargetReg,
-   		generateS390MemoryReference(vmReg, TR::Compiler->vm.thisThreadGetEvacuateTopAddressOffset(comp()), _cg), _cursor);
+       generateS390MemoryReference(vmReg, TR::Compiler->vm.thisThreadGetEvacuateTopAddressOffset(comp()), _cg), _cursor);
    _cursor = generateS390BranchInstruction(_cg, TR::InstOpCode::BRC, TR::InstOpCode::COND_CC2, load->getNode(), concurrentScavangeNotActiveLabel, _cursor);
 
    // Save result of LA to gsParameters.operandAddr as invokeJ9ReadBarrier helper expects it to be set
@@ -548,7 +549,7 @@ TR_S390PostRAPeephole::replaceGuardedLoadWithSoftwareReadBarrier()
    // Use raReg to call handleReadBarrier helper, preserve raReg before the call in the load reg
    _cursor = generateRRInstruction(_cg, TR::InstOpCode::LGR, load->getNode(), loadTargetReg, raReg, _cursor);
    TR::MemoryReference *gsHelperAddrMemRef = generateS390MemoryReference(vmReg, TR::Compiler->vm.thisThreadGetGSHandlerAddressOffset(comp()), _cg);
-   _cursor = generateRXYInstruction(_cg, TR::InstOpCode::LG, load->getNode(), raReg, gsHelperAddrMemRef, _cursor);
+   _cursor = generateRXInstruction(_cg, TR::InstOpCode::LG, load->getNode(), raReg, gsHelperAddrMemRef, _cursor);
    _cursor = new (_cg->trHeapMemory()) TR::S390RRInstruction(TR::InstOpCode::BASR, load->getNode(), raReg, raReg, _cursor, _cg);
    _cursor = generateRRInstruction(_cg, TR::InstOpCode::LGR, load->getNode(), raReg, loadTargetReg, _cursor);
 
@@ -1506,7 +1507,7 @@ TR_S390PostRAPeephole::LoadAndMaskReduction(TR::InstOpCode::Mnemonic LZOpCode)
          loadInst->getMemoryReference()->resetMemRefUsedBefore();
 
          // Replace the load instruction with load-and-mask instruction
-         _cg->replaceInst(loadInst, _cursor = generateRXYInstruction(_cg, LZOpCode, comp()->getStartTree()->getNode(), loadTargetReg, loadInst->getMemoryReference(), _cursor->getPrev()));
+         _cg->replaceInst(loadInst, _cursor = generateRXInstruction(_cg, LZOpCode, comp()->getStartTree()->getNode(), loadTargetReg, loadInst->getMemoryReference(), _cursor->getPrev()));
 
          return true;
          }
@@ -1893,11 +1894,11 @@ TR_S390PostRAPeephole::trueCompEliminationForLoadComp()
    TR::RealRegister *tempReg = NULL;
    if((toRealRegister(srcReg))->getRegisterNumber() == TR::RealRegister::GPR1)
       {
-      tempReg = _cg->machine()->getS390RealRegister(TR::RealRegister::GPR2);
+      tempReg = _cg->machine()->getRealRegister(TR::RealRegister::GPR2);
       }
    else
       {
-      tempReg = _cg->machine()->getS390RealRegister(TR::RealRegister::GPR1);
+      tempReg = _cg->machine()->getRealRegister(TR::RealRegister::GPR1);
       }
 
    if (prev && prev->defsRegister(srcReg))
@@ -2256,7 +2257,7 @@ TR_S390PostRAPeephole::inlineEXtargetHelper(TR::Instruction *inst, TR::Instructi
          }
 
       // generate new label
-      TR::LabelSymbol * ssInstrLabel = TR::LabelSymbol::create(_cg->trHeapMemory(),_cg);
+      TR::LabelSymbol * ssInstrLabel = generateLabelSymbol(_cg);
       TR::Instruction * labelInstr = generateS390LabelInstruction(_cg, TR::InstOpCode::LABEL, _cursor->getNode(), ssInstrLabel, inst);
 
       //cnstDataInstr->move(labelInstr);
@@ -2331,7 +2332,7 @@ TR_S390PostRAPeephole::inlineEXtarget()
           }
 
        // Generate branch and label
-       TR::LabelSymbol *targetLabel = TR::LabelSymbol::create(_cg->trHeapMemory(),_cg);
+       TR::LabelSymbol *targetLabel = generateLabelSymbol(_cg);
        TR::Instruction *branchInstr = generateS390BranchInstruction(_cg, TR::InstOpCode::BRC, TR::InstOpCode::COND_BRC, _cursor->getNode(), targetLabel, prev);
        TR::Instruction *labelInstr = generateS390LabelInstruction(_cg, TR::InstOpCode::LABEL, _cursor->getNode(), targetLabel, branchInstr);
        inlineEXtargetHelper(branchInstr,instrB4EX);
@@ -2648,7 +2649,7 @@ TR_S390PostRAPeephole::markBlockThatModifiesRegister(TR::Instruction * cursor,
                {
                for (uint8_t i=highReg->getRegisterNumber()+1; i++; i<= numRegs)
                   {
-                  _cg->getS390Linkage()->getS390RealRegister(REGNUM(i))->setModified(true);
+                  _cg->getS390Linkage()->getRealRegister(REGNUM(i))->setModified(true);
                   }
                }
             }
@@ -3208,7 +3209,7 @@ bool TR_S390PostRAPeephole::forwardBranchTarget()
    if (!targetLabelInsn)
       return false;
    auto tmp = targetLabelInsn;
-   while (tmp->isLabel() || _cg->isFenceInstruction(tmp))  // skip labels and fences
+   while (tmp->isLabel() || tmp->getOpCodeValue() == TR::InstOpCode::FENCE)  // skip labels and fences
       tmp = tmp->getNext();
    if (tmp->getOpCodeValue() == TR::InstOpCode::BRC)
       {

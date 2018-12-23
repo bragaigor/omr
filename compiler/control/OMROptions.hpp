@@ -200,12 +200,12 @@ enum TR_CompilationOptions
    TR_Timing                              = 0x00000200 + 3,
    TR_SupportSwitchToInterpreter          = 0x00000400 + 3,
    TR_DisableFPCodeGen                    = 0x00000800 + 3,
-   TR_DisableLongDispStackSlot            = 0x00001000 + 3,
+   TR_DisableAotAtCheapWarm               = 0x00001000 + 3,
    TR_Profile                             = 0x00002000 + 3,
    TR_DisableAsyncCompilation             = 0x00004000 + 3,
    TR_DisableCompilationThread            = 0x00008000 + 3,
    TR_EnableCompilationThread             = 0x00010000 + 3,
-   // Available                           = 0x00020000 + 3,
+   TR_EnableJITaaSHeuristics              = 0x00020000 + 3,
    TR_SoftFailOnAssume                    = 0x00040000 + 3,
    TR_DisableNewBlockOrdering             = 0x00080000 + 3,
    TR_DisableZNext                        = 0x00100000 + 3,
@@ -316,7 +316,7 @@ enum TR_CompilationOptions
    TR_DisableCodeCacheSnippets            = 0x00000020 + 7,
    TR_EnableReassociation                 = 0x00000040 + 7,
    TR_DisableSSOpts                       = 0x00000080 + 7,
-   //Available                            = 0x00000100 + 7,
+   TR_EnableFieldWatch                    = 0x00000100 + 7,
    TR_DisableDelayRelocationForAOTCompilations   = 0x00000200 + 7,
    TR_DisableRecompDueToInlinedMethodRedefinition = 0x00000400 + 7,
    TR_DisableLoopReplicatorColdSideEntryCheck = 0x00000800 + 7,
@@ -459,10 +459,10 @@ enum TR_CompilationOptions
    // Available                               = 0x10000000 + 11,
    TR_DisableNewInliningInfrastructure        = 0x20000000 + 11,
    // Available                               = 0x40000000 + 11,
-   // Avaiable                                = 0x80000000 + 11,
+   // Available                               = 0x80000000 + 11,
 
    // Option word 12
-   TR_TraceShrinkWrapping                     = 0x00000020 + 12,
+   // Available                               = 0x00000020 + 12,
    TR_DisableZ13LoadAndMask                   = 0x00000040 + 12,
    TR_DisablePartialInlining                  = 0x00000080 + 12,
    TR_AssumeStartupPhaseUntilToldNotTo        = 0x00000100 + 12,
@@ -486,7 +486,7 @@ enum TR_CompilationOptions
    // Available                               = 0x04000000 + 12,
    // Available                               = 0x08000000 + 12,
    // Available                               = 0x10000000 + 12,
-   TR_DisableLongDispNodes                    = 0x20000000 + 12, // 390
+   // Available                               = 0x20000000 + 12,
    // Available                               = 0x40000000 + 12,
    TR_DisableAOTInstanceFieldResolution       = 0x80000000 + 12,
 
@@ -587,7 +587,7 @@ enum TR_CompilationOptions
    TR_DisableEmptyPreHeaderCheck                      = 0x00001000 + 16,
    TR_SinkOnlyCCStores                                = 0x00002000 + 16,
    TR_EnableDeterministicOrientedCompilation          = 0x00004000 + 16,
-   TR_DisableShrinkWrapping                           = 0x00008000 + 16,
+   // Available                                       = 0x00008000 + 16,
    TR_EnableAOTStats                                  = 0x00010000 + 16,
    // Available                                       = 0x00020000 + 16,
    TR_DisableSynchronizedFieldLoad                    = 0x00040000 + 16,
@@ -731,7 +731,7 @@ enum TR_CompilationOptions
    // Available                                       = 0x00010000 + 21,
    TR_OldDataCacheImplementation                      = 0x00020000 + 21,
    TR_EnableDataCacheStatistics                       = 0x00040000 + 21,
-   TR_DisableRedundantBCDSignElimination              = 0x00080000 + 21,
+   // Available                                       = 0x00080000 + 21,
    // Available                                       = 0x00100000 + 21,
    TR_AllowVPRangeNarrowingBasedOnDeclaredType        = 0x00200000 + 21,
    TR_EnableScratchMemoryDebugging                    = 0x00400000 + 21,
@@ -837,7 +837,7 @@ enum TR_CompilationOptions
    // Available                                       = 0x00000800 + 25,
    // Available                                       = 0x00001000 + 25,
    TR_TracePREForOptimalSubNodeReplacement            = 0x00002000 + 25,
-   TR_EnableTrueRegisterModel                         = 0x00008000 + 25,
+   // Available                                       = 0x00008000 + 25,
    TR_PerfTool                                        = 0x00010000 + 25,
    // Available                                       = 0x00020000 + 25,
    TR_DisableBranchOnCount                            = 0x00040000 + 25,
@@ -1691,6 +1691,7 @@ public:
    void setAggressiveQuickStart();
    void setGlobalAggressiveAOT();
    void setLocalAggressiveAOT();
+   void setInlinerOptionsForAggressiveAOT();
    void setConservativeDefaultBehavior();
 
    static bool getCountsAreProvidedByUser() { return _countsAreProvidedByUser; } // set very late in setCounts()

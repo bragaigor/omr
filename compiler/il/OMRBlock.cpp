@@ -91,7 +91,6 @@ OMR::Block::Block(TR_Memory * m) :
    _pStructureOf(NULL),
    _liveLocals(NULL),
    _globalRegisters(0),
-   _registerSaveDescriptionBits(0),
    _catchBlockExtension(NULL),
    _firstInstruction(NULL),
    _lastInstruction(NULL),
@@ -111,7 +110,6 @@ OMR::Block::Block(TR::TreeTop *entry, TR::TreeTop *exit, TR_Memory * m) :
    _pStructureOf(NULL),
    _liveLocals(NULL),
    _globalRegisters(0),
-   _registerSaveDescriptionBits(0),
    _catchBlockExtension(NULL),
    _firstInstruction(NULL),
    _lastInstruction(NULL),
@@ -1741,7 +1739,7 @@ OMR::Block::verifyOSRInduceBlock(TR::Compilation *comp)
       {
       TR::Node *node = cursor->getNode();
       if (node->getOpCodeValue() == TR::treetop && node->getFirstChild()->getOpCode().hasSymbolReference()
-          && node->getFirstChild()->getSymbolReference() == comp->getSymRefTab()->element(TR_induceOSRAtCurrentPC))
+          && node->getFirstChild()->getSymbolReference()->isOSRInductionHelper())
          {
          foundOSRInduceCall = true;
          break;

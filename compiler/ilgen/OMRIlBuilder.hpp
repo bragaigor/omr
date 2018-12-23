@@ -25,18 +25,18 @@
 #include <fstream>
 #include <stdarg.h>
 #include <string.h>
-#include "ilgen/IlBuilderRecorder.hpp"
+#include "ilgen/IlInjector.hpp"
 #include "il/ILHelpers.hpp"
 
-#include "ilgen/IlValue.hpp" // must go after IlBuilderRecorder.hpp or TR_ALLOC isn't cleaned up
+#include "ilgen/IlValue.hpp" // must go after IlInjector.hpp or TR_ALLOC isn't cleaned up
 
 namespace OMR { class MethodBuilder; }
-namespace OMR { class JitBuilderWriter; }
 
 namespace TR { class Block; }
+namespace TR { class BytecodeBuilder; }
 namespace TR { class IlGeneratorMethodDetails; }
 namespace TR { class IlBuilder; }
-namespace TR { class ResolvedMethodSymbol; }
+namespace TR { class ResolvedMethodSymbol; } 
 namespace TR { class SymbolReference; }
 namespace TR { class SymbolReferenceTable; }
 namespace TR { class VirtualMachineState; }
@@ -47,13 +47,19 @@ namespace TR { class TypeDictionary; }
 template <class T> class List;
 template <class T> class ListAppender;
 
+extern "C"
+{
+typedef bool (*ClientBuildILCallback)(void *clientObject);
+typedef void * (*ClientAllocator)(void *implObject);
+typedef void * (*ImplGetter)(void *client);
+}
+
 namespace OMR
 {
 
 typedef TR::ILOpCodes (*OpCodeMapper)(TR::DataType);
 
-
-class IlBuilder : public TR::IlBuilderRecorder
+class IlBuilder : public TR::IlInjector
    {
 
 protected:
@@ -95,7 +101,12 @@ public:
     */
    class JBCase
       {
-      private:
+      public:
+         void * client();
+         void setClient(void * client) { _client = client; }
+         static void setClientAllocator(ClientAllocator allocator) { _clientAllocator = allocator; }
+         static void setGetImpl(ImplGetter getter) { _getImpl = getter; }
+
          /**
           * @brief Construct a new JBCase object.
           *
@@ -107,11 +118,15 @@ public:
           * @param f whether the case falls-through or not
           */
          JBCase(int32_t v, TR::IlBuilder *b, int32_t f)
-             : _value(v), _builder(b), _fallsThrough(f) {}
+             : _value(v), _builder(b), _fallsThrough(f), _client(NULL) {}
 
+      private:
          int32_t _value;          // value matched by the case
          TR::IlBuilder *_builder; // builder for the case body
          int32_t _fallsThrough;   // whether the case falls-through
+         void * _client;
+         static ClientAllocator _clientAllocator;
+         static ImplGetter _getImpl;
 
          friend class OMR::IlBuilder;
       };
@@ -124,7 +139,12 @@ public:
     */
    class JBCondition
       {
-      private:
+      public:
+         void * client();
+         void setClient(void * client) { _client = client; }
+         static void setClientAllocator(ClientAllocator allocator) { _clientAllocator = allocator; }
+         static void setGetImpl(ImplGetter getter) { _getImpl = getter; }
+
          /**
           * @brief Construct a new JBCondition object.
           *
@@ -135,10 +155,14 @@ public:
           * @param conditionValue the IlValue representing value for the condition
           */
          JBCondition(TR::IlBuilder *conditionBuilder, TR::IlValue *conditionValue)
-            : _builder(conditionBuilder), _condition(conditionValue) {}
+            : _builder(conditionBuilder), _condition(conditionValue), _client(NULL) {}
 
+      private:
          TR::IlBuilder *_builder; // builder used to generate the condition value
          TR::IlValue *_condition; // value for the condition
+         void * _client;
+         static ClientAllocator _clientAllocator;
+         static ImplGetter _getImpl;
 
          friend class OMR::IlBuilder;
       };
@@ -146,7 +170,9 @@ public:
    friend class OMR::MethodBuilder;
 
    IlBuilder(TR::MethodBuilder *methodBuilder, TR::TypeDictionary *types)
-      : TR::IlBuilderRecorder(methodBuilder, types),
+      : TR::IlInjector(types),
+      _client(0),
+      _clientCallbackBuildIL(0),
       _methodBuilder(methodBuilder),
       _sequence(0),
       _sequenceAppender(0),
@@ -176,6 +202,8 @@ public:
    virtual TR::VirtualMachineState *vmState()                { return NULL; }
    virtual void setVMState(TR::VirtualMachineState *vmState) { }
 
+   //char *getName();
+
    void print(const char *title, bool recurse=false);
    void printBlock(TR::Block *block);
 
@@ -192,6 +220,8 @@ public:
 
    TR::IlBuilder *createBuilderIfNeeded(TR::IlBuilder *builder);
    TR::IlBuilder *OrphanBuilder();
+   TR::BytecodeBuilder *OrphanBytecodeBuilder(int32_t bcIndex=0, char *name=NULL);
+
    bool TraceEnabled_log();
    void TraceIL_log(const char *s, ...);
 
@@ -355,7 +385,8 @@ public:
     * @returns the TR::IlValue corresponding to the called function's return value or NULL if return type is None
     */
    TR::IlValue *ComputedCall(const char *name, int32_t numArgs, TR::IlValue **args);
-   void genCall(TR::IlValue *returnValue, TR::SymbolReference *methodSymRef, int32_t numArgs, TR::IlValue ** paramValues, bool isDirectCall = true);
+
+   TR::IlValue *genCall(TR::SymbolReference *methodSymRef, int32_t numArgs, TR::IlValue ** paramValues, bool isDirectCall = true);
    void Goto(TR::IlBuilder **dest);
    void Goto(TR::IlBuilder *dest);
    void Return();
@@ -520,11 +551,83 @@ public:
                      TR::IlBuilder **caseBuilder,
                      int32_t caseFallsThrough);
 
-   void defineSymbol(const char *name, TR::SymbolReference *v);
+   /**
+    * @brief associates this object with a particular client object
+    */
+   void setClient(void *client)
+      {
+      _client = client;
+      }
 
-   TR::MethodBuilder * methodBuilder() { return _methodBuilder;}
+   /**
+    * @brief returns the client object associated with this object, allocating it if necessary
+    */
+   void *client();
+
+   /**
+    * @brief Set the ClientCallback buildIL function
+    * 
+    * @param callback function pointer to the buildIL() callback for the client
+    */
+   void setClientCallback_buildIL(void *callback)
+      {
+      _clientCallbackBuildIL = (ClientBuildILCallback)callback;
+      }
+
+   /**
+    * @brief Set the Client Allocator function
+    * 
+    * @param allocator function pointer to the client object allocator
+    */
+   static void setClientAllocator(ClientAllocator allocator)
+      {
+      _clientAllocator = allocator;
+      }
+
+   /**
+    * @brief Set the Get Impl function
+    *
+    * @param getter function pointer to the impl getter
+    */
+   static void setGetImpl(ImplGetter getter)
+      {
+      _getImpl = getter;
+      }
 
 protected:
+
+   /**
+    * @brief pointer to a client object that corresponds to this object
+    */
+   void                        * _client;
+ 
+   /**
+    * @brief pointer to buildIL callback function for this object
+    * usually NULL, but client objects can set this via setBuildILCallback() to be called
+    * when buildIL is called on this object
+    */
+   ClientBuildILCallback         _clientCallbackBuildIL;
+
+   /**
+    * @brief pointer to allocator function for this object.
+    *
+    * Clients must set this pointer using setClientAllocator().
+    * When this allocator is called, a pointer to the current
+    * class (this) will be passed as argument. The expected
+    * returned value is a pointer to the base type of the
+    * client object.
+    */
+   static ClientAllocator        _clientAllocator;
+
+   /**
+    * @brief pointer to impl getter function
+    *
+    * Clients must set this pointer using setImplGetter().
+    * When called with an instance of a client object,
+    * the function must return the corresponding
+    * implementation object
+    */
+   static ImplGetter             _getImpl;
 
    /**
     * @brief MethodBuilder parent for this IlBuilder object
@@ -576,19 +679,23 @@ protected:
     */
    bool                          _isHandler;
 
-   virtual bool buildIL() { return true; }
+   virtual bool buildIL()
+      {
+      if (_clientCallbackBuildIL)
+         return (*_clientCallbackBuildIL)(client());
+      return true;
+      }
 
    TR::SymbolReference *lookupSymbol(const char *name);
+   void defineSymbol(const char *name, TR::SymbolReference *v);
    TR::IlValue *newValue(TR::IlType *dt, TR::Node *n=NULL);
    TR::IlValue *newValue(TR::DataType dt, TR::Node *n=NULL);
-   void closeValue(TR::IlValue *v, TR::IlType *dt, TR::Node *n);
-   void closeValue(TR::IlValue *v, TR::DataType dt, TR::Node *n);
    void defineValue(const char *name, TR::IlType *dt);
 
    TR::Node *loadValue(TR::IlValue *v);
    void storeNode(TR::SymbolReference *symRef, TR::Node *v);
    void indirectStoreNode(TR::Node *addr, TR::Node *v);
-   void indirectLoadNode(TR::IlValue *returnValue, TR::IlType *dt, TR::Node *addr, bool isVectorLoad = false);
+   TR::IlValue *indirectLoadNode(TR::IlType *dt, TR::Node *addr, bool isVectorLoad=false);
 
    TR::Node *zero(TR::DataType dt);
    TR::Node *zero(TR::IlType *dt);
@@ -598,20 +705,15 @@ protected:
    TR::IlValue *unaryOp(TR::ILOpCodes op, TR::IlValue *v);
    void doVectorConversions(TR::Node **leftPtr, TR::Node **rightPtr);
    TR::IlValue *widenIntegerTo32Bits(TR::IlValue *v);
-
-   void binaryOpFromNodes(TR::ILOpCodes op, TR::IlValue *returnValue, TR::Node *leftNode, TR::Node *rightNode);
+   TR::IlValue *binaryOpFromNodes(TR::ILOpCodes op, TR::Node *leftNode, TR::Node *rightNode);
    TR::Node *binaryOpNodeFromNodes(TR::ILOpCodes op, TR::Node *leftNode, TR::Node *rightNode);
-   void binaryOpFromOpMap(OpCodeMapper mapOp, TR::IlValue *returnValue, TR::IlValue *left, TR::IlValue *right);
-   void binaryOpFromOpCode(TR::ILOpCodes op, TR::IlValue *returnValue, TR::IlValue *left, TR::IlValue *right);
+   TR::IlValue *binaryOpFromOpMap(OpCodeMapper mapOp, TR::IlValue *left, TR::IlValue *right);
+   TR::IlValue *binaryOpFromOpCode(TR::ILOpCodes op, TR::IlValue *left, TR::IlValue *right);
    TR::Node *shiftOpNodeFromNodes(TR::ILOpCodes op, TR::Node *leftNode, TR::Node *rightNode);
-   void shiftOpFromNodes(TR::ILOpCodes op, TR::IlValue *returnValue, TR::Node *leftNode, TR::Node *rightNode);
-   void shiftOpFromOpMap(OpCodeMapper mapOp, TR::IlValue *returnValue, TR::IlValue *left, TR::IlValue *right);
+   TR::IlValue *shiftOpFromNodes(TR::ILOpCodes op, TR::Node *leftNode, TR::Node *rightNode);
    TR::IlValue *shiftOpFromOpMap(OpCodeMapper mapOp, TR::IlValue *left, TR::IlValue *right);
-
    TR::IlValue *compareOp(TR_ComparisonTypes ct, bool needUnsigned, TR::IlValue *left, TR::IlValue *right);
-   void compareOp(TR_ComparisonTypes ct, bool needUnsigned, TR::IlValue *returnValue, TR::IlValue *left, TR::IlValue *right);
-
-   void convertTo(TR::IlValue *convertedValue, TR::DataType t, TR::IlValue *v, bool needUnsigned);
+   TR::IlValue *convertTo(TR::DataType typeTo, TR::IlValue *v, bool needUnsigned);
 
    void ifCmpCondition(TR_ComparisonTypes ct, bool isUnsignedCmp, TR::IlValue *left, TR::IlValue *right, TR::Block *target);
    void ifCmpNotEqualZero(TR::IlValue *condition, TR::Block *target);
@@ -628,7 +730,7 @@ protected:
       }
 
    TR::Block *emptyBlock();
-
+   
    virtual uint32_t countBlocks();
 
    void pullInBuilderTrees(TR::IlBuilder *builder,
@@ -644,8 +746,7 @@ protected:
    TR::Node *genOverflowCHKTreeTop(TR::Node *operationNode, TR::ILOpCodes overflow);
    TR::ILOpCodes getOpCode(TR::IlValue *leftValue, TR::IlValue *rightValue);
    void appendExceptionHandler(TR::Block *blockThrowsException, TR::IlBuilder **builder, uint32_t catchType);
-   void genOperationWithOverflowCHK(TR::IlValue *returnValue, TR::ILOpCodes op, TR::Node *leftNode, TR::Node *rightNode, TR::IlBuilder **handler, TR::ILOpCodes overflow);
-
+   TR::IlValue *genOperationWithOverflowCHK(TR::ILOpCodes op, TR::Node *leftNode, TR::Node *rightNode, TR::IlBuilder **handler, TR::ILOpCodes overflow);
    virtual void setHandlerInfo(uint32_t catchType);
    TR::IlValue **processCallArgs(TR::Compilation *comp, int numArgs, va_list args);
    };

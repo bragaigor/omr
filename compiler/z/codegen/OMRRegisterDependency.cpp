@@ -424,7 +424,7 @@ void OMR::Z::RegisterDependencyConditions::resolveSplitDependencies(
          case TR_GPR:
             opCode = TR::InstOpCode::getLoadRegOpCode();
             if (cg->supportsHighWordFacility() && !comp->getOption(TR_DisableHighWordRA) &&
-                  (child->getDataType() == TR::Int32 ||
+                  (!reg->is64BitReg() ||
                   child->getOpCodeValue() == TR::icall ||
                   child->getOpCodeValue() == TR::icalli ||
                   TR::RealRegister::isHPR(regNum)))
@@ -669,7 +669,7 @@ TR_S390RegisterDependencyGroup::genBitMapOfAssignableGPRs(TR::CodeGenerator * cg
       TR::RealRegister::RegNum realReg = _dependencies[i].getRealRegister();
       if (TR::RealRegister::isGPR(realReg))
          {
-         availRegMap &= ~machine->getS390RealRegister(realReg)->getRealRegisterMask();
+         availRegMap &= ~machine->getRealRegister(realReg)->getRealRegisterMask();
          }
       }
 
@@ -740,11 +740,11 @@ TR_S390RegisterDependencyGroup::checkRegisterPairSufficiencyAndHPRAssignment(TR:
             if (TR::RealRegister::isHPR(realRegI))
                {
                virtRegI->setAssignToHPR(true);
-               cg->maskAvailableHPRSpillMask(~(machine->getS390RealRegister(realRegI)->getRealRegisterMask()));
+               cg->maskAvailableHPRSpillMask(~(machine->getRealRegister(realRegI)->getRealRegisterMask()));
                }
             else if (TR::RealRegister::isGPR(realRegI) && virtRegI->is64BitReg())
                {
-               cg->maskAvailableHPRSpillMask(~(machine->getS390RealRegister(realRegI)->getRealRegisterMask() << 16));
+               cg->maskAvailableHPRSpillMask(~(machine->getRealRegister(realRegI)->getRealRegisterMask() << 16));
                }
             }
          }
@@ -958,7 +958,14 @@ TR_S390RegisterDependencyGroup::assignRegisters(TR::Instruction   *currentInstru
                      opCode = TR::InstOpCode::LG;
                      break;
                   case TR_GPR:
-                     opCode = TR::InstOpCode::getLoadOpCode();
+                     if (virtReg->is64BitReg())
+                        {
+                        opCode = TR::InstOpCode::LG;
+                        }
+                     else
+                        {
+                        opCode = TR::InstOpCode::L;
+                        }
                      break;
                   case TR_FPR:
                      opCode = TR::InstOpCode::LD;
@@ -970,12 +977,10 @@ TR_S390RegisterDependencyGroup::assignRegisters(TR::Instruction   *currentInstru
                      TR_ASSERT( 0, "\nRegister kind not supported in OOL spill\n");
                      break;
                   }
-
+               
                if (cg->supportsHighWordFacility() && !comp->getOption(TR_DisableHighWordRA) &&
                    rk != TR_FPR && rk != TR_VRF)
                   {
-                  opCode = virtReg->is64BitReg()? TR::InstOpCode::LG : TR::InstOpCode::L;
-
                   if (assignedReg->isHighWordRegister())
                      {
                      // virtReg was spilled to an HPR and now we need it spilled to stack
@@ -1102,28 +1107,28 @@ TR_S390RegisterDependencyGroup::assignRegisters(TR::Instruction   *currentInstru
    // count up how many registers are locked for each type
    for (int32_t i = TR::RealRegister::FirstGPR; i <= TR::RealRegister::LastGPR; ++i)
       {
-      TR::RealRegister* realReg = machine->getS390RealRegister((TR::RealRegister::RegNum)i);
+      TR::RealRegister* realReg = machine->getRealRegister((TR::RealRegister::RegNum)i);
       if (realReg->getState() == TR::RealRegister::Locked)
          ++lockedGPRs;
       }
 
    for (int32_t i = TR::RealRegister::FirstHPR; i <= TR::RealRegister::LastHPR; ++i)
       {
-      TR::RealRegister* realReg = machine->getS390RealRegister((TR::RealRegister::RegNum)i);
+      TR::RealRegister* realReg = machine->getRealRegister((TR::RealRegister::RegNum)i);
       if (realReg->getState() == TR::RealRegister::Locked)
          ++lockedHPRs;
       }
 
    for (int32_t i = TR::RealRegister::FirstFPR; i <= TR::RealRegister::LastFPR; ++i)
       {
-      TR::RealRegister* realReg = machine->getS390RealRegister((TR::RealRegister::RegNum)i);
+      TR::RealRegister* realReg = machine->getRealRegister((TR::RealRegister::RegNum)i);
       if (realReg->getState() == TR::RealRegister::Locked)
          ++lockedFPRs;
       }
 
    for (int32_t i = TR::RealRegister::FirstVRF; i <= TR::RealRegister::LastVRF; ++i)
       {
-      TR::RealRegister* realReg = machine->getS390RealRegister((TR::RealRegister::RegNum)i);
+      TR::RealRegister* realReg = machine->getRealRegister((TR::RealRegister::RegNum)i);
       if (realReg->getState() == TR::RealRegister::Locked)
          ++lockedVRFs;
       }
@@ -1451,7 +1456,7 @@ TR_S390RegisterDependencyGroup::assignRegisters(TR::Instruction   *currentInstru
          TR_ASSERT( virtReg != NULL, "null virtual register during coercion");
          dependentRegNum = _dependencies[i].getRealRegister();
 
-         dependentRealReg = machine->getS390RealRegister(dependentRegNum);
+         dependentRealReg = machine->getRealRegister(dependentRegNum);
 
          // If dep requires a specific real reg, and the real reg is free
          if (dependentRegNum != TR::RealRegister::NoReg     &&
@@ -1465,15 +1470,6 @@ TR_S390RegisterDependencyGroup::assignRegisters(TR::Instruction   *currentInstru
 
             // Assign the real reg to the virt reg
             machine->coerceRegisterAssignment(currentInstruction, virtReg, dependentRegNum, DEPSREG);
-            if(comp->getOption(TR_EnableTrueRegisterModel) && _dependencies[i].getDefsRegister() &&
-                virtReg->isPendingSpillOnDef())
-              {
-              TR::RealRegister * realReg = machine->getS390RealRegister(dependentRegNum);
-              if(cg->insideInternalControlFlow())
-                machine->reverseSpillState(cg->getInstructionAtEndInternalControlFlow(), virtReg, toRealRegister(realReg));
-              else
-                machine->reverseSpillState(currentInstruction, virtReg, toRealRegister(realReg));
-              }
             virtReg->block();
             changed = true;
             }
@@ -1498,7 +1494,7 @@ TR_S390RegisterDependencyGroup::assignRegisters(TR::Instruction   *currentInstru
             }
 
          dependentRegNum = _dependencies[i].getRealRegister();
-         dependentRealReg = machine->getS390RealRegister(dependentRegNum);
+         dependentRealReg = machine->getRealRegister(dependentRegNum);
 
          // If the dependency requires a real reg
          // and the assigned real reg is not equal to the required one
@@ -1529,7 +1525,7 @@ TR_S390RegisterDependencyGroup::assignRegisters(TR::Instruction   *currentInstru
                    if (aRealNum != TR::RealRegister::NoReg     &&
                        aRealNum != TR::RealRegister::AssignAny &&
                        aRealNum != TR::RealRegister::SpilledReg &&
-                       assignedRegister == machine->getS390RealRegister(aRealNum))
+                       assignedRegister == machine->getRealRegister(aRealNum))
                      {
                        #if 0
                         fprintf(stdout, "COERCE3 %i (%s, %d)\n", i, cg->getDebug()->getName(virtReg), aRealNum-1);
@@ -1539,28 +1535,10 @@ TR_S390RegisterDependencyGroup::assignRegisters(TR::Instruction   *currentInstru
                         TR::Register *depReg = _dependencies[lcount].getRegister();
                         machine->coerceRegisterAssignment(currentInstruction, depReg, aRealNum, DEPSREG);
                         _dependencies[lcount].getRegister()->block();
-                        if(comp->getOption(TR_EnableTrueRegisterModel) && _dependencies[lcount].getDefsRegister() &&
-                            depReg->isPendingSpillOnDef())
-                          {
-                          TR::RealRegister * realReg = machine->getS390RealRegister(aRealNum);
-                          if(cg->insideInternalControlFlow())
-                            machine->reverseSpillState(cg->getInstructionAtEndInternalControlFlow(), depReg, toRealRegister(realReg));
-                          else
-                            machine->reverseSpillState(currentInstruction, depReg, toRealRegister(realReg));
-                          }
                         break;
                      }
                    }
                  }
-              }
-            if(comp->getOption(TR_EnableTrueRegisterModel) && _dependencies[i].getDefsRegister() &&
-                virtReg->isPendingSpillOnDef())
-              {
-              TR::RealRegister * realReg = machine->getS390RealRegister(dependentRegNum);
-              if(cg->insideInternalControlFlow())
-                machine->reverseSpillState(cg->getInstructionAtEndInternalControlFlow(), virtReg, toRealRegister(realReg));
-              else
-                machine->reverseSpillState(currentInstruction, virtReg, toRealRegister(realReg));
               }
             }
          }
@@ -1594,14 +1572,6 @@ TR_S390RegisterDependencyGroup::assignRegisters(TR::Instruction   *currentInstru
             // Disable this dependency
             _dependencies[i].setRealRegister(toRealRegister(targetReg)->getRegisterNumber());
             virtReg->block();
-            if(comp->getOption(TR_EnableTrueRegisterModel) && _dependencies[i].getDefsRegister() &&
-                virtReg->isPendingSpillOnDef())
-              {
-              if(cg->insideInternalControlFlow())
-                machine->reverseSpillState(cg->getInstructionAtEndInternalControlFlow(), virtReg, toRealRegister(targetReg));
-              else
-                machine->reverseSpillState(currentInstruction, virtReg, toRealRegister(targetReg));
-              }
            }
          }
       }
@@ -1623,14 +1593,6 @@ TR_S390RegisterDependencyGroup::assignRegisters(TR::Instruction   *currentInstru
             _dependencies[i].setRealRegister(toRealRegister(targetReg)->getRegisterNumber());
 
             virtReg->block();
-            if(comp->getOption(TR_EnableTrueRegisterModel) && _dependencies[i].getDefsRegister() &&
-                virtReg->isPendingSpillOnDef())
-              {
-              if(cg->insideInternalControlFlow())
-                machine->reverseSpillState(cg->getInstructionAtEndInternalControlFlow(), virtReg, toRealRegister(targetReg));
-              else
-                machine->reverseSpillState(currentInstruction, virtReg, toRealRegister(targetReg));
-              }
             }
           }
       }
@@ -1657,7 +1619,7 @@ TR_S390RegisterDependencyGroup::assignRegisters(TR::Instruction   *currentInstru
       // We pay special attention to pairs, as it is not the parent placeholder
       // that must have its count decremented, but rather the children.
       if (dependentRegister->getRegisterPair() == NULL &&
-          (dependentRegister->getAssignedRegister() || (comp->getOption(TR_EnableTrueRegisterModel) && dependentRegister->isLive())) &&
+          dependentRegister->getAssignedRegister() != NULL &&
           getRegisterDependency(i)->getRealRegister() != TR::RealRegister::SpilledReg
          )
          {
@@ -1670,10 +1632,7 @@ TR_S390RegisterDependencyGroup::assignRegisters(TR::Instruction   *currentInstru
             TR_ASSERT(dependentRegister->getFutureUseCount() >=0,
                     "\nReg dep assignment: futureUseCount should not be negative\n");
             }
-         if ((dependentRegister->getFutureUseCount() == 0) ||
-             (comp->getOption(TR_EnableTrueRegisterModel) && !currentInstruction->isLabel() &&
-              getRegisterDependency(i)->getDefsRegister() && !getRegisterDependency(i)->getRefsRegister() &&
-              !currentInstruction->defsRegister(dependentRegister)))
+         if (dependentRegister->getFutureUseCount() == 0)
             {
             // check if need to free HW
             if (assignedRealRegister != NULL && cg->supportsHighWordFacility() && !comp->getOption(TR_DisableHighWordRA))
@@ -1954,11 +1913,6 @@ bool OMR::Z::RegisterDependencyConditions::addPostConditionIfNotAlreadyInserted(
    else if (pos >= 0 && _postConditions->getRegisterDependency(pos)->getFlags() != flag)
       {
       _postConditions->getRegisterDependency(pos)->setFlags(flag);
-      if((flag & DefinesDependentRegister) != 0)
-        {
-        bool redefined=(vr->getStartOfRange() != NULL);
-        vr->setRedefined(redefined);
-        }
       return false;
       }
    return false;

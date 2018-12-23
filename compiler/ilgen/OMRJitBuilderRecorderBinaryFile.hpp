@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2016 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -23,10 +23,9 @@
 #define OMR_JITBUILDERRECORDER_BINARYFILE_INCL
 
 #include "ilgen/JitBuilderRecorderBinaryBuffer.hpp"
-#include <fstream>
 
-namespace TR { class IlBuilderRecorder; }
-namespace TR { class MethodBuilderRecorder; }
+namespace TR { class IlBuilder; }
+namespace TR { class MethodBuilder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
 
@@ -36,13 +35,11 @@ namespace OMR
 class JitBuilderRecorderBinaryFile : public TR::JitBuilderRecorderBinaryBuffer
    {
    public:
-   JitBuilderRecorderBinaryFile(const TR::MethodBuilderRecorder *mb, const char *fileName);
+   JitBuilderRecorderBinaryFile(const TR::MethodBuilder *mb, const char *fileName);
    virtual ~JitBuilderRecorderBinaryFile() { }
 
    virtual void Close();
 
-   private:
-   std::fstream _file;
    };
 
 } // namespace OMR

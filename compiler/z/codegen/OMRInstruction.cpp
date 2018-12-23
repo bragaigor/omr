@@ -81,21 +81,21 @@
    _targetRegSize(0), _sourceRegSize(0), _sourceMemSize(0), _targetMemSize(0), _sourceStart(-1), _targetStart(-1)
 
 OMR::Z::Instruction::Instruction(TR::CodeGenerator* cg, TR::InstOpCode::Mnemonic op, TR::Node* node)
-   : 
+   :
    OMR::Instruction(cg, op, node),
    CTOR_INITIALIZER_LIST
    {
-   TR_ASSERT(cg->getS390ProcessorInfo()->supportsArch(_opcode.getMinimumALS()), "Processor detected does not support instruction %s\n", cg->getDebug()? cg->getDebug()->getOpCodeName(&_opcode) : "(unknown)");
+   TR_ASSERT(cg->getS390ProcessorInfo()->supportsArch(_opcode.getMinimumALS()), "Processor detected does not support instruction %s\n", _opcode.getMnemonicName());
 
    self()->initialize();
    }
 
 OMR::Z::Instruction::Instruction(TR::CodeGenerator*cg, TR::Instruction* precedingInstruction, TR::InstOpCode::Mnemonic op, TR::Node* node)
-   : 
+   :
    OMR::Instruction(cg, precedingInstruction, op, node),
    CTOR_INITIALIZER_LIST
    {
-   TR_ASSERT(cg->getS390ProcessorInfo()->supportsArch(_opcode.getMinimumALS()), "Processor detected does not support instruction %s\n", cg->getDebug()? cg->getDebug()->getOpCodeName(&_opcode) : "(unknown)");
+   TR_ASSERT(cg->getS390ProcessorInfo()->supportsArch(_opcode.getMinimumALS()), "Processor detected does not support instruction %s\n", _opcode.getMnemonicName());
 
    self()->initialize(precedingInstruction, true);
    }
@@ -579,65 +579,6 @@ OMR::Z::Instruction::usesRegister(TR::Register * reg)
    return false;
    }
 
-
-bool OMR::Z::Instruction::startOfLiveRange(TR::Register * reg)
-  {
-   int32_t i;
-   TR::Register **_targetReg = self()->targetRegBase();
-   bool result;
-
-   // If reg is part of internal control flow region then it must stay alive
-   if(self()->cg()->isInternalControlFlowReg(reg))
-     return false;
-
-   // Special case SRDA, SRDL, SLDA, SLDL when immediate is >= 32
-   if((self()->getOpCodeValue() == TR::InstOpCode::SRDA || self()->getOpCodeValue() == TR::InstOpCode::SRDL) && toS390RSInstruction(self())->getSourceImmediate() >= 32)
-     {
-     // Clobbering the low order half by shifing completely over it so not really using it
-     TR::RegisterPair *rp=_targetReg[0]->getRegisterPair();
-     if(reg == rp->getLowOrder())
-       return true;
-     }
-   if((self()->getOpCodeValue() == TR::InstOpCode::SLDA || self()->getOpCodeValue() == TR::InstOpCode::SLDL) && toS390RSInstruction(self())->getSourceImmediate() >= 32)
-     {
-     // Clobbering the high order half by shifing completely over it so not really using it
-     TR::RegisterPair *rp=_targetReg[0]->getRegisterPair();
-     if(reg == rp->getHighOrder())
-       return true;
-     }
-   if(self()->getOpCodeValue() == TR::InstOpCode::RISBG || self()->getOpCodeValue() == TR::InstOpCode::RISBGN || self()->getOpCodeValue() == TR::InstOpCode::RISBHG || self()->getOpCodeValue() == TR::InstOpCode::RISBLG)
-     {
-      uint8_t endBit = ((TR::S390RIEInstruction* )self())->getSourceImmediate8Two();
-      if(_targetReg[0] == reg && (endBit & 128) != 0)
-        return true;
-      }
-
-   if (_targetReg && !(self()->getOpCode().usesTarget()))
-      {
-      for (i = 0; i < _targetRegSize; ++i)
-        {
-        if (_targetReg[i]->usesRegister(reg) && !self()->usesOnlyRegister(reg))
-          {
-          // Special case LTR GPR_X,GPR_X
-          if(self()->getOpCodeValue() == TR::InstOpCode::LTR && self()->getRegisterOperand(1) == self()->getRegisterOperand(2))
-            return false;
-          if(_targetReg[i]->getKind() == TR_GPR64 && self()->getOpCode().is32bit() && TR::Compiler->target.is32Bit())
-            return false;
-          return true;
-          }
-        }
-      }
-
-   // We might have an out of line EX instruction.  If so, we
-   // need to check whether either the EX instruction OR the instruction
-   // it refers to uses the specified register.
-   TR::Instruction *outOfLineEXInstr = self()->getOutOfLineEXInstr();
-   if (outOfLineEXInstr && outOfLineEXInstr->startOfLiveRange(reg))
-      return true;
-
-   return false;
-  }
-
 bool OMR::Z::Instruction::getRegisters(TR::list<TR::Register *> &regs)
   {
    TR::Compilation *comp = self()->cg()->comp();
@@ -775,7 +716,7 @@ bool OMR::Z::Instruction::getUsedRegisters(TR::list<TR::Register *> &usedRegs)
   TR::MemoryReference **_targetMem = self()->targetMemBase();
   TR::Register *baseReg, *indexReg;
 
-  if(self()->getOpCodeValue() == TR::InstOpCode::BCR && _sourceRegSize == 1 && _sourceReg[0]->getRealRegister() == machine->getS390RealRegister(TR::RealRegister::GPR0))
+  if(self()->getOpCodeValue() == TR::InstOpCode::BCR && _sourceRegSize == 1 && _sourceReg[0]->getRealRegister() == machine->getRealRegister(TR::RealRegister::GPR0))
     return false;
 
   if((self()->getOpCodeValue() == TR::InstOpCode::XGR || self()->getOpCodeValue() == TR::InstOpCode::XR) && _sourceReg[0] == _targetReg[0])
@@ -898,7 +839,7 @@ bool OMR::Z::Instruction::getUsedRegisters(TR::list<TR::Register *> &usedRegs)
               TR::RealRegister::RegNum rr = dep->getRealRegister();
               if(rr>TR::RealRegister::NoReg && rr<=TR::RealRegister::LastHPR)
                 {
-                usedRegs.push_back(machine->getS390RealRegister(rr));
+                usedRegs.push_back(machine->getRealRegister(rr));
                 }
               }
             }
@@ -931,7 +872,7 @@ bool OMR::Z::Instruction::getUsedRegisters(TR::list<TR::Register *> &usedRegs)
               TR::RealRegister::RegNum rr = dep->getRealRegister();
               if(rr>TR::RealRegister::NoReg && rr<=TR::RealRegister::LastHPR)
                 {
-                usedRegs.push_back(machine->getS390RealRegister(rr));
+                usedRegs.push_back(machine->getRealRegister(rr));
                 }
               }
             }
@@ -1019,7 +960,7 @@ bool OMR::Z::Instruction::getDefinedRegisters(TR::list<TR::Register *> &defedReg
               TR::RealRegister::RegNum rr = dep->getRealRegister();
               if(rr>TR::RealRegister::NoReg && rr<=TR::RealRegister::LastHPR)
                 {
-                defedRegs.push_back(machine->getS390RealRegister(rr));
+                defedRegs.push_back(machine->getRealRegister(rr));
                 }
               }
             }
@@ -1052,7 +993,7 @@ bool OMR::Z::Instruction::getDefinedRegisters(TR::list<TR::Register *> &defedReg
               TR::RealRegister::RegNum rr = dep->getRealRegister();
               if(rr>TR::RealRegister::NoReg && rr<=TR::RealRegister::LastHPR)
                 {
-                defedRegs.push_back(machine->getS390RealRegister(rr));
+                defedRegs.push_back(machine->getRealRegister(rr));
                 }
               }
             }
@@ -1104,14 +1045,14 @@ bool OMR::Z::Instruction::getKilledRegisters(TR::list<TR::Register *> &killedReg
         TR::RegisterDependency* dep=postConds->getRegisterDependency(i);
         TR::Register *r=dep->getRegister();
         if(r && r->isPlaceholderReg())
-          killedRegs.push_back(machine->getS390RealRegister(dep->getRealRegister()));
+          killedRegs.push_back(machine->getRealRegister(dep->getRealRegister()));
         }
       }
     }
 
   // A function call via address in a register uses register r1 to hold the target address but this register is also killed.
   if(self()->getOpCodeValue() == TR::InstOpCode::BASR)
-    killedRegs.push_back(machine->getS390RealRegister(TR::RealRegister::GPR1));
+    killedRegs.push_back(machine->getRealRegister(TR::RealRegister::GPR1));
 
   // We might have an out of line EX instruction.  If so, we
   // need to check whether either the EX instruction OR the instruction
@@ -1148,11 +1089,6 @@ static bool isInternalControlFlowOneEntryOneExit(TR::Instruction *regionEnd, TR:
       TR::LabelSymbol *labelSym=toS390LabelInstruction(curr)->getLabelSymbol();
       labels.push_back(labelSym);
       labelSym->isStartInternalControlFlow();
-      done=true;
-      regionStart=curr->getPrev();
-      }
-    else if(curr->isStartInternalControlFlow())
-      {
       done=true;
       regionStart=curr->getPrev();
       }
@@ -1713,18 +1649,6 @@ OMR::Z::Instruction::useTargetRegister(TR::Register* reg)
       self()->clearCCInfo();
       }
 
-   // Set Redefined flag for Trivial Remat
-   bool redefined=(reg->getStartOfRange() != NULL);
-   TR::RegisterPair *rp=reg->getRegisterPair();
-   if(rp)
-     {
-     TR::Register *lowReg=rp->getLowOrder();
-     TR::Register *highReg=rp->getHighOrder();
-     redefined |= (lowReg->getStartOfRange() != NULL) || (highReg->getStartOfRange() != NULL);
-     lowReg->setRedefined(redefined);
-     highReg->setRedefined(redefined);
-     }
-   reg->setRedefined(redefined);
    self()->useRegister(reg);
 
    // mark used bit for HW/LW virtual regs
@@ -1776,126 +1700,6 @@ OMR::Z::Instruction::hasLongDisplacementSupport()
   return self()->getOpCode().hasLongDispSupport();
   }
 
-TR::InstOpCode::Mnemonic OMR::Z::Instruction::opCodeCanBeAdjustedTo(TR::InstOpCode::Mnemonic op)
-   {
-   switch (op)
-      {
-      case TR::InstOpCode::A:
-         return TR::InstOpCode::AY;
-      case TR::InstOpCode::AL:
-         return TR::InstOpCode::ALY;
-      case TR::InstOpCode::AH:
-         return TR::InstOpCode::AHY;
-      case TR::InstOpCode::C:
-         return TR::InstOpCode::CY;
-      case TR::InstOpCode::CH:
-         return TR::InstOpCode::CHY;
-      case TR::InstOpCode::CL:
-         return TR::InstOpCode::CLY;
-      case TR::InstOpCode::IC:
-         return TR::InstOpCode::ICY;
-      case TR::InstOpCode::L:
-         return TR::InstOpCode::LY;
-      case TR::InstOpCode::LA:
-         return TR::InstOpCode::LAY;
-      case TR::InstOpCode::LAE:
-         return TR::InstOpCode::LAEY;
-      case TR::InstOpCode::LRA:
-         return TR::InstOpCode::LRAY;
-      case TR::InstOpCode::LH:
-         return TR::InstOpCode::LHY;
-      case TR::InstOpCode::MS:
-         return TR::InstOpCode::MSY;
-      case TR::InstOpCode::M:
-         return TR::InstOpCode::MFY;
-      case TR::InstOpCode::MH:
-         return TR::InstOpCode::MHY;
-      case TR::InstOpCode::N:
-         return TR::InstOpCode::NY;
-      case TR::InstOpCode::NI:
-         return TR::InstOpCode::NIY;
-      case TR::InstOpCode::O:
-         return TR::InstOpCode::OY;
-       case TR::InstOpCode::OI:
-         return TR::InstOpCode::OIY;
-      case TR::InstOpCode::S:
-         return TR::InstOpCode::SY;
-      case TR::InstOpCode::SH:
-         return TR::InstOpCode::SHY;
-      case TR::InstOpCode::SL:
-         return TR::InstOpCode::SLY;
-      case TR::InstOpCode::ST:
-         return TR::InstOpCode::STY;
-      case TR::InstOpCode::STC:
-         return TR::InstOpCode::STCY;
-      case TR::InstOpCode::STH:
-         return TR::InstOpCode::STHY;
-      case TR::InstOpCode::X:
-         return TR::InstOpCode::XY;
-      case TR::InstOpCode::XI:
-         return TR::InstOpCode::XIY;
-      case TR::InstOpCode::LE:
-         return TR::InstOpCode::LEY;
-      case TR::InstOpCode::LD:
-         return TR::InstOpCode::LDY;
-      case TR::InstOpCode::STE:
-         return TR::InstOpCode::STEY;
-      case TR::InstOpCode::STD:
-         return TR::InstOpCode::STDY;
-      case TR::InstOpCode::LM:
-         return TR::InstOpCode::LMY;
-      case TR::InstOpCode::STM:
-         return TR::InstOpCode::STMY;
-      case TR::InstOpCode::STCM:
-         return TR::InstOpCode::STCMY;
-      case TR::InstOpCode::ICM:
-         return TR::InstOpCode::ICMY;
-      case TR::InstOpCode::TM:
-         return TR::InstOpCode::TMY;
-      case TR::InstOpCode::MVI:
-         return TR::InstOpCode::MVIY;
-      case TR::InstOpCode::CLI:
-         return TR::InstOpCode::CLIY;
-      case TR::InstOpCode::CVB:
-         return TR::InstOpCode::CVBY;
-      case TR::InstOpCode::CVD:
-         return TR::InstOpCode::CVDY;
-      case TR::InstOpCode::CS:
-         return TR::InstOpCode::CSY;
-      case TR::InstOpCode::CDS:
-         return TR::InstOpCode::CDSY;
-      default:
-         return TR::InstOpCode::BAD;
-      }
-   }
-
-// the following converts RX and RXE instructions into their
-// corresponding long displacement instructions
-void
-OMR::Z::Instruction::attemptOpAdjustmentForLongDisplacement()
-   {
-   TR::InstOpCode::Mnemonic n_op = self()->opCodeCanBeAdjustedTo(self()->getOpCodeValue());
-   if (n_op != TR::InstOpCode::BAD)
-      self()->setOpCodeValue(n_op);
-
-   auto instructionFormat = self()->getOpCode().getInstructionFormat(self()->getOpCodeValue());
-
-   if (instructionFormat == RXYa_FORMAT ||
-       instructionFormat == RXYb_FORMAT)
-      self()->setKind(IsRXY);
-   else if (instructionFormat == RSYa_FORMAT || 
-            instructionFormat == RSYb_FORMAT)
-      self()->setKind(IsRSY);
-   else if (instructionFormat == SIY_FORMAT)
-      self()->setKind(IsSIY);
-   else if (self()->cg()->getDebug())
-      TR_ASSERT(0, "only RX, RS and SI instructions can be safely mapped to long displacement: opCode: %s", self()->cg()->getDebug()->getOpCodeName(&self()->getOpCode()));
-   else
-      TR_ASSERT(0, "only RX, RS and SI instructions can be safely mapped to long displacement");
-
-   }
-
-
 uint32_t
 OMR::Z::Instruction::useSourceMemoryReference(TR::MemoryReference * memRef)
    {
@@ -1907,17 +1711,6 @@ OMR::Z::Instruction::useSourceMemoryReference(TR::MemoryReference * memRef)
 
    memRef->bookKeepingRegisterUses(self(), self()->cg());
 
-   if(!self()->cg()->afterRA())
-     {
-    int32_t disp = memRef->getOffset();
-    if (self()->hasLongDisplacementSupport() &&
-        !memRef->hasTemporaryNegativeOffset() &&
-        (disp < 0 || disp >= MAXDISP) && (disp >= MINLONGDISP || disp <= MAXLONGDISP))
-      {
-      self()->attemptOpAdjustmentForLongDisplacement();
-      }
-
-     }
    return _sourceMemSize-1; // index into source memref array
    }
 
@@ -1931,10 +1724,6 @@ OMR::Z::Instruction::useTargetMemoryReference(TR::MemoryReference * memRef, TR::
    self()->recordOperand(memRef, _targetMemSize);
 
    memRef->bookKeepingRegisterUses(self(), self()->cg());
-
-   if(!self()->cg()->afterRA())
-     {
-     }
 
    return _targetMemSize-1;      // index into the target memref array
    }
@@ -2566,7 +2355,7 @@ OMR::Z::Instruction::assignRegistersAndDependencies(TR_RegisterKinds kindToBeAss
           {
           if (linkage->getPreserved(REGNUM(i)))
             {
-            TR::RealRegister * targetRegister = machine->getS390RealRegister(REGNUM(i));
+            TR::RealRegister * targetRegister = machine->getRealRegister(REGNUM(i));
             TR::Register * assignedReg = targetRegister->getAssignedRegister();
             if(assignedReg && assignedReg->getKind() != TR_FPR)
               {
@@ -3023,7 +2812,7 @@ OMR::Z::Instruction::setUseDefRegisters(bool updateDependencies)
          lowRegNum = (lowRegNum == 15) ? 0 : lowRegNum + 1;
          for (uint32_t i = lowRegNum; i != highRegNum; i = ((i == 15) ? 0 : i + 1))  // wrap around to 0 at 15
             {
-            TR::RealRegister *reg = self()->cg()->machine()->getS390RealRegister(i + TR::RealRegister::GPR0);
+            TR::RealRegister *reg = self()->cg()->machine()->getRealRegister(i + TR::RealRegister::GPR0);
             if (loadOrStoreMultiple == 0) // load
                (*_defRegs)[indexTarget++] = reg;
             else if (loadOrStoreMultiple == 1) // store
@@ -3190,7 +2979,7 @@ OMR::Z::Instruction::getOneLocalLocalAllocFreeReg(TR::RealRegister ** reg)
      {
      if ( (_binFreeRegs>>cnt)&0x1 )
         {
-        *reg = self()->cg()->machine()->getS390RealRegister(cnt+1);
+        *reg = self()->cg()->machine()->getRealRegister(cnt+1);
         return true;
         }
      cnt++;
@@ -3216,11 +3005,11 @@ OMR::Z::Instruction::getTwoLocalLocalAllocFreeReg(TR::RealRegister ** reg1, TR::
         {
         if (*reg1 == NULL)
            {
-           *reg1 = self()->cg()->machine()->getS390RealRegister(cnt+1);
+           *reg1 = self()->cg()->machine()->getRealRegister(cnt+1);
            }
         else
            {
-           *reg2 = self()->cg()->machine()->getS390RealRegister(cnt+1);
+           *reg2 = self()->cg()->machine()->getRealRegister(cnt+1);
            return true;
            }
         }

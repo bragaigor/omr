@@ -349,6 +349,18 @@ OMR::SymbolReferenceTable::findOrCreateOSRReturnAddressSymbolRef()
    return element(osrReturnAddressSymbol);
    }
 
+TR::SymbolReference *
+OMR::SymbolReferenceTable::findOrCreateInduceOSRSymbolRef(TR_RuntimeHelper induceOSRHelper)
+   {
+   TR_ASSERT(induceOSRHelper == TR_induceOSRAtCurrentPC || induceOSRHelper == TR_induceOSRAtCurrentPCAndRecompile, "unexpected helper index when creating induce OSR helper symbol reference");
+   TR::SymbolReference *induceOSRSymRef = findOrCreateRuntimeHelper(induceOSRHelper,
+                                                                    true /* canGCandReturn */,
+                                                                    true /* canGCandExcept */,
+                                                                    true /* preservesAllRegisters */);
+   // treat jitInduceOSR like an interpreted call so that each platform's codegen generates a snippet for it
+   induceOSRSymRef->getSymbol()->getMethodSymbol()->setInterpreted();
+   return induceOSRSymRef;
+   }
 
 TR::SymbolReference *
 OMR::SymbolReferenceTable::findOrCreateArrayletShadowSymbolRef(TR::DataType type)
@@ -1057,8 +1069,6 @@ OMR::SymbolReferenceTable::findOrCreateReportMethodEnterSymbolRef(TR::ResolvedMe
    return findOrCreateRuntimeHelper(TR_reportMethodEnter, true, false, true);
    }
 
-
-
 bool OMR::SymbolReferenceTable::shouldMarkBlockAsCold(TR_ResolvedMethod * owningMethod, bool isUnresolvedInCP)
    {
    return false;
@@ -1303,7 +1313,7 @@ OMR::SymbolReferenceTable::findOrCreateClassSymbol(
    sym->setClassObject();
 
 #ifdef J9_PROJECT_SPECIFIC
-   if (cpIndex == -1 && comp()->compileRelocatableCode())
+   if (cpIndex == -1 && comp()->compileRelocatableCode() && !comp()->getOption(TR_UseSymbolValidationManager))
       {
       // Restricting TR_ArbitraryClassAddress to classes loaded by the
       // bootstrap loader ensures that there is no ambiguity when correlating
@@ -1845,6 +1855,27 @@ bool OMR::SymbolReferenceTable::isNonHelper(int32_t ref, CommonNonhelperSymbol s
       }
    }
 
+bool OMR::SymbolReferenceTable::isNonHelper(TR::SymbolReference *symRef)
+   {
+   return isNonHelper(symRef->getReferenceNumber());
+   }
+
+bool OMR::SymbolReferenceTable::isNonHelper(int32_t ref)
+   {
+   return (ref >= _numHelperSymbols && ref < _numHelperSymbols + getLastCommonNonhelperSymbol());
+   }
+
+OMR::SymbolReferenceTable::CommonNonhelperSymbol OMR::SymbolReferenceTable::getNonHelperSymbol(TR::SymbolReference *symRef)
+   {
+   return getNonHelperSymbol(symRef->getReferenceNumber());
+   }
+
+OMR::SymbolReferenceTable::CommonNonhelperSymbol OMR::SymbolReferenceTable::getNonHelperSymbol(int32_t ref)
+   {
+   return isNonHelper(ref) ? (CommonNonhelperSymbol) (ref - _numHelperSymbols)
+                           : getLastCommonNonhelperSymbol();
+   }
+
 int32_t OMR::SymbolReferenceTable::getNonhelperIndex(CommonNonhelperSymbol s)
    {
    TR_ASSERT(s <= getLastCommonNonhelperSymbol(), "assertion failure");
@@ -1926,4 +1957,30 @@ TR_BitVector *OMR::SymbolReferenceTable::getSharedAliases(TR::SymbolReference *s
       }
 
    return NULL;
+   }
+
+TR::SymbolReference *
+OMR::SymbolReferenceTable::findOrCreatePotentialOSRPointHelperSymbolRef()
+   {
+   if (!element(potentialOSRPointHelperSymbol))
+      {
+      TR::MethodSymbol * sym = TR::MethodSymbol::create(trHeapMemory(), TR_None);
+      sym->setHelper();
+      TR::SymbolReference* symRef = new (trHeapMemory()) TR::SymbolReference(self(), potentialOSRPointHelperSymbol, sym);
+      element(potentialOSRPointHelperSymbol) = symRef;
+      }
+   return element(potentialOSRPointHelperSymbol);
+   }
+
+TR::SymbolReference *
+OMR::SymbolReferenceTable::findOrCreateOSRFearPointHelperSymbolRef()
+   {
+   if (!element(osrFearPointHelperSymbol))
+      {
+      TR::MethodSymbol * sym = TR::MethodSymbol::create(trHeapMemory(), TR_None);
+      sym->setHelper();
+      TR::SymbolReference* symRef = new (trHeapMemory()) TR::SymbolReference(self(), osrFearPointHelperSymbol, sym);
+      element(osrFearPointHelperSymbol) = symRef;
+      }
+   return element(osrFearPointHelperSymbol);
    }

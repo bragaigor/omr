@@ -34,10 +34,10 @@ namespace OMR { typedef OMR::Z::Machine MachineConnector; }
 
 #include "compiler/codegen/OMRMachine.hpp"
 
-#include <string.h>                  // for memset
-#include "codegen/RealRegister.hpp"  // for RealRegister, etc
-#include "il/DataTypes.hpp"          // for CONSTANT64, etc
-#include "infra/Flags.hpp"           // for flags32_t
+#include <string.h>
+#include "codegen/RealRegister.hpp"
+#include "il/DataTypes.hpp"
+#include "infra/Flags.hpp"
 #include "infra/TRlist.hpp"
 
 class TR_Debug;
@@ -59,10 +59,9 @@ template <typename ListKind> class List;
 #define NUM_S390_VRF 16 ///< 32 after full RA complete
 #define NUM_S390_FPR_PAIRS 8
 
-/** Max. displacement */
+#define MINDISP      0
 #define MAXDISP      4096
 
-// Min/Max. long displacement
 #define MAXLONGDISP      +524287 // 0x7FFFF
 #define MINLONGDISP      -524288 // 0x80000
 
@@ -101,8 +100,6 @@ template <typename ListKind> class List;
 #define DISALLOWBLOCKED  false
 #define ALLOWLOCKED      true
 #define DISALLOWBLOCKED  false
-
-#define  REAL_REGISTER(ri)  machine->getS390RealRegister(ri)
 
 #define GLOBAL_REG_FOR_LITPOOL     3    // GPR6
 
@@ -230,12 +227,12 @@ class OMR_EXTENSIBLE Machine : public OMR::Machine
 
    Machine(TR::CodeGenerator *cg);
 
-   TR::RealRegister *getS390RealRegister(TR::RealRegister::RegNum regNum)
-      {
-      return _registerFile[regNum];
-      }
-
-   TR::RealRegister *getS390RealRegister(int32_t regNum)
+   /**
+    * @brief Converts RegNum to RealRegister
+    * @param[in] regNum : register number
+    * @return RealRegister for specified register number
+    */
+   TR::RealRegister *getRealRegister(int32_t regNum)
       {
       return _registerFile[regNum];
       }

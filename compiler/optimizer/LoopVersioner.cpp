@@ -408,7 +408,7 @@ int32_t TR_LoopVersioner::performWithoutDominators()
       TR_ScratchList<TR::TreeTop> divCheckTrees(trMemory());
       TR_ScratchList<TR::TreeTop> checkCastTrees(trMemory());
       TR_ScratchList<TR::TreeTop> arrayStoreCheckTrees(trMemory());
-      TR_ScratchList<TR::TreeTop> iwrtbarTrees(trMemory());
+      TR_ScratchList<TR::TreeTop> awrtbariTrees(trMemory());
       TR_ScratchList<TR::Node> specializedInvariantNodes(trMemory());
       TR_ScratchList<TR_NodeParentSymRef> invariantNodesList(trMemory());
       TR_ScratchList<TR_NodeParentSymRefWeightTuple> invariantTranslationNodesList(trMemory());
@@ -433,6 +433,7 @@ int32_t TR_LoopVersioner::performWithoutDominators()
          naturalLoop->computeInvariantExpressions();
          }
 
+      _skipWrtbarVersion = false;
       _seenDefinedSymbolReferences->empty();
       _writtenAndNotJustForHeapification->empty();
       _additionInfo->empty();
@@ -452,7 +453,7 @@ int32_t TR_LoopVersioner::performWithoutDominators()
 
       bool discontinue = false;
       bool   nullChecksMayBeEliminated = detectChecksToBeEliminated(naturalLoop, &nullCheckedReferences, &nullCheckTrees, &numIndirections,
-                                                                  &boundCheckTrees, &spineCheckTrees, &numDimensions, &conditionalTrees, &divCheckTrees, &iwrtbarTrees,
+                                                                  &boundCheckTrees, &spineCheckTrees, &numDimensions, &conditionalTrees, &divCheckTrees, &awrtbariTrees,
                                                                   &checkCastTrees, &arrayStoreCheckTrees, &specializedInvariantNodes, invariantNodes,
                                                                   &invariantTranslationNodesList, discontinue);
 
@@ -531,11 +532,17 @@ int32_t TR_LoopVersioner::performWithoutDominators()
       //else
       //   divCheckTrees.deleteAll();
 
-      bool iwrtBarsWillBeEliminated = false;
-      if (!shouldOnlySpecializeLoops() && !refineAliases())
-         iwrtBarsWillBeEliminated = detectInvariantIwrtbars(&iwrtbarTrees);
+      bool awrtBarisWillBeEliminated = false;
+      // Use separate env variables to completely disable wrtbar versioning,
+      // or reenable wrtbar version (i.e. revert to old, more aggressive behavior)
+      static char *disableWrtbarVersion = feGetEnv("TR_disableWrtbarVersion");
+      static char *enableWrtbarVersion = feGetEnv("TR_enableWrtbarVersion");
+      if ((!enableWrtbarVersion && _skipWrtbarVersion) || disableWrtbarVersion)
+         awrtbariTrees.deleteAll();
+      else if (!shouldOnlySpecializeLoops() && !refineAliases())
+         awrtBarisWillBeEliminated = detectInvariantAwrtbaris(&awrtbariTrees);
       //else
-      //   iwrtBarTrees.deleteAll();
+      //   awrtBariTrees.deleteAll();
 
       SharedSparseBitVector reverseBranchInLoops(comp()->allocator());
       bool containsNonInlineGuard = false;
@@ -580,7 +587,7 @@ int32_t TR_LoopVersioner::performWithoutDominators()
              ) ||
              boundChecksWillBeEliminated ||
              divChecksWillBeEliminated  ||
-             iwrtBarsWillBeEliminated  ||
+             awrtBarisWillBeEliminated  ||
              checkCastTreesWillBeEliminated ||
              arrayStoreCheckTreesWillBeEliminated ||
              specializedNodesWillBeEliminated ||
@@ -620,7 +627,7 @@ int32_t TR_LoopVersioner::performWithoutDominators()
            spineChecksWillBeEliminated ||
            conditionalsWillBeEliminated ||
            divChecksWillBeEliminated ||
-           iwrtBarsWillBeEliminated  ||
+           awrtBarisWillBeEliminated  ||
            checkCastTreesWillBeEliminated ||
            arrayStoreCheckTreesWillBeEliminated ||
            specializedNodesWillBeEliminated ||
@@ -632,7 +639,7 @@ int32_t TR_LoopVersioner::performWithoutDominators()
          //   printf("Reached here for %s\n", comp()->signature());
          somethingChanged = true;
          versionedThisLoop = true;
-         versionNaturalLoop(naturalLoop, &nullCheckedReferences, &nullCheckTrees, &boundCheckTrees, &spineCheckTrees, &conditionalTrees, &divCheckTrees, &iwrtbarTrees, &checkCastTrees, &arrayStoreCheckTrees, &specializedInvariantNodes, invariantNodes, &invariantTranslationNodesList, &whileLoops, &clonedInnerWhileLoops, skipAsyncCheckRemoval, reverseBranchInLoops);
+         versionNaturalLoop(naturalLoop, &nullCheckedReferences, &nullCheckTrees, &boundCheckTrees, &spineCheckTrees, &conditionalTrees, &divCheckTrees, &awrtbariTrees, &checkCastTrees, &arrayStoreCheckTrees, &specializedInvariantNodes, invariantNodes, &invariantTranslationNodesList, &whileLoops, &clonedInnerWhileLoops, skipAsyncCheckRemoval, reverseBranchInLoops);
          }
 
       if (versionedThisLoop)
@@ -2734,16 +2741,16 @@ bool TR_LoopVersioner::isDependentOnAllocation(TR::Node *useNode, int32_t recurs
    }
 
 
-bool TR_LoopVersioner::detectInvariantIwrtbars(List<TR::TreeTop> *iwrtbarTrees)
+bool TR_LoopVersioner::detectInvariantAwrtbaris(List<TR::TreeTop> *awrtbariTrees)
    {
 
-   if (!iwrtbarTrees->getListHead())
+   if (!awrtbariTrees->getListHead())
       return false;
 
 #ifdef J9_PROJECT_SPECIFIC
    if (comp()->getOptions()->isVariableHeapBaseForBarrierRange0())
       {
-      iwrtbarTrees->deleteAll();
+      awrtbariTrees->deleteAll();
       return false;
       }
 
@@ -2752,32 +2759,32 @@ bool TR_LoopVersioner::detectInvariantIwrtbars(List<TR::TreeTop> *iwrtbarTrees)
    //printf("nursery base %p nursery top %p\n", nurseryBase, nurseryTop);
    if ((nurseryBase == 0) || (nurseryTop == 0))
       {
-      iwrtbarTrees->deleteAll();
+      awrtbariTrees->deleteAll();
       return false;
       }
 
    uintptrj_t stackCompareValue = comp()->getOptions()->getHeapBase();
    if (stackCompareValue == 0)
      {
-     iwrtbarTrees->deleteAll();
+     awrtbariTrees->deleteAll();
      return false;
      }
 
    bool foundInvariantChecks = false;
-   ListElement<TR::TreeTop> *nextTree = iwrtbarTrees->getListHead();
+   ListElement<TR::TreeTop> *nextTree = awrtbariTrees->getListHead();
    ListElement<TR::TreeTop> *prevTree = NULL;
 
    for (;nextTree;)
       {
       TR::Node *node = nextTree->getData()->getNode();
       bool isBaseInvariant = false;
-      if (node->getOpCodeValue() != TR::wrtbari)
+      if (node->getOpCodeValue() != TR::awrtbari)
         node = node->getFirstChild();
 
       if (trace())
          traceMsg(comp(), "base invariant 0 in %p\n", node);
 
-      if (node->getOpCodeValue() == TR::wrtbari)
+      if (node->getOpCodeValue() == TR::awrtbari)
          {
          if (trace())
             traceMsg(comp(), "base invariant 1 in %p\n", node);
@@ -2818,7 +2825,7 @@ bool TR_LoopVersioner::detectInvariantIwrtbars(List<TR::TreeTop> *iwrtbarTrees)
       if (!isBaseInvariant)
          {
          if (trace())
-            traceMsg(comp(), "Non invariant iwrtbar %p (%s)\n", node, node->getOpCode().getName());
+            traceMsg(comp(), "Non invariant awrtbari %p (%s)\n", node, node->getOpCode().getName());
 
          if (prevTree)
             {
@@ -2826,13 +2833,13 @@ bool TR_LoopVersioner::detectInvariantIwrtbars(List<TR::TreeTop> *iwrtbarTrees)
             }
          else
             {
-            iwrtbarTrees->setListHead(nextTree->getNextElement());
+            awrtbariTrees->setListHead(nextTree->getNextElement());
             }
          }
       else
          {
          if (trace())
-            traceMsg(comp(), "Invariant iwrtbar %p (%s)\n", node, node->getOpCode().getName());
+            traceMsg(comp(), "Invariant awrtbari %p (%s)\n", node, node->getOpCode().getName());
          foundInvariantChecks = true;
          prevTree = nextTree;
          }
@@ -2902,22 +2909,22 @@ bool TR_LoopVersioner::isExprInvariant(TR::Node *node, bool ignoreHeapificationS
    }
 
 
-bool TR_LoopVersioner::hasWrtbarBeenSeen(List<TR::TreeTop> *iwrtbarTrees, TR::Node *iwrtbarNode)
+bool TR_LoopVersioner::hasWrtbarBeenSeen(List<TR::TreeTop> *awrtbariTrees, TR::Node *awrtbariNode)
    {
-   ListElement<TR::TreeTop> *nextTree = iwrtbarTrees->getListHead();
+   ListElement<TR::TreeTop> *nextTree = awrtbariTrees->getListHead();
    for (;nextTree;)
       {
       TR::Node *node = nextTree->getData()->getNode();
 
-      if (node->getOpCodeValue() != TR::wrtbari)
+      if (node->getOpCodeValue() != TR::awrtbari)
         node = node->getFirstChild();
 
       if (trace())
          traceMsg(comp(), "base invariant 0 in %p\n", node);
 
-      if (node->getOpCodeValue() == TR::wrtbari)
+      if (node->getOpCodeValue() == TR::awrtbari)
          {
-         if (node == iwrtbarNode)
+         if (node == awrtbariNode)
            return true;
          }
 
@@ -3160,7 +3167,7 @@ bool TR_LoopVersioner::isBranchSuitableToDoLoopTransfer(TR_ScratchList<TR::Block
 
 
 
-bool TR_LoopVersioner::detectChecksToBeEliminated(TR_RegionStructure *whileLoop, List<TR::Node> *nullCheckedReferences, List<TR::TreeTop> *nullCheckTrees, List<int32_t> *numIndirections, List<TR::TreeTop> *boundCheckTrees, List<TR::TreeTop> *spineCheckTrees, List<int32_t> *numDimensions, List<TR::TreeTop> *conditionalTrees, List<TR::TreeTop> *divCheckTrees, List<TR::TreeTop> *iwrtbarTrees, List<TR::TreeTop> *checkCastTrees, List<TR::TreeTop> *arrayStoreCheckTrees, List<TR::Node> *specializedInvariantNodes, List<TR_NodeParentSymRef> *invariantNodes, List<TR_NodeParentSymRefWeightTuple> *invariantTranslationNodesList, bool &discontinue)
+bool TR_LoopVersioner::detectChecksToBeEliminated(TR_RegionStructure *whileLoop, List<TR::Node> *nullCheckedReferences, List<TR::TreeTop> *nullCheckTrees, List<int32_t> *numIndirections, List<TR::TreeTop> *boundCheckTrees, List<TR::TreeTop> *spineCheckTrees, List<int32_t> *numDimensions, List<TR::TreeTop> *conditionalTrees, List<TR::TreeTop> *divCheckTrees, List<TR::TreeTop> *awrtbariTrees, List<TR::TreeTop> *checkCastTrees, List<TR::TreeTop> *arrayStoreCheckTrees, List<TR::Node> *specializedInvariantNodes, List<TR_NodeParentSymRef> *invariantNodes, List<TR_NodeParentSymRefWeightTuple> *invariantTranslationNodesList, bool &discontinue)
    {
    bool foundPotentialChecks = false;
    int32_t warmBranchCount = 0;
@@ -3284,6 +3291,11 @@ bool TR_LoopVersioner::detectChecksToBeEliminated(TR_RegionStructure *whileLoop,
          _containsCall = false;
          _nullCheckReference = NULL;
          _inNullCheckReference = false;
+
+         // If the node is a GC point (either cause GC and return, or cause GC and throw),
+         // be conservative and do not version wrtbars.
+         if (currentNode->canCauseGC())
+            _skipWrtbarVersion = true;
 
          if (currentOpCode.isNullCheck())
             _nullCheckReference = currentNode->getNullCheckReference();
@@ -3464,19 +3476,19 @@ bool TR_LoopVersioner::detectChecksToBeEliminated(TR_RegionStructure *whileLoop,
             if ( comp()->getOptions()->getGcMode() == TR_WrtbarCardMarkAndOldCheck ||
                  comp()->getOptions()->getGcMode() == TR_WrtbarOldCheck)
                {
-               TR::Node *possibleIwrtbarNode = currentTree->getNode();
-               if ((currentOpCode.getOpCodeValue() != TR::wrtbari) &&
-                  (possibleIwrtbarNode->getNumChildren() > 0))
-                  possibleIwrtbarNode = possibleIwrtbarNode->getFirstChild();
+               TR::Node *possibleAwrtbariNode = currentTree->getNode();
+               if ((currentOpCode.getOpCodeValue() != TR::awrtbari) &&
+                  (possibleAwrtbariNode->getNumChildren() > 0))
+                  possibleAwrtbariNode = possibleAwrtbariNode->getFirstChild();
 
-               if ((possibleIwrtbarNode->getOpCodeValue() == TR::wrtbari) &&
-                  !possibleIwrtbarNode->skipWrtBar() &&
-                   !hasWrtbarBeenSeen(iwrtbarTrees, possibleIwrtbarNode))
+               if ((possibleAwrtbariNode->getOpCodeValue() == TR::awrtbari) &&
+                  !possibleAwrtbariNode->skipWrtBar() &&
+                   !hasWrtbarBeenSeen(awrtbariTrees, possibleAwrtbariNode))
                   {
                   if (trace())
-                     traceMsg(comp(), "iwrtbar %p\n", currentTree->getNode());
+                     traceMsg(comp(), "awrtbari %p\n", currentTree->getNode());
 
-                  iwrtbarTrees->add(currentTree);
+                  awrtbariTrees->add(currentTree);
 
                   if (dupOfThisBlockAlreadyExecutedBeforeLoop)
                      _checksInDupHeader.add(currentTree);
@@ -3666,7 +3678,7 @@ void TR_LoopVersioner::updateDefinitionsAndCollectProfiledExprs(TR::Node *parent
    }
 
 
-void TR_LoopVersioner::versionNaturalLoop(TR_RegionStructure *whileLoop, List<TR::Node> *nullCheckedReferences, List<TR::TreeTop> *nullCheckTrees, List<TR::TreeTop> *boundCheckTrees, List<TR::TreeTop> *spineCheckTrees, List<TR::TreeTop> *conditionalTrees, List<TR::TreeTop> *divCheckTrees, List<TR::TreeTop> *iwrtbarTrees, List<TR::TreeTop> *checkCastTrees, List<TR::TreeTop> *arrayStoreCheckTrees, List<TR::Node> *specializedNodes, List<TR_NodeParentSymRef> *invariantNodes, List<TR_NodeParentSymRefWeightTuple> *invariantTranslationNodesList, List<TR_Structure> *innerWhileLoops, List<TR_Structure> *clonedInnerWhileLoops, bool skipVersioningAsynchk, SharedSparseBitVector &reverseBranchInLoops)
+void TR_LoopVersioner::versionNaturalLoop(TR_RegionStructure *whileLoop, List<TR::Node> *nullCheckedReferences, List<TR::TreeTop> *nullCheckTrees, List<TR::TreeTop> *boundCheckTrees, List<TR::TreeTop> *spineCheckTrees, List<TR::TreeTop> *conditionalTrees, List<TR::TreeTop> *divCheckTrees, List<TR::TreeTop> *awrtbariTrees, List<TR::TreeTop> *checkCastTrees, List<TR::TreeTop> *arrayStoreCheckTrees, List<TR::Node> *specializedNodes, List<TR_NodeParentSymRef> *invariantNodes, List<TR_NodeParentSymRefWeightTuple> *invariantTranslationNodesList, List<TR_Structure> *innerWhileLoops, List<TR_Structure> *clonedInnerWhileLoops, bool skipVersioningAsynchk, SharedSparseBitVector &reverseBranchInLoops)
    {
    if (!performTransformation(comp(), "%sVersioning natural loop %d\n", OPT_DETAILS_LOOP_VERSIONER, whileLoop->getNumber()))
       return;
@@ -4303,10 +4315,10 @@ void TR_LoopVersioner::versionNaturalLoop(TR_RegionStructure *whileLoop, List<TR
 
    //Construct the tests for invariant expressions that need to be checked for write barriers.
    //
-   if (!iwrtbarTrees->isEmpty() &&
+   if (!awrtbariTrees->isEmpty() &&
       !shouldOnlySpecializeLoops())
       {
-      buildIwrtbarComparisonsTree(iwrtbarTrees, nullCheckTrees, divCheckTrees, checkCastTrees, arrayStoreCheckTrees, &comparisonTrees, clonedLoopInvariantBlock);
+      buildAwrtbariComparisonsTree(awrtbariTrees, nullCheckTrees, divCheckTrees, checkCastTrees, arrayStoreCheckTrees, &comparisonTrees, clonedLoopInvariantBlock);
       }
 
 
@@ -4387,8 +4399,8 @@ void TR_LoopVersioner::versionNaturalLoop(TR_RegionStructure *whileLoop, List<TR
          TR::TreeTop *nextTreeTop = arrayStoreCheckTree->getNextTreeTop();
          TR::TreeTop *firstNewTree = TR::TreeTop::create(comp(), TR::Node::create(TR::treetop, 1, arrayStoreCheckNode->getFirstChild()), NULL, NULL);
          TR::Node *child = arrayStoreCheckNode->getFirstChild();
-         if (child->getOpCodeValue() == TR::wrtbari && comp()->getOptions()->getGcMode() == TR_WrtbarNone &&
-            performTransformation(comp(), "%sChanging iwrtbar node [%p] to an iastore\n", OPT_DETAILS_LOOP_VERSIONER, child))
+         if (child->getOpCodeValue() == TR::awrtbari && comp()->getOptions()->getGcMode() == TR_WrtbarNone &&
+            performTransformation(comp(), "%sChanging awrtbari node [%p] to an iastore\n", OPT_DETAILS_LOOP_VERSIONER, child))
             {
             TR::Node::recreate(child, TR::astorei);
             child->getChild(2)->recursivelyDecReferenceCount();
@@ -4401,8 +4413,8 @@ void TR_LoopVersioner::versionNaturalLoop(TR_RegionStructure *whileLoop, List<TR
          TR_ASSERT((arrayStoreCheckNode->getNumChildren() == 2), "Unknown array store check tree\n");
          secondNewTree = TR::TreeTop::create(comp(), TR::Node::create(TR::treetop, 1, arrayStoreCheckNode->getSecondChild()), NULL, NULL);
          child = arrayStoreCheckNode->getSecondChild();
-         if (child->getOpCodeValue() == TR::wrtbari && comp()->getOptions()->getGcMode() == TR_WrtbarNone &&
-             performTransformation(comp(), "%sChanging iwrtbar node [%p] to an iastore\n", OPT_DETAILS_LOOP_VERSIONER, child))
+         if (child->getOpCodeValue() == TR::awrtbari && comp()->getOptions()->getGcMode() == TR_WrtbarNone &&
+             performTransformation(comp(), "%sChanging awrtbari node [%p] to an iastore\n", OPT_DETAILS_LOOP_VERSIONER, child))
             {
             TR::Node::recreate(child, TR::astorei);
             child->getChild(2)->recursivelyDecReferenceCount();
@@ -5138,32 +5150,26 @@ void TR_LoopVersioner::buildNullCheckComparisonsTree(List<TR::Node> *nullChecked
    }
 
 
-void TR_LoopVersioner::buildIwrtbarComparisonsTree(List<TR::TreeTop> *iwrtbarTrees, List<TR::TreeTop> *nullCheckTrees, List<TR::TreeTop> *divCheckTrees, List<TR::TreeTop> *checkCastTrees, List<TR::TreeTop> *arrayStoreCheckTrees, List<TR::Node> *comparisonTrees, TR::Block *exitGotoBlock)
+void TR_LoopVersioner::buildAwrtbariComparisonsTree(List<TR::TreeTop> *awrtbariTrees, List<TR::TreeTop> *nullCheckTrees, List<TR::TreeTop> *divCheckTrees, List<TR::TreeTop> *checkCastTrees, List<TR::TreeTop> *arrayStoreCheckTrees, List<TR::Node> *comparisonTrees, TR::Block *exitGotoBlock)
    {
 #ifdef J9_PROJECT_SPECIFIC
-   ListElement<TR::TreeTop> *nextTree = iwrtbarTrees->getListHead();
+   ListElement<TR::TreeTop> *nextTree = awrtbariTrees->getListHead();
    while (nextTree)
       {
-      TR::TreeTop *iwrtbarTree = nextTree->getData();
-      TR::Node *iwrtbarNode = iwrtbarTree->getNode();
-      if (iwrtbarNode->getOpCodeValue() != TR::wrtbari)
-        iwrtbarNode = iwrtbarNode->getFirstChild();
+      TR::TreeTop *awrtbariTree = nextTree->getData();
+      TR::Node *awrtbariNode = awrtbariTree->getNode();
+      if (awrtbariNode->getOpCodeValue() != TR::awrtbari)
+        awrtbariNode = awrtbariNode->getFirstChild();
 
-      //traceMsg(comp(), "iwrtbar node %p\n", iwrtbarNode);
+      //traceMsg(comp(), "awrtbari node %p\n", awrtbariNode);
 
       //vcount_t visitCount = comp()->incVisitCount();
       //collectAllExpressionsToBeChecked(nullCheckTrees, divCheckTrees, checkCastTrees, arrayStoreCheckTrees, divCheckNode->getFirstChild()->getSecondChild(), comparisonTrees, exitGotoBlock, visitCount);
 
-      if (performTransformation(comp(), "%s Creating test outside loop for checking if %p is iwrtbar is required\n", OPT_DETAILS_LOOP_VERSIONER, iwrtbarNode))
+      if (performTransformation(comp(), "%s Creating test outside loop for checking if %p is awrtbari is required\n", OPT_DETAILS_LOOP_VERSIONER, awrtbariNode))
          {
-         TR::Node *duplicateBase = iwrtbarNode->getLastChild()->duplicateTreeForCodeMotion();
+         TR::Node *duplicateBase = awrtbariNode->getLastChild()->duplicateTreeForCodeMotion();
          TR::Node *ifNode, *ifNode1, *ifNode2;
-
-         bool isX86 = false;
-
-#ifdef TR_TARGET_X86
-         isX86 = true;
-#endif
 
          // If we can guarantee a fixed tenure size we can hardcode size constants
          bool isVariableHeapBase = comp()->getOptions()->isVariableHeapBaseForBarrierRange0();
@@ -5171,40 +5177,39 @@ void TR_LoopVersioner::buildIwrtbarComparisonsTree(List<TR::TreeTop> *iwrtbarTre
 
          TR_J9VMBase *fej9 = (TR_J9VMBase *)(comp()->fe());
 
-         if (!isX86 && (isVariableHeapBase || isVariableHeapSize))
+         if (isVariableHeapBase || isVariableHeapSize)
             {
             ifNode1 =  TR::Node::create(TR::acmpge, 2, duplicateBase, TR::Node::createWithSymRef(TR::aload, 0, comp()->getSymRefTab()->findOrCreateThreadLowTenureAddressSymbolRef()));
             }
          else
             {
-            ifNode1 =  TR::Node::create(TR::acmpge, 2, duplicateBase, TR::Node::create(duplicateBase, TR::aconst, 0, fej9->getLowTenureAddress()));
+            ifNode1 =  TR::Node::create(TR::acmpge, 2, duplicateBase, TR::Node::aconst(duplicateBase, fej9->getLowTenureAddress()));
             }
 
          //comparisonTrees->add(ifNode);
 
-         dumpOptDetails(comp(), "1 The node %p has been created for testing if iwrtbar is required\n", ifNode1);
+         dumpOptDetails(comp(), "1 The node %p has been created for testing if awrtbari is required\n", ifNode1);
 
-         duplicateBase = iwrtbarNode->getLastChild()->duplicateTreeForCodeMotion();
+         duplicateBase = awrtbariNode->getLastChild()->duplicateTreeForCodeMotion();
 
-         if (!isX86 && (isVariableHeapBase || isVariableHeapSize))
+         if (isVariableHeapBase || isVariableHeapSize)
             {
             ifNode2 =  TR::Node::create(TR::acmplt, 2, duplicateBase, TR::Node::createWithSymRef(TR::aload, 0, comp()->getSymRefTab()->findOrCreateThreadHighTenureAddressSymbolRef()));
             }
          else
             {
-            ifNode2 =  TR::Node::create(TR::acmplt, 2, duplicateBase, TR::Node::create(duplicateBase, TR::aconst, 0, fej9->getHighTenureAddress()));
+            ifNode2 =  TR::Node::create(TR::acmplt, 2, duplicateBase, TR::Node::aconst(duplicateBase, fej9->getHighTenureAddress()));
             }
 
          ifNode =  TR::Node::createif(TR::ificmpne, TR::Node::create(TR::iand, 2, ifNode1, ifNode2), TR::Node::create(duplicateBase, TR::iconst, 0, 0), exitGotoBlock->getEntry());
 
          comparisonTrees->add(ifNode);
 
-         dumpOptDetails(comp(), "2 The node %p has been created for testing if iwrtbar is required\n", ifNode2);
+         dumpOptDetails(comp(), "2 The node %p has been created for testing if awrtbari is required\n", ifNode2);
 
+         //printf("Found opportunity for skipping wrtbar %p in %s at freq %d\n", awrtbariNode, comp()->signature(), awrtbariTree->getEnclosingBlock()->getFrequency()); fflush(stdout);
 
-         //printf("Found opportunity for skipping wrtbar %p in %s at freq %d\n", iwrtbarNode, comp()->signature(), iwrtbarTree->getEnclosingBlock()->getFrequency()); fflush(stdout);
-
-         iwrtbarNode->setSkipWrtBar(true);
+         awrtbariNode->setSkipWrtBar(true);
          }
 
       nextTree = nextTree->getNextElement();

@@ -31,7 +31,12 @@ class TR_Memory;
 
 
 namespace TR { class IlType; }
-namespace TR { class JitBuilderRecorder; }
+namespace TR { class TypeDictionary; }
+
+extern "C" {
+typedef void * (*ClientAllocator)(void * impl);
+typedef void * (*ImplGetter)(void *client);
+}
 
 namespace OMR
 {
@@ -42,9 +47,11 @@ public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
    IlType(const char *name) :
+      _client(0),
       _name(name)
       { }
    IlType() :
+      _client(0),
       _name(0)
       { }
    virtual ~IlType()
@@ -52,7 +59,8 @@ public:
 
    const char *getName() { return _name; }
    virtual char *getSignatureName();
-   const TR::IlType * self();
+
+   virtual TR::IlType *primitiveType(TR::TypeDictionary * d);
 
    virtual TR::DataType getPrimitiveType() { return TR::NoType; }
 
@@ -65,13 +73,60 @@ public:
 
    virtual size_t getSize();
 
-   void RecordFirstTime(TR::JitBuilderRecorder *recorder);
-   virtual void Record(TR::JitBuilderRecorder *recorder);
+   /**
+    * @brief associates this object with a particular client object
+    */
+   void setClient(void *client)
+      {
+      _client = client;
+      }
+
+   /**
+    * @brief returns the client object associated with this object
+    */
+   void *client();
+
+   /**
+    * @brief Set the Client Allocator function
+    *
+    * @param allocator a function pointer to the client object allocator
+    */
+   static void setClientAllocator(ClientAllocator allocator)
+      {
+      _clientAllocator = allocator;
+      }
+
+   /**
+    * @brief Set the Get Impl function
+    *
+    * @param getter function pointer to the impl getter
+    */
+   static void setGetImpl(ImplGetter getter)
+      {
+      _getImpl = getter;
+      }
 
 protected:
-   const char *_name;
-   static const char * signatureNameForType[TR::NumOMRTypes];
-   static const uint8_t primitiveTypeAlignment[TR::NumOMRTypes];
+   /**
+    * @brief pointer to a client object that corresponds to this object
+    */
+   void                 * _client;
+
+   /**
+    * @brief pointer to the function used to allocate an instance of a
+    * client object
+    */
+   static ClientAllocator _clientAllocator;
+
+   /**
+    * @brief pointer to impl getter function
+    */
+   static ImplGetter _getImpl;
+
+   const char           * _name;
+
+   static const char    * signatureNameForType[TR::NumOMRTypes];
+   static const uint8_t   primitiveTypeAlignment[TR::NumOMRTypes];
    };
 
 } // namespace OMR

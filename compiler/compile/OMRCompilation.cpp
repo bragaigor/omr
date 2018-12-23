@@ -202,8 +202,7 @@ OMR::Compilation::Compilation(
       TR::Options &options,
       TR::Region &heapMemoryRegion,
       TR_Memory *m,
-      TR_OptimizationPlan *optimizationPlan,
-      bool shouldCompile) :
+      TR_OptimizationPlan *optimizationPlan) :
    _signature(compilee->signature(m)),
    _options(&options),
    _heapMemoryRegion(heapMemoryRegion),
@@ -281,7 +280,6 @@ OMR::Compilation::Compilation(
    _relocatableMethodCodeStart(NULL),
    _compThreadID(id),
    _failCHtableCommitFlag(false),
-   _numReservedIPICTrampolines(0),
    _phaseTimer("Compilation", self()->allocator("phaseTimer"), self()->getOption(TR_Timing)),
    _phaseMemProfiler("Compilation", self()->allocator("phaseMemProfiler"), self()->getOption(TR_LexicalMemProfiler)),
    _compilationNodes(NULL),
@@ -295,7 +293,6 @@ OMR::Compilation::Compilation(
    _gpuKernelLineNumberList(m),
    _gpuPtxCount(0),
    _bitVectorPool(self()),
-   _shouldCompile(shouldCompile),
    _tlsManager(*self())
    {
 
@@ -372,6 +369,18 @@ OMR::Compilation::Compilation(
 #endif
          );
    _isServerInlining = !options.getOption(TR_NoOptServer);
+
+   // TR_DisableInternalPointers must be set before allocateCodeGenerator(self()) is called because
+   // CodeGenerator's _disableInternalPointers member is set in its constructor and this is one of
+   // options that is checked for
+   if (_isOptServer)
+      {
+      if(self()->getMethodHotness() <= warm)
+         {
+         if (!TR::Compiler->target.cpu.isPower()) // Temporarily exclude PPC due to perf regression
+            self()->setOption(TR_DisableInternalPointers);
+         }
+      }
 
    //_methodSymbol must be done after symRefTab, but before codegen
    // _methodSymbol must be initialized here because creating a jitted method symbol
@@ -650,9 +659,15 @@ bool OMR::Compilation::isPotentialOSRPoint(TR::Node *node, TR::Node **osrPointNo
       else if (node->getOpCode().isCall())
          {
          TR::SymbolReference *callSymRef = node->getSymbolReference();
-         if (callSymRef->getReferenceNumber() >=
+         if (node->isPotentialOSRPointHelperCall())
+            {
+            potentialOSRPoint = true;
+            }
+         else if (callSymRef->getReferenceNumber() >=
              self()->getSymRefTab()->getNonhelperIndex(self()->getSymRefTab()->getLastCommonNonhelperSymbol()))
+            {
             potentialOSRPoint = (disableGuardedCallOSR == NULL);
+            }
          }
       else if (node->getOpCodeValue() == TR::monent)
          potentialOSRPoint = (disableMonentOSR == NULL);
@@ -776,6 +791,11 @@ OMR::Compilation::getOSRInductionOffset(TR::Node *node)
    if (!self()->isPotentialOSRPoint(node, &osrNode))
       {
       TR_ASSERT(0, "getOSRInductionOffset should only be called on OSR points");
+      }
+
+   if (osrNode->isPotentialOSRPointHelperCall())
+      {
+      return osrNode->getOSRInductionOffset();
       }
 
    if (osrNode->getOpCode().isCall())
@@ -920,15 +940,7 @@ int32_t OMR::Compilation::compile()
    bool printCodegenTime = self()->getOption(TR_CummTiming);
 
    if (self()->isOptServer())
-      {
-      // Temporarily exclude PPC due to perf regression
-      if( (self()->getMethodHotness() <= warm))
-         {
-         if (!TR::Compiler->target.cpu.isPower())
-            TR::Options::getCmdLineOptions()->setOption(TR_DisableInternalPointers);
-         }
-      self()->getOptions()->setOption(TR_DisablePartialInlining);
-      }
+      self()->setOption(TR_DisablePartialInlining);
 
 #ifdef J9_PROJECT_SPECIFIC
    if (self()->getOptions()->getDelayCompile())
@@ -1011,7 +1023,7 @@ int32_t OMR::Compilation::compile()
    LexicalTimer t("compile", self()->signature(), self()->phaseTimer());
    TR::LexicalMemProfiler mp("compile", self()->signature(), self()->phaseMemProfiler());
 
-   if (_ilGenSuccess && _shouldCompile)
+   if (_ilGenSuccess)
       {
       _methodSymbol->detectInternalCycles(_methodSymbol->getFlowGraph(), self());
 
@@ -1272,11 +1284,6 @@ void OMR::Compilation::performOptimizations()
 
    if (_optimizer)
       _optimizer->optimize();
-
-   if (self()->getOption(TR_DisableShrinkWrapping) &&
-       !TR::Compiler->target.cpu.isZ() && // 390 now uses UseDefs in CodeGenPrep
-       !self()->getOptions()->getVerboseOption(TR_VerboseCompYieldStats))
-      _optimizer = NULL;
    }
 
 bool OMR::Compilation::incInlineDepth(TR::ResolvedMethodSymbol * method, TR_ByteCodeInfo & bcInfo, int32_t cpIndex, TR::SymbolReference *callSymRef, bool directCall, TR_PrexArgInfo *argInfo)
@@ -2019,8 +2026,12 @@ void OMR::Compilation::switchCodeCache(TR::CodeCache *newCodeCache)
    {
    TR_ASSERT( self()->getCurrentCodeCache() != newCodeCache, "Attempting to switch to the currently held code cache");
    self()->setCurrentCodeCache(newCodeCache);  // Even if we signal, we need to update the reserved code cache for recompilations.
-   _codeCacheSwitched = true;
-   _numReservedIPICTrampolines = 0;
+   self()->cg()->setCodeCacheSwitched(true);
+
+#ifdef TR_TARGET_X86
+   self()->cg()->setNumReservedIPICTrampolines(0);
+#endif
+
    if ( self()->cg()->committedToCodeCache() || !newCodeCache )
       {
       if (newCodeCache)
@@ -2725,4 +2736,35 @@ void OMR::Compilation::invalidateAliasRegion()
       self()->_aliasRegion.~Region();
       new (&self()->_aliasRegion) TR::Region(_heapMemoryRegion);
       }
+   }
+
+bool OMR::Compilation::incompleteOptimizerSupportForReadWriteBarriers()
+   {
+   return false;
+   }
+
+int32_t OMR::Compilation::getNumReservedIPICTrampolines()
+   {
+#ifdef TR_TARGET_X86
+   return self()->cg()->getNumReservedIPICTrampolines();
+#else
+   return 0;
+#endif
+   }
+
+void OMR::Compilation::setNumReservedIPICTrampolines(int32_t n)
+   {
+#ifdef TR_TARGET_X86
+   return self()->cg()->setNumReservedIPICTrampolines(n);
+#endif
+   }
+
+bool OMR::Compilation::getCodeCacheSwitched()
+   {
+   return self()->cg()->hasCodeCacheSwitched();
+   }
+
+void OMR::Compilation::setCodeCacheSwitched(bool s)
+   {
+   self()->cg()->setCodeCacheSwitched(s);
    }

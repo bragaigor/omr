@@ -65,7 +65,7 @@ typedef enum MM_GCPolicy {
 #define OMR_GC_READ_BARRIER_TYPE_ILLEGAL 0x0
 #define OMR_GC_READ_BARRIER_TYPE_NONE 0x1
 #define OMR_GC_READ_BARRIER_TYPE_ALWAYS 0x2
-#define OMR_GC_READ_BARRIER_TYPE_EVACUATE 0x3
+#define OMR_GC_READ_BARRIER_TYPE_RANGE_CHECK 0x3
 #define OMR_GC_READ_BARRIER_TYPE_COUNT 0x4
 
 typedef enum MM_GCWriteBarrierType {
@@ -84,7 +84,7 @@ typedef enum MM_GCWriteBarrierType {
 typedef enum MM_GCReadBarrierType {
 	gc_modron_readbar_illegal = OMR_GC_READ_BARRIER_TYPE_ILLEGAL,
 	gc_modron_readbar_none = OMR_GC_READ_BARRIER_TYPE_NONE,
-	gc_modron_readbar_evacuate = OMR_GC_READ_BARRIER_TYPE_EVACUATE,
+	gc_modron_readbar_range_check = OMR_GC_READ_BARRIER_TYPE_RANGE_CHECK,
 	gc_modron_readbar_always = OMR_GC_READ_BARRIER_TYPE_ALWAYS,
 	gc_modron_readbar_count = OMR_GC_READ_BARRIER_TYPE_COUNT
 } MM_GCReadBarrierType;
@@ -496,7 +496,6 @@ typedef enum {
 #define PREFERRED_HEAP_BASE 0x0
 #endif
 
-#if defined(OMR_GC_COMPRESSED_POINTERS)
 #define SUBALLOCATOR_INITIAL_SIZE (200*1024*1024)
 #define SUBALLOCATOR_COMMIT_SIZE (50*1024*1024)
 #if defined(AIXPPC)
@@ -505,7 +504,6 @@ typedef enum {
 #else /* defined(AIXPPC) */
 #define SUBALLOCATOR_ALIGNMENT (8*1024*1024)
 #endif /* defined(AIXPPC) */
-#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 
 #if defined(OMR_GC_REALTIME)
 #define METRONOME_DEFAULT_HRT_PERIOD_MICRO 1000 /* This gives vanilla linux a chance to use the HRT */

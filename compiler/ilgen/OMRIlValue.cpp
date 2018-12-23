@@ -27,35 +27,18 @@
 #include "il/symbol/AutomaticSymbol.hpp"
 #include "il/SymbolReference.hpp"
 #include "ilgen/IlValue.hpp" // must follow include for compile/Compilation.hpp for TR_Memory
-#include "ilgen/MethodBuilderRecorder.hpp"
+#include "ilgen/MethodBuilder.hpp"
 
 
-OMR::IlValue::IlValue(TR::MethodBuilderRecorder *methodBuilder)
-   : _id(methodBuilder->getNextValueID()),
-     _nodeThatComputesValue(0),
-     _treeTopThatAnchorsValue(0),
-     _blockThatComputesValue(0),
-     _methodBuilder(methodBuilder),
-     _symRefThatCanBeUsedInOtherBlocks(0)
-   {
-   }
-
-OMR::IlValue::IlValue(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block, TR::MethodBuilderRecorder *methodBuilder)
-   : _id(methodBuilder->getNextValueID()),
+OMR::IlValue::IlValue(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block, TR::MethodBuilder *methodBuilder)
+   : _client(0),
+     _id(methodBuilder->getNextValueID()),
      _nodeThatComputesValue(node),
      _treeTopThatAnchorsValue(treeTop),
      _blockThatComputesValue(block),
      _methodBuilder(methodBuilder),
      _symRefThatCanBeUsedInOtherBlocks(0)
    {
-   }
-
-void
-OMR::IlValue::close(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block)
-   {
-    _nodeThatComputesValue = node;
-    _treeTopThatAnchorsValue = treeTop;
-    _blockThatComputesValue = block;
    }
 
 TR::DataType
@@ -136,3 +119,14 @@ OMR::IlValue::storeOver(TR::IlValue *value, TR::Block *block)
       // any downstream use of "this" IlValue will now load the value computed by "value"
       }
    }
+
+void *
+OMR::IlValue::client()
+   {
+   if (_client == NULL && _clientAllocator != NULL)
+      _client = _clientAllocator(static_cast<TR::IlValue *>(this));
+   return _client;
+   }
+
+ClientAllocator OMR::IlValue::_clientAllocator = NULL;
+ClientAllocator OMR::IlValue::_getImpl = NULL;

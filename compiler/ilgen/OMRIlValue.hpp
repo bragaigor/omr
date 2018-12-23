@@ -33,8 +33,12 @@ namespace TR { class Block; }
 namespace TR { class Symbol; }
 namespace TR { class SymbolReference; }
 namespace TR { class MethodBuilder; }
-namespace TR { class MethodBuilderRecorder; }
 namespace TR { class IlValue; }
+
+extern "C" {
+typedef void * (*ClientAllocator)(void * impl);
+typedef void * (*ImplGetter)(void *client);
+}
 
 namespace OMR
 {
@@ -45,19 +49,9 @@ public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
    /**
-    * @brief used to create a TR::IlValue before nodes, treetops, or blocks can be associated
-    */
-   IlValue(TR::MethodBuilderRecorder *methodBuilder);
-
-   /**
     * @brief initial state assumes value will only be used locally
     */
-   IlValue(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block, TR::MethodBuilderRecorder *methodBuilder);
-
-   /**
-    * @brief fill in details if IlValue was created without values
-    */
-   void close(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block);
+   IlValue(TR::Node *node, TR::TreeTop *treeTop, TR::Block *block, TR::MethodBuilder *methodBuilder);
 
    /**
     * @brief return a TR::Node that computes this value, either directly if in same block or by loading a local variable if not
@@ -96,11 +90,60 @@ public:
       return _id;
       }
 
+   /**
+    * @brief associates this object with a particular client object
+    */
+   void setClient(void *client)
+      {
+      _client = client;
+      }
+
+   /**
+    * @brief returns the client object associated with this object
+    */
+   void *client();
+
+   /**
+    * @brief Set the Client Allocator function
+    *
+    * @param allocator a function pointer to the client object allocator
+    */
+   static void setClientAllocator(ClientAllocator allocator)
+      {
+      _clientAllocator = allocator;
+      }
+
+   /**
+    * @brief Set the Get Impl function
+    *
+    * @param getter function pointer to the impl getter
+    */
+   static void setGetImpl(ImplGetter getter)
+      {
+      _getImpl = getter;
+      }
+
 protected:
    /**
     * @brief ensures this value is accessible via an auto symbol, but only generates store if hasn't already been stored
     */
    void storeToAuto();
+
+   /**
+    * @brief pointer to a client object that corresponds to this object
+    */
+   void                * _client;
+
+   /**
+    * @brief pointer to the function used to allocate an instance of a
+    * client object
+    */
+   static ClientAllocator _clientAllocator;
+
+   /**
+    * @brief pointer to impl getter function
+    */
+   static ImplGetter _getImpl;
 
    /**
     * @brief identifying number for values guaranteed to be unique per MethodBuilder
@@ -125,7 +168,7 @@ protected:
    /**
     * @brief Method builder object where value is computed
     */
-   TR::MethodBuilderRecorder   * _methodBuilder;
+   TR::MethodBuilder   * _methodBuilder;
 
    /**
     * @brief TR::SymbolReference for temp holding value if it needs to be used outside basic block that computes it

@@ -376,7 +376,6 @@ public:
    TR::RealRegister::RegNum getEntryPointRegister();
    TR::RealRegister::RegNum getReturnAddressRegister();
 
-   TR::RealRegister *getExtCodeBaseRealRegister();
    TR::RealRegister *getMethodMetaDataRealRegister();
    TR::RealRegister *getLitPoolRealRegister();
 
@@ -455,9 +454,6 @@ public:
    void setEnableBranchPreloadForCalls()          {_cgFlags.set(S390CG_enableBranchPreloadForCalls);}
    void setDisableBranchPreloadForCalls()          {_cgFlags.reset(S390CG_enableBranchPreloadForCalls);}
 
-   bool getExtCodeBaseRegisterIsFree()         {return _cgFlags.testAny(S390CG_extCodeBaseRegisterIsFree);}
-   void setExtCodeBaseRegisterIsFree(bool val) {return _cgFlags.set(S390CG_extCodeBaseRegisterIsFree, val);}
-
    bool isOutOfLineHotPath() {return _cgFlags.testAny(S390CG_isOutOfLineHotPath);}
    void setIsOutOfLineHotPath(bool val) {_cgFlags.set(S390CG_isOutOfLineHotPath, val);}
 
@@ -472,8 +468,6 @@ public:
    void setEnableTLHPrefetching() { _cgFlags.set(S390CG_enableTLHPrefetching);}
 
    // Query to codegen to know if regs are available or not
-   //
-   bool isExtCodeBaseFreeForAssignment();
    bool isLitPoolFreeForAssignment();
 
    // zGryphon HPR
@@ -524,11 +518,6 @@ public:
                                    TR::RealRegister::RegNum realNum);
    bool isGlobalRegisterAvailable(TR_GlobalRegisterNumber i, TR::DataType dt);
 
-   // Used to model register liveness without Future Use Count.
-   virtual bool isInternalControlFlowReg(TR::Register *reg);
-   virtual void startInternalControlFlow(TR::Instruction *instr);
-   virtual void endInternalControlFlow(TR::Instruction *instr) { _internalControlFlowRegisters.clear(); }
-
    bool doRematerialization() {return true;}
 
    void dumpDataSnippets(TR::FILE *outFile);
@@ -552,20 +541,6 @@ public:
 
    uint8_t getRCondMoveBranchOpCond() { return 0xF - fCondMoveBranchOpCond; }
 
-   /** Support for shrinkwrapping */
-   bool processInstruction(TR::Instruction *instr, TR_BitVector **registerUsageInfo, int32_t &blockNum, int32_t &isFence, bool traceIt); // virt
-   uint32_t isPreservedRegister(int32_t regIndex);
-   bool isReturnInstruction(TR::Instruction *instr);
-   bool isBranchInstruction(TR::Instruction *instr);
-   bool isLabelInstruction(TR::Instruction *instr);
-   int32_t isFenceInstruction(TR::Instruction *instr);
-   bool isAlignmentInstruction(TR::Instruction *instr);
-   TR::Instruction *splitEdge(TR::Instruction *cursor, bool isFallThrough, bool needsJump, TR::Instruction *newSplitLabel, TR::list<TR::Instruction*> *jmpInstrs, bool firstJump = false);
-   TR::Instruction *splitBlockEntry(TR::Instruction *instr);
-   int32_t computeRegisterSaveDescription(TR_BitVector *regs, bool populateInfo = false);
-   void processIncomingParameterUsage(TR_BitVector **registerUsageInfo, int32_t blockNum);
-   void updateSnippetMapWithRSD(TR::Instruction *cur, int32_t rsd);
-   bool isTargetSnippetOrOutOfLine(TR::Instruction *instr, TR::Instruction **start, TR::Instruction **end);
    bool canUseImmedInstruction(int64_t v);
    void ensure64BitRegister(TR::Register *reg);
 
@@ -906,8 +881,6 @@ private:
 
    TR::SymbolReference* _reusableTempSlot;
 
-   TR::list<TR::Register *> _internalControlFlowRegisters;
-
    CS2::HashTable<ncount_t, bool, TR::Allocator> _nodesToBeEvaluatedInRegPairs;
 
 protected:
@@ -917,7 +890,7 @@ protected:
    typedef enum
       {
       // Available                       = 0x00000001,
-      S390CG_extCodeBaseRegisterIsFree   = 0x00000002,
+      // Available                       = 0x00000002,
       // Available                       = 0x00000004,
       S390CG_addStorageReferenceHints    = 0x00000008,
       S390CG_isOutOfLineHotPath          = 0x00000010,

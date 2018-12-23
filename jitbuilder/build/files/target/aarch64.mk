@@ -38,12 +38,12 @@ JIT_PRODUCT_BACKEND_SOURCES+= \
     $(JIT_OMR_DIRTY_DIR)/aarch64/codegen/OMRMemoryReference.cpp \
     $(JIT_OMR_DIRTY_DIR)/aarch64/codegen/OMRRealRegister.cpp \
     $(JIT_OMR_DIRTY_DIR)/aarch64/codegen/OMRRegisterDependency.cpp \
-    $(JIT_OMR_DIRTY_DIR)/aarch64/codegen/OMRRegisterIterator.cpp \
     $(JIT_OMR_DIRTY_DIR)/aarch64/codegen/OMRSnippet.cpp \
     $(JIT_OMR_DIRTY_DIR)/aarch64/codegen/OMRTreeEvaluator.cpp \
     $(JIT_OMR_DIRTY_DIR)/aarch64/codegen/OpBinary.cpp \
     $(JIT_OMR_DIRTY_DIR)/aarch64/codegen/UnaryEvaluator.cpp
 
 #environement files
-#JIT_PRODUCT_BACKEND_SOURCES+= \
-#    $(JIT_OMR_DIRTY_DIR)/aarch64/env/<file>.cpp
+
+JIT_PRODUCT_BACKEND_SOURCES+= \
+    $(JIT_OMR_DIRTY_DIR)/aarch64/env/OMRDebugEnv.cpp

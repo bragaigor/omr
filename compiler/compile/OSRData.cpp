@@ -104,7 +104,7 @@ TR_OSRCompilationData::addInstruction(TR::Instruction* instr)
    if (comp->getOSRMode() == TR::voluntaryOSR
        && !(node
          && node->getOpCode().hasSymbolReference()
-         && node->getSymbolReference()->getReferenceNumber() == TR_induceOSRAtCurrentPC))
+         && node->getSymbolReference()->isOSRInductionHelper()))
       return;
 
    int32_t instructionPC = instr->getBinaryEncoding() - instr->cg()->getCodeStart();
@@ -1490,9 +1490,12 @@ bool TR_OSRCompilationData::TR_ScratchBufferInfo::operator==(const TR_ScratchBuf
       scratchBufferOffset == info.scratchBufferOffset && symSize == info.symSize;
    }
 
-#if defined(TR_HOST_POWER) && defined(TR_TARGET_POWER) && defined(__IBMCPP__)
+#if (defined(TR_HOST_POWER) && defined(TR_TARGET_POWER)                       \
+           || defined(TR_HOST_S390) && defined(TR_TARGET_S390))               \
+        && defined(__IBMCPP__)
 __attribute__((__noinline__))
-//This tiny function when inlined by xlC 12 at -O3 breaks java -version
+//This tiny function when inlined by xlC 12 or later at -O3 breaks java -version
+//on Power and causes intermittent crashes on z/OS with xlC 2.1.1
 #endif
 int32_t TR_OSRCompilationData::TR_ScratchBufferInfo::writeToBuffer(uint8_t* buffer) const
    {

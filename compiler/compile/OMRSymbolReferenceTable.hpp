@@ -146,6 +146,35 @@ class SymbolReferenceTable
       osrScratchBufferSymbol,    //osrScratchBuffer slot on  j9vmthread
       osrFrameIndexSymbol,       // osrFrameIndex slot on j9vmthread
       osrReturnAddressSymbol,       // osrFrameIndex slot on j9vmthread
+
+      /** \brief
+       *
+       *  A call with this symbol marks a place in the jitted code where OSR transition to the VM interpreter is supported.
+       *  The transition target bytecode is the bytecode index on the call plus an induction offset which is stored on the
+       *  call node.
+       *
+       *  \code
+       *    call <potentialOSRPointHelperSymbol>
+       *  \endcode
+       *
+       *  \note
+       *   The call is not to be codegen evaluated, it should be cleaned up before codegen.
+       */
+      potentialOSRPointHelperSymbol,
+      /** \brief
+       *
+       *  A call with this symbol marks a place that has been optimized with runtime assumptions. Such place needs protection of OSR
+       *  points. When the assumption becomes wrong, the execution of jitted code with the assumption has to be transition to the VM
+       *  interpreter before running the invalid code.
+       *
+       *  \code
+       *    call <osrFearPointHelperSymbol>
+       *  \endcode
+       *
+       *  \note
+       *   The call is not to be codegen evaluated, it should be cleaned up before codegen.
+       */
+      osrFearPointHelperSymbol,
       lowTenureAddressSymbol,    // on j9vmthread
       highTenureAddressSymbol,   // on j9vmthread
       fragmentParentSymbol,
@@ -279,11 +308,60 @@ class SymbolReferenceTable
       return lastCommonNonhelperSymbol;
       }
 
-   // Check whether the given symbol reference (or reference number) is the
-   // known "non-helper" symbol reference.
-   //
-   bool isNonHelper(TR::SymbolReference *, CommonNonhelperSymbol);
-   bool isNonHelper(int32_t, CommonNonhelperSymbol);
+   /**
+    * Check whether the given symbol reference is the specified
+    * "non-helper" symbol reference
+    * @param[in] symRef the symbol reference to check
+    * @param[in] nonHelper the non-helper symbol to check
+    * @returns `true` if symRef is the specified non-helper symbol;
+    * `false` otherwise
+    */
+   bool isNonHelper(TR::SymbolReference *symRef, CommonNonhelperSymbol nonHelper);
+
+   /**
+    * Check whether the given reference number is the specified
+    * "non-helper" symbol.
+    * @param[in] ref the reference number to check
+    * @param[in] nonHelper the non-helper symbol to check
+    * @returns `true` if ref is the specified non-helper symbol;
+    * `false` otherwise
+    */
+   bool isNonHelper(int32_t ref, CommonNonhelperSymbol nonHelper);
+
+   /**
+    * Check whether the given symbol reference is a "non-helper" symbol.
+    * @param[in] symRef the symbol reference to check
+    * @returns `true` if symRef is a non-helper reference;
+    * `false` otherwise
+    */
+   bool isNonHelper(TR::SymbolReference *symRef);
+
+   /**
+    * Check whether the given reference number is a "non-helper" symbol.
+    * @param[in] ref the reference number to check
+    * @returns `true` if ref is a non-helper reference;
+    * `false` otherwise
+    */
+   bool isNonHelper(int32_t ref);
+
+   /**
+    * Retrieve the @ref CommonNonhelperSymbol for this symbol reference.
+    * @param[in] symRef the symbol reference to check
+    * @returns the @ref CommonNonhelperSymbol that this symbol reference
+    * refers to or the value of getLastCommonNonhelperSymbol() if
+    * the symbol reference does not refer to a non-helper
+    */
+   CommonNonhelperSymbol getNonHelperSymbol(TR::SymbolReference *symRef);
+
+   /**
+    * Retrieve the `CommonNonhelperSymbol` for this reference number.
+    * @param[in] ref the reference number to check
+    * @returns the @ref CommonNonhelperSymbol that this symbol reference
+    * refers to or the value of getLastCommonNonhelperSymbol() if
+    * the symbol reference does not refer to a non-helper
+    */
+   CommonNonhelperSymbol getNonHelperSymbol(int32_t ref);
+
 
    // Total number of symbols (known and dynamic) in the SRT
    //
@@ -329,6 +407,9 @@ class SymbolReferenceTable
    TR::SymbolReference * findOrCreateRuntimeHelper(TR_RuntimeHelper index, bool canGCandReturn, bool canGCandExcept, bool preservesAllRegisters);
 
    TR::SymbolReference * findOrCreateCodeGenInlinedHelper(CommonNonhelperSymbol index);
+   TR::SymbolReference * findOrCreatePotentialOSRPointHelperSymbolRef();
+   TR::SymbolReference * findOrCreateOSRFearPointHelperSymbolRef();
+   TR::SymbolReference * findOrCreateInduceOSRSymbolRef(TR_RuntimeHelper induceOSRHelper);
 
    TR::ParameterSymbol * createParameterSymbol(TR::ResolvedMethodSymbol * owningMethodSymbol, int32_t slot, TR::DataType);
    TR::SymbolReference * findOrCreateAutoSymbol(TR::ResolvedMethodSymbol * owningMethodSymbol, int32_t slot, TR::DataType, bool isReference = true,

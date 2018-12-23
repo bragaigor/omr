@@ -26,7 +26,7 @@
 #include "compile/SymbolReferenceTable.hpp"
 #include "compile/Compilation.hpp"
 #include "env/FrontEnd.hpp"
-#include "ilgen/JitBuilderRecorder.hpp"
+#include "ilgen/IlReference.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "env/Region.hpp"
 #include "env/SystemSegmentProvider.hpp"
@@ -60,14 +60,6 @@ public:
 
    virtual size_t getSize() { return TR::DataType::getSize(_type); }
 
-   virtual void Record(TR::JitBuilderRecorder *recorder)
-      {
-      recorder->BeginStatement(StatementName::STATEMENT_PRIMITIVETYPE);
-      recorder->Type(this);
-      recorder->Number((int32_t)(getPrimitiveType()));
-      recorder->EndStatement();
-      }
-
 protected:
    TR::DataType _type;
    };
@@ -87,29 +79,20 @@ public:
       {
       }
 
-   void cacheSymRef(TR::SymbolReference *symRef) { _symRef = symRef; }
-   TR::SymbolReference *getSymRef()              { return _symRef; }
-   void clearSymRef()                            { _symRef = NULL; }
+   void cacheSymRef(TR::SymbolReference *symRef)    { _symRef = symRef; }
+   TR::SymbolReference *getSymRef()                 { return _symRef; }
+   void clearSymRef()                               { _symRef = NULL; }
 
-   TR::IlType *getType()                         { return _type; }
+   TR::IlType *getType()                            { return _type; }
 
-   TR::DataType getPrimitiveType()               { return _type->getPrimitiveType(); }
+   TR::IlType *primitiveType(TR::TypeDictionary *d) { return _type->primitiveType(d); }
 
-   size_t getOffset()                            { return _offset; }
+   TR::DataType getPrimitiveType()                  { return _type->getPrimitiveType(); }
 
-   FieldInfo *getNext()                          { return _next; }
-   void setNext(FieldInfo *next)                 { _next = next; }
+   size_t getOffset()                               { return _offset; }
 
-   virtual void Record(TR::JitBuilderRecorder *recorder, const TR::IlType *myStruct)
-      {
-      _type->RecordFirstTime(recorder);
-      recorder->BeginStatement(StatementName::STATEMENT_DEFINEFIELD);
-      recorder->Type(myStruct);
-      recorder->Type(_type);
-      recorder->String(_name);
-      recorder->Number((int64_t)_offset);
-      recorder->EndStatement();
-      }
+   FieldInfo *getNext()                             { return _next; }
+   void setNext(FieldInfo *next)                    { _next = next; }
 
 //private:
    FieldInfo           * _next;
@@ -135,7 +118,8 @@ public:
    virtual ~StructType()
       { }
 
-   TR::DataType getPrimitiveType()                 { return TR::Address; }
+   TR::IlType *primitiveType(TR::TypeDictionary * d) { return d->Address; }
+   TR::DataType getPrimitiveType()                   { return TR::Address; }
    void Close(size_t finalSize)                      { TR_ASSERT(_size <= finalSize, "Final size %d of struct %s is less than its current size %d\n", finalSize, _name, _size); _size = finalSize; _closed = true; };
    void Close()                                      { _closed = true; };
 
@@ -149,8 +133,6 @@ public:
    virtual size_t getSize() { return _size; }
 
    void clearSymRefs();
-
-   virtual void Record(TR::JitBuilderRecorder *recorder);
 
 protected:
    FieldInfo * findField(const char *fieldName);
@@ -178,7 +160,8 @@ public:
    virtual ~UnionType()
       { }
 
-   TR::DataType getPrimitiveType()                 { return TR::Address; }
+   TR::IlType *primitiveType(TR::TypeDictionary * d) { return d->Address; }
+   TR::DataType getPrimitiveType()                   { return TR::Address; }
    void Close();
 
    void AddField(const char *name, TR::IlType *fieldType);
@@ -189,17 +172,16 @@ public:
    virtual size_t getSize() { return _size; }
 
    void clearSymRefs();
-   virtual void Record(TR::JitBuilderRecorder *recorder);
 
 protected:
-   FieldInfo * findField(const char *fieldName);
+   FieldInfo *  findField(const char *fieldName);
 
-   FieldInfo * _firstField;
-   FieldInfo * _lastField;
-   size_t      _size;
-   bool        _closed;
+   FieldInfo *  _firstField;
+   FieldInfo *  _lastField;
+   size_t       _size;
+   bool         _closed;
    TR_BitVector _symRefBV;
-   TR_Memory* _trMemory;
+   TR_Memory*   _trMemory;
    };
 
 class PointerType : public TR::IlType
@@ -221,18 +203,10 @@ public:
 
    virtual const char *getName() { return _name; }
 
-   virtual TR::DataType getPrimitiveType() { return TR::Address; }
+   virtual TR::IlType *primitiveType(TR::TypeDictionary * d) { return d->Address; }
+   virtual TR::DataType getPrimitiveType()                   { return TR::Address; }
 
    virtual size_t getSize() { return TR::DataType::getSize(TR::Address); }
-
-   virtual void Record(TR::JitBuilderRecorder *recorder)
-      {
-      _baseType->RecordFirstTime(recorder);
-      recorder->BeginStatement(StatementName::STATEMENT_POINTERTYPE);
-      recorder->Type(this);
-      recorder->Type(_baseType);
-      recorder->EndStatement();
-      }
 
 protected:
    TR::IlType          * _baseType;
@@ -309,7 +283,7 @@ OMR::StructType::getFieldOffset(const char *fieldName)
    return info->getOffset();
    }
 
-TR::IlReference *
+TR::SymbolReference *
 OMR::StructType::getFieldSymRef(const char *fieldName)
    {
    OMR::FieldInfo *info = findField(fieldName);
@@ -343,7 +317,7 @@ OMR::StructType::getFieldSymRef(const char *fieldName)
       info->cacheSymRef(symRef);
       }
 
-   return (TR::IlReference *)symRef;
+   return symRef;
    }
 
 void
@@ -357,21 +331,6 @@ OMR::StructType::clearSymRefs()
       }
    }
 
-void
-OMR::StructType::Record(TR::JitBuilderRecorder *recorder)
-   {
-   recorder->BeginStatement(StatementName::STATEMENT_DEFINESTRUCT);
-   recorder->Type(self());
-   recorder->String(_name);
-   recorder->EndStatement();
-
-   FieldInfo *field = _firstField;
-   while (field)
-      {
-      field->Record(recorder, self());
-      field = field->_next;
-      }
-   }
 
 void
 OMR::UnionType::AddField(const char *name, TR::IlType *typeInfo)
@@ -418,7 +377,7 @@ OMR::UnionType::getFieldType(const char *fieldName)
    return info->_type;
    }
 
-TR::IlReference *
+TR::SymbolReference *
 OMR::UnionType::getFieldSymRef(const char *fieldName)
    {
    OMR::FieldInfo *info = findField(fieldName);
@@ -450,7 +409,7 @@ OMR::UnionType::getFieldSymRef(const char *fieldName)
       info->cacheSymRef(symRef);
       }
 
-   return static_cast<TR::IlReference *>(symRef);
+   return symRef;
    }
 
 void
@@ -463,22 +422,6 @@ OMR::UnionType::clearSymRefs()
       field = field->_next;
       }
    _symRefBV.init(4, _trMemory);
-   }
-
-void
-OMR::UnionType::Record(TR::JitBuilderRecorder *recorder)
-   {
-   recorder->BeginStatement(StatementName::STATEMENT_DEFINEUNION);
-   recorder->Type(self());
-   recorder->String(_name);
-   recorder->EndStatement();
-
-   FieldInfo *field = _firstField;
-   while (field)
-      {
-      field->Record(recorder, self());
-      field = field->_next;
-      }
    }
 
 
@@ -505,6 +448,7 @@ OMR::TypeDictionary::MemoryManager::~MemoryManager()
    }
 
 OMR::TypeDictionary::TypeDictionary() :
+   _client(0),
    _structsByName(str_comparator, trMemory()->heapMemoryRegion()),
    _unionsByName(str_comparator, trMemory()->heapMemoryRegion())
    {
@@ -667,14 +611,14 @@ OMR::TypeDictionary::FieldReference(const char *typeName, const char *fieldName)
    if (structIterator != _structsByName.end())
       {
       OMR::StructType *theStruct = structIterator->second;
-      return theStruct->getFieldSymRef(fieldName);
+      return new (PERSISTENT_NEW) TR::IlReference(theStruct->getFieldSymRef(fieldName));
       }
 
    UnionMap::iterator unionIterator = _unionsByName.find(typeName);
    if (unionIterator != _unionsByName.end())
       {
       OMR::UnionType *theUnion = unionIterator->second;
-      return theUnion->getFieldSymRef(fieldName);
+      return new (PERSISTENT_NEW) TR::IlReference(theUnion->getFieldSymRef(fieldName));
       }
 
    TR_ASSERT_FATAL(false, "No type with name '%s'", typeName);
@@ -718,3 +662,14 @@ OMR::TypeDictionary::getUnion(const char *unionName)
    OMR::UnionType *theUnion = it->second;
    return theUnion;
    }
+
+void *
+OMR::TypeDictionary::client()
+   {
+   if (_client == NULL && _clientAllocator != NULL)
+      _client = _clientAllocator(static_cast<TR::TypeDictionary *>(this));
+   return _client;
+   }
+
+ClientAllocator OMR::TypeDictionary::_clientAllocator = NULL;
+ClientAllocator OMR::TypeDictionary::_getImpl = NULL;

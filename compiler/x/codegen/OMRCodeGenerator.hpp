@@ -36,7 +36,6 @@ namespace OMR { typedef OMR::X86::CodeGenerator CodeGeneratorConnector; }
 #include "codegen/Machine.hpp"                 // for Machine, etc
 #include "codegen/RealRegister.hpp"
 #include "codegen/Register.hpp"                // for Register
-#include "codegen/RegisterIterator.hpp"        // for RegisterIterator
 #include "codegen/ScratchRegisterManager.hpp"
 #include "compile/Compilation.hpp"             // for Compilation
 #include "env/jittypes.h"                      // for intptrj_t
@@ -333,9 +332,6 @@ class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator
       return (_assignmentDirection = d);
       }
 
-   TR::RegisterIterator *getX87RegisterIterator()                          {return _x87RegisterIterator;}
-   TR::RegisterIterator *setX87RegisterIterator(TR::RegisterIterator *iter) {return (_x87RegisterIterator = iter);}
-
    TR::RealRegister *getFrameRegister()                       {return _frameRegister;}
    TR::RealRegister *getMethodMetaDataRegister();
 
@@ -343,25 +339,14 @@ class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator
 
    void buildRegisterMapForInstruction(TR_GCStackMap *map);
 
-   bool processInstruction(TR::Instruction *instr, TR_BitVector ** registerUsageInfo, int32_t &blockNum, int32_t &isFence, bool traceIt);
-   uint32_t isPreservedRegister(int32_t regIndex);
    bool isReturnInstruction(TR::Instruction *instr);
    bool isBranchInstruction(TR::Instruction *instr);
-   bool isLabelInstruction(TR::Instruction *instr);
-   int32_t isFenceInstruction(TR::Instruction *instr);
-   bool isAlignmentInstruction(TR::Instruction *instr);
-   TR::Instruction *splitEdge(TR::Instruction *cursor, bool isFallThrough, bool needsJump, TR::Instruction *newSplitLabel, TR::list<TR::Instruction*> *jmpInstrs, bool firstJump = false);
-   TR::Instruction *splitBlockEntry(TR::Instruction *instr);
-   int32_t computeRegisterSaveDescription(TR_BitVector *regs, bool populateInfo = false);
-   void processIncomingParameterUsage(TR_BitVector **registerUsageInfo, int32_t blockNum);
-   void updateSnippetMapWithRSD(TR::Instruction *cur, int32_t rsd);
-   bool isTargetSnippetOrOutOfLine(TR::Instruction *instr, TR::Instruction **start, TR::Instruction **end);
 
    TR::SymbolReference *getNanoTimeTemp();
 
    int32_t branchDisplacementToHelperOrTrampoline(uint8_t *nextInstructionAddress, TR::SymbolReference *helper);
 
-   /*
+   /**
     * \brief Reserve space in the code cache for a specified number of trampolines.
     *
     * \param[in] numTrampolines : number of trampolines to reserve
@@ -369,6 +354,28 @@ class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator
     * \return : none
     */
    void reserveNTrampolines(int32_t numTrampolines) { return; }
+
+   /**
+    * \brief Provides the number of trampolines in the current CodeCache that have
+    *        been reserved for unpopulated interface PIC (IPIC) slots.
+    *
+    * \return The number of reserved IPIC trampolines.
+    */
+   int32_t getNumReservedIPICTrampolines() const { return _numReservedIPICTrampolines; }
+
+   /**
+    * \brief Updates the number of reserved IPIC trampolines in the current CodeCache.
+    *
+    * \param[in] n : number of reserved IPIC trampolines
+    */
+   void setNumReservedIPICTrampolines(int32_t n) { _numReservedIPICTrampolines = n; }
+
+   /**
+    * \brief Changes the current CodeCache to the provided CodeCache.
+    *
+    * \param[in] newCodeCache : the CodeCache to switch to
+    */
+   void switchCodeCacheTo(TR::CodeCache *newCodeCache);
 
    // Note: This leaves the code aligned in the specified manner.
    TR::Instruction *generateSwitchToInterpreterPrePrologue(TR::Instruction *prev, uint8_t alignment, uint8_t alignmentMargin);
@@ -427,7 +434,7 @@ class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator
    void setLowestCommonCodePatchingAlignmentBoundary(int32_t b) {_lowestCommonCodePatchingAlignmentBoundary = b;}
 
    // NOT NEEDED, overridden in amd64/i386
-   bool internalPointerSupportImplemented() {return false;} // no virt
+   bool internalPointerSupportImplemented() {return false;}
 
    bool supportsSinglePrecisionSQRT() {return true;}
 
@@ -577,7 +584,6 @@ class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator
 
    TR_OutlinedInstructions *findOutlinedInstructionsFromLabel(TR::LabelSymbol *label);
    TR_OutlinedInstructions *findOutlinedInstructionsFromMergeLabel(TR::LabelSymbol *label);
-   TR_OutlinedInstructions *findOutlinedInstructionsFromLabelForShrinkWrapping(TR::LabelSymbol *label);
 
    const TR_VFPState         &vfpState()           { return _vfpState; }
    TR::X86VFPSaveInstruction  *vfpResetInstruction(){ return _vfpResetInstruction; }
@@ -646,7 +652,6 @@ class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator
    TR::list<TR_OutlinedInstructions*>    _outlinedInstructionsList;
 
    RegisterAssignmentDirection     _assignmentDirection;
-   TR::RegisterIterator            *_x87RegisterIterator;
 
    int32_t                         _instructionPatchAlignmentBoundary;
    int32_t                         _PicSlotCount;
@@ -660,6 +665,8 @@ class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator
    TR::LabelSymbol                  *_switchToInterpreterLabel;
 
    TR_X86OpCodes                   _xmmDoubleLoadOpCode;
+
+   int32_t _numReservedIPICTrampolines; ///< number of reserved IPIC trampolines
 
    enum TR_X86CodeGeneratorFlags
       {
@@ -813,28 +820,6 @@ class OMR_EXTENSIBLE CodeGenerator : public OMR::CodeGenerator
 #endif
 
 #define IS_32BIT_RIP(x,rip)  ((intptrj_t)(x) == (intptrj_t)(rip) + (int32_t)((intptrj_t)(x) - (intptrj_t)(rip)))
-
-
-class TR_X86FPStackIterator : public TR::RegisterIterator
-   {
-   public:
-
-   TR_X86FPStackIterator(TR::Machine *machine, TR_RegisterKinds kind = TR_NoRegister):
-      TR::RegisterIterator(machine, kind)
-      {
-      _machine = machine;
-      _cursor = TR_X86FPStackRegister::fpFirstStackReg;
-      }
-
-   TR::Register *getFirst() {return _machine->getFPStackLocationPtr(_cursor = TR_X86FPStackRegister::fpFirstStackReg);}
-   TR::Register *getCurrent() {return _machine->getFPStackLocationPtr(_cursor);}
-   TR::Register *getNext() {return _cursor > TR_X86FPStackRegister::fpLastStackReg ? NULL : _machine->getFPStackLocationPtr(++_cursor);}
-
-   private:
-
-   TR::Machine *_machine;
-   int32_t _cursor;
-   };
 
 class TR_X86ScratchRegisterManager: public TR_ScratchRegisterManager
    {

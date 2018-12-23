@@ -125,12 +125,6 @@ class OMR_EXTENSIBLE Instruction : public OMR::Instruction
    bool isCCuseKnown() { return _flags.testAny(CCuseKnown); }
    void setCCuseKnown() {_flags.set(CCuseKnown);}
 
-   bool isStartInternalControlFlow(){ return _flags.testAny(StartInternalControlFlow); }
-   void setStartInternalControlFlow() {_flags.set(StartInternalControlFlow);}
-
-   bool isEndInternalControlFlow(){ return _flags.testAny(EndInternalControlFlow); }
-   void setEndInternalControlFlow() {_flags.set(EndInternalControlFlow);}
-
    // Region numbers start life as just the inline indexes
    // but are later extended by any optimization that duplicates
    // IL (e.g. loopCanonicalizer)
@@ -144,8 +138,6 @@ class OMR_EXTENSIBLE Instruction : public OMR::Instruction
    void setDebugHookOp() {_flags.set(DebugHookOp);}
 
    bool hasLongDisplacementSupport();
-   TR::InstOpCode::Mnemonic opCodeCanBeAdjustedTo(TR::InstOpCode::Mnemonic);
-   void attemptOpAdjustmentForLongDisplacement();
    TR::Register* getRegForBinaryEncoding(TR::Register* reg);
    void useRegister(TR::Register *reg, bool isDummy = false);
    bool matchesAnyRegister(TR::Register* reg, TR::Register* instReg);
@@ -161,8 +153,6 @@ class OMR_EXTENSIBLE Instruction : public OMR::Instruction
 
    virtual Kind getKind() { return IsNotExtended; }
    virtual bool isRegInstruction() { return false; }
-
-   virtual void setKind(Kind kind) { TR_ASSERT(0, "Should not be called unless working with an RX, RS or RI instructions"); }
 
    virtual TR::MemoryReference* getMemoryReference()  {  return NULL; }
    virtual TR::MemoryReference* getMemoryReference2() {  return NULL; }
@@ -230,7 +220,6 @@ class OMR_EXTENSIBLE Instruction : public OMR::Instruction
    virtual bool usesOnlyRegister(TR::Register *reg);
    virtual bool usesRegister(TR::Register *reg);
    virtual bool containsRegister(TR::Register *reg);
-   virtual bool startOfLiveRange(TR::Register *reg); // True if virtual register is dead before current instruction
 
    virtual bool dependencyRefsRegister(TR::Register *reg);
 

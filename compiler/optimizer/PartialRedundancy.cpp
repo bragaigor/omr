@@ -230,6 +230,14 @@ int32_t TR_PartialRedundancy::perform()
    if (comp()->getProfilingMode() == JitProfiling && comp()->getHCRMode() != TR::none && _numProfilingsAllowed == 0)
       return 0;
 
+   // Need to confirm places calling opCodeFor* APIs are doing the right
+   // thing for readbar and wrtbar. All the transformations applied to normal
+   // load/store s should be applied to rd/wrtbar s. However, we need to be
+   // careful about the difference in the shape of the trees and the
+   // mapping relationship between different loads and stores.
+   if (comp()->incompleteOptimizerSupportForReadWriteBarriers())
+      return 0;
+
    TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
    // setAlteredCode(false);
@@ -3925,7 +3933,7 @@ bool TR_ExceptionCheckMotion::includeRelevantNodes(TR::Node *node, vcount_t visi
 
    int32_t rhsChild = -1;
    if (node->getOpCode().isStore())
-      rhsChild = (node->getNumChildren() - ((node->getOpCode().isWrtBar()) ? 2 : 1));
+      rhsChild = node->getOpCode().isStoreDirect() ? 0 : 1;
 
    bool childRelevant = false, containsIndirectAccess = false, containsArrayAccess = false, containsDivide = false, containsUnresolvedAccess = false;
    int32_t i;

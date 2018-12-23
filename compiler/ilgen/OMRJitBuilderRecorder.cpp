@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -19,17 +19,15 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include <stdint.h>
-#include <iostream>
-#include <fstream>
-
 #include "infra/Assert.hpp"
 #include "ilgen/JitBuilderRecorder.hpp"
-#include "ilgen/MethodBuilderRecorder.hpp"
 
-OMR::JitBuilderRecorder::JitBuilderRecorder(const TR::MethodBuilderRecorder *mb)
-   : _mb(mb), _nextID(0), _idSize(8)
+namespace TR { class MethodBuilder; }
+
+OMR::JitBuilderRecorder::JitBuilderRecorder(const TR::MethodBuilder *mb, const char *fileName)
+: _mb(mb), _nextID(0), _idSize(8),  _file(fileName, std::fstream::out | std::fstream::trunc)
    {
+   start(); // initializes IDs 0 and 1 (reserved)
    }
 
 OMR::JitBuilderRecorder::~JitBuilderRecorder()
@@ -52,6 +50,13 @@ OMR::JitBuilderRecorder::start()
    EndStatement();
    }
 
+void 
+OMR::JitBuilderRecorder::Close()                                       
+   { 
+   end();
+   EndStatement();
+   }
+
 OMR::JitBuilderRecorder::TypeID
 OMR::JitBuilderRecorder::getNewID()
    {
@@ -63,12 +68,12 @@ OMR::JitBuilderRecorder::getNewID()
    if (_nextID == (1 << 8) - 2)
       {
       _idSize = 16;
-      Statement(StatementName::STATEMENT_ID16BIT); // TODO
+      Statement(StatementName::STATEMENT_ID16BIT);
       }
    else if (_nextID == (1 << 16) - 2)
       {
       _idSize = 32;
-      Statement(StatementName::STATEMENT_ID32BIT); // TODO
+      Statement(StatementName::STATEMENT_ID32BIT);
       }
 
    return _nextID++;
@@ -114,7 +119,7 @@ OMR::JitBuilderRecorder::ensureStatementDefined(const char *s)
 void
 OMR::JitBuilderRecorder::end()
    {
-   ID(1);
+   ID(1); // reserved ID to indicate end of file
    String(StatementName::JBIL_COMPLETE);
    }
 
@@ -125,7 +130,7 @@ OMR::JitBuilderRecorder::BeginStatement(const char *s)
    }
 
 void
-OMR::JitBuilderRecorder::BeginStatement(const TR::IlBuilderRecorder *b, const char *s)
+OMR::JitBuilderRecorder::BeginStatement(const TR::MethodBuilder *b, const char *s)
    {
    ensureStatementDefined(s);
    Builder(b);
@@ -140,11 +145,6 @@ OMR::JitBuilderRecorder::StoreID(const void *ptr)
       TR_ASSERT_FATAL(0, "Unexpected ID already defined for address %p", ptr);
 
    _idMap.insert(std::make_pair(ptr, getNewID()));
-   // std::cout << "map: " << _idMap << '\n';
-   // auto pair = std::make_pair(ptr, getNewID());
-   // _idMap.insert(pair);
-   // std::cout << "pointer: " << pair.first << '\n';
-   // std::cout << "id: " << pair.second << '\n';
    }
 
 bool

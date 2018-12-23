@@ -299,8 +299,7 @@ public:
          TR::Options &,
          TR::Region &heapMemoryRegion,
          TR_Memory *,
-         TR_OptimizationPlan *optimizationPlan,
-         bool shouldCompile = true
+         TR_OptimizationPlan *optimizationPlan
          );
 
    TR::SymbolReference * getSymbolReferenceByReferenceNumber(int32_t referenceNumber);
@@ -519,8 +518,15 @@ public:
    // Should be in Code Generator
    //
    // J9
-   int32_t getNumReservedIPICTrampolines() const { return _numReservedIPICTrampolines; }
-   void setNumReservedIPICTrampolines(int32_t n) { _numReservedIPICTrampolines = n; }
+
+   /**
+    * These functions are deprecated and live in Compilation only to redirect
+    * downstream projects to the new CodeGenerator API.  They will be removed
+    * once all downstream projects have been updated to the new API once it is
+    * merged (currently only OpenJ9).
+    */
+   int32_t getNumReservedIPICTrampolines();
+   void setNumReservedIPICTrampolines(int32_t n);
 
    TR::list<TR::Instruction*> *getStaticPICSites() {return &_staticPICSites;}
    TR::list<TR::Instruction*> *getStaticHCRPICSites() {return &_staticHCRPICSites;}
@@ -534,7 +540,15 @@ public:
    TR::list<TR_Pair<TR::Snippet,TR_ResolvedMethod> *> *getSnippetsToBePatchedOnRegisterNative() { return &_snippetsToBePatchedOnRegisterNative; }
 
    void switchCodeCache(TR::CodeCache *newCodeCache);
-   bool getCodeCacheSwitched() { return _codeCacheSwitched; }
+
+   /**
+    * These functions are deprecated and live in Compilation only to redirect
+    * downstream projects to the new CodeGenerator API.  They will be removed
+    * once all downstream projects have been updated to the new API once it is
+    * merged (currently only OpenJ9).
+    */
+   bool getCodeCacheSwitched();
+   void setCodeCacheSwitched(bool s);
 
    void setCurrentCodeCache(TR::CodeCache *codeCache);
    TR::CodeCache *getCurrentCodeCache();
@@ -544,6 +558,19 @@ public:
 
    bool hasNativeCall()                         { return _flags.testAny(HasNativeCall); }
    void setHasNativeCall()                      { _flags.set(HasNativeCall); }
+
+   /*
+   * \brief
+   *    This query tells whether the trees might contain rdbar/wrtbar opcodes
+   *    that are not fully supported by optimizer yet
+   *
+   * \note
+   *    This query is for temporarily disable opts not supporting
+   *    the newly added rdbar/wrtbar opcodes. Subprojects can overrite
+   *    the answer. This query should be deleted eventually if
+   *    all the optimizations support the opcodes.
+   */
+   bool incompleteOptimizerSupportForReadWriteBarriers();
 
    // P codegen
    TR::list<TR_PrefetchInfo*> &getExtraPrefetchInfo() { return _extraPrefetchInfo; }
@@ -1195,10 +1222,6 @@ private:
    const int32_t                     _compThreadID; // The ID of the supporting compilation thread; 0 for compilation an application thread
    volatile bool                     _failCHtableCommitFlag;
 
-   int32_t                           _numReservedIPICTrampolines;
-                                                              // The list is moved to the jittedBodyInfo at end of compilatuion
-
-
    PhaseTimingSummary                _phaseTimer;
    TR::PhaseMemSummary               _phaseMemProfiler;
    TR::NodePool                      *_compilationNodes;
@@ -1225,8 +1248,6 @@ private:
    int32_t _gpuPtxCount;
 
    BitVectorPool _bitVectorPool; //MUST be declared after _trMemory
-
-   bool _shouldCompile;
 
    /*
     * This must be last

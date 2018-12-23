@@ -505,7 +505,7 @@ TR::RealRegister *OMR::X86::Machine::freeBestGPRegister(TR::Instruction         
          continue;
          }
 
-      realReg = self()->getX86RealRegister((TR::RealRegister::RegNum)i);
+      realReg = self()->getRealRegister((TR::RealRegister::RegNum)i);
 
       if (realReg->getState() == TR::RealRegister::Assigned)
          {
@@ -775,23 +775,11 @@ TR::RealRegister *OMR::X86::Machine::freeBestGPRegister(TR::Instruction         
                    self()->getDebug()->getName(bestDiscardableRegister));
 
             tempMR->setBaseRegister(info->getBaseRegister()->getAssignedRegister());
-#ifdef DEBUG
-            self()->cg()->incNumRematerializedIndirects();
-#endif
             }
-#ifdef DEBUG
-         else if (tempMR->getSymbolReference().getSymbol()->isStatic())
-            self()->cg()->incNumRematerializedStatics();
-         else
-            self()->cg()->incNumRematerializedLocals();
-#endif
 
          if (info->getDataType() == TR_RematerializableFloat)
             {
             instr = generateRegMemInstruction(currentInstruction, MOVSSRegMem, best, tempMR, self()->cg());
-#ifdef DEBUG
-            self()->cg()->incNumRematerializedXMMRs();
-#endif
             }
          else
             {
@@ -802,9 +790,6 @@ TR::RealRegister *OMR::X86::Machine::freeBestGPRegister(TR::Instruction         
          {
          TR::MemoryReference  *tempMR = generateX86MemoryReference(info->getSymbolReference(), self()->cg());
          instr = generateRegMemInstruction(currentInstruction, LEARegMem(), best, tempMR, self()->cg());
-#ifdef DEBUG
-         self()->cg()->incNumRematerializedAddresses();
-#endif
          }
       else
          {
@@ -812,17 +797,11 @@ TR::RealRegister *OMR::X86::Machine::freeBestGPRegister(TR::Instruction         
             {
             TR::MemoryReference* tempMR = generateX86MemoryReference(self()->cg()->findOrCreate4ByteConstant(currentInstruction->getNode(), info->getConstant()), self()->cg());
             instr = generateRegMemInstruction(currentInstruction, MOVSSRegMem, best, tempMR, self()->cg());
-#ifdef DEBUG
-            self()->cg()->incNumRematerializedXMMRs();
-#endif
             }
          else
             {
             instr = TR::TreeEvaluator::insertLoadConstant(0, best, info->getConstant(), info->getDataType(), self()->cg(), currentInstruction);
             }
-#ifdef DEBUG
-         self()->cg()->incNumRematerializedConstants();
-#endif
          }
 
       self()->cg()->traceRAInstruction(instr);
@@ -959,9 +938,6 @@ TR::RealRegister *OMR::X86::Machine::freeBestGPRegister(TR::Instruction         
 
       self()->cg()->traceRegFreed(bestRegister, best);
       self()->cg()->traceRAInstruction(instr);
-#ifdef DEBUG
-      self()->cg()->incNumSpilledRegisters();
-#endif
       }
 
    if (enableRematerialisation)
@@ -1434,8 +1410,8 @@ void OMR::X86::Machine::swapGPRegisters(TR::Instruction          *currentInstruc
                                     TR::RealRegister::RegNum  regNum1,
                                     TR::RealRegister::RegNum  regNum2)
    {
-   TR::RealRegister *realReg1 = self()->getX86RealRegister(regNum1);
-   TR::RealRegister *realReg2 = self()->getX86RealRegister(regNum2);
+   TR::RealRegister *realReg1 = self()->getRealRegister(regNum1);
+   TR::RealRegister *realReg2 = self()->getRealRegister(regNum2);
    TR::Instruction *instr = new (self()->cg()->trHeapMemory()) TR::X86RegRegInstruction(currentInstruction, XCHGRegReg(), realReg1, realReg2, self()->cg());
 
    TR::Register *virtReg1 = realReg1->getAssignedRegister();
@@ -1490,7 +1466,7 @@ void OMR::X86::Machine::setGPRWeightsFromAssociations()
       {
       // Skip non-assignable registers
       //
-      if (self()->getX86RealRegister((TR::RealRegister::RegNum)i)->getState() == TR::RealRegister::Locked)
+      if (self()->getRealRegister((TR::RealRegister::RegNum)i)->getState() == TR::RealRegister::Locked)
          continue;
 
       TR::Register *assocReg = _registerAssociations[i];
@@ -1543,7 +1519,7 @@ OMR::X86::Machine::createRegisterAssociationDirective(TR::Instruction *cursor)
 
       // Skip non-assignable registers
       //
-      if (self()->getX86RealRegister(regNum)->getState() == TR::RealRegister::Locked)
+      if (self()->getRealRegister(regNum)->getState() == TR::RealRegister::Locked)
          continue;
 
       associations->addPostCondition(self()->getVirtualAssociatedWithReal(regNum),
@@ -1737,7 +1713,7 @@ OMR::X86::Machine::cloneRegisterFile(TR::RealRegister **registerFile, TR_Allocat
       }
 
    // the vfp entry is a real register and it must always point to the same _frameRegister pointer so the memRef assignRegisters check
-   // if (_baseRegister == cg()->machine()->getX86RealRegister(TR::RealRegister::vfp)
+   // if (_baseRegister == cg()->machine()->getRealRegister(TR::RealRegister::vfp)
    // works correctly
    registerFileClone[TR::RealRegister::vfp] = self()->cg()->getFrameRegister();
 
@@ -1762,7 +1738,7 @@ TR::RegisterDependencyConditions * OMR::X86::Machine::createDepCondForLiveGPRs()
    //
    for (i = TR::RealRegister::FirstGPR; i <= TR::RealRegister::LastXMMR; i = ((i==TR::RealRegister::LastAssignableGPR) ? TR::RealRegister::FirstXMMR : i+1))
       {
-      TR::RealRegister *realReg = self()->getX86RealRegister((TR::RealRegister::RegNum)i);
+      TR::RealRegister *realReg = self()->getRealRegister((TR::RealRegister::RegNum)i);
       if (realReg->getState() == TR::RealRegister::Assigned ||
           realReg->getState() == TR::RealRegister::Free ||
           realReg->getState() == TR::RealRegister::Blocked)
@@ -1776,7 +1752,7 @@ TR::RegisterDependencyConditions * OMR::X86::Machine::createDepCondForLiveGPRs()
       deps = generateRegisterDependencyConditions(0, c, self()->cg());
       for (i = TR::RealRegister::FirstGPR; i <= TR::RealRegister::LastXMMR; i = ((i==TR::RealRegister::LastAssignableGPR) ? TR::RealRegister::FirstXMMR : i+1))
          {
-         TR::RealRegister *realReg = self()->getX86RealRegister((TR::RealRegister::RegNum)i);
+         TR::RealRegister *realReg = self()->getRealRegister((TR::RealRegister::RegNum)i);
          if (realReg->getState() == TR::RealRegister::Assigned ||
              realReg->getState() == TR::RealRegister::Free ||
              realReg->getState() == TR::RealRegister::Blocked)
@@ -1819,7 +1795,7 @@ TR::RegisterDependencyConditions * OMR::X86::Machine::createCondForLiveAndSpille
       endReg = TR::RealRegister::LastXMMR;
    for (i = TR::RealRegister::FirstGPR; i <= endReg; i = ((i==TR::RealRegister::LastAssignableGPR) ? TR::RealRegister::FirstXMMR : i+1))
       {
-      TR::RealRegister *realReg = self()->getX86RealRegister((TR::RealRegister::RegNum)i);
+      TR::RealRegister *realReg = self()->getRealRegister((TR::RealRegister::RegNum)i);
       TR_ASSERT(realReg->getState() == TR::RealRegister::Assigned ||
               realReg->getState() == TR::RealRegister::Free ||
               realReg->getState() == TR::RealRegister::Locked,
@@ -1837,7 +1813,7 @@ TR::RegisterDependencyConditions * OMR::X86::Machine::createCondForLiveAndSpille
       deps = generateRegisterDependencyConditions(0, c, self()->cg());
       for (i = TR::RealRegister::FirstGPR; i <= endReg; i = ((i==TR::RealRegister::LastAssignableGPR) ? TR::RealRegister::FirstXMMR : i+1))
          {
-         TR::RealRegister *realReg = self()->getX86RealRegister((TR::RealRegister::RegNum)i);
+         TR::RealRegister *realReg = self()->getRealRegister((TR::RealRegister::RegNum)i);
          if (realReg->getState() == TR::RealRegister::Assigned)
             {
             TR::Register *virtReg = realReg->getAssignedRegister();
@@ -2846,9 +2822,6 @@ TR::Instruction *OMR::X86::Machine::fpSpillFPR(TR::Instruction *prevInstruction,
                                               isFloat ? FSTPMemReg : DSTPMemReg,
                                               tempMR,
                                               self()->fpMapToStackRelativeRegister(vreg), self()->cg());
-#ifdef DEBUG
-      self()->cg()->incNumSpilledRegisters();
-#endif
       }
 
    self()->fpStackPop();

@@ -280,6 +280,14 @@ MM_Scavenger::initialize(MM_EnvironmentBase *env)
 
 	_cacheLineAlignment = CACHE_LINE_SIZE;
 
+#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+	if (_extensions->concurrentScavenger) {
+		if (!_masterGCThread.initialize(this, true, true)) {
+			return false;
+		}
+	}
+#endif /* OMR_GC_CONCURRENT_SCAVENGER */
+
 	return true;
 }
 
@@ -313,9 +321,6 @@ MM_Scavenger::collectorStartup(MM_GCExtensionsBase* extensions)
 {
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	if (_extensions->concurrentScavenger) {
-		if (!_masterGCThread.initialize(this, true, true)) {
-			return false;
-		}
 		if (!_masterGCThread.startup()) {
 			return false;
 		}
@@ -1344,7 +1349,7 @@ MM_Scavenger::copy(MM_EnvironmentStandard *env, MM_ForwardedHeader* forwardedHea
 		/* raise the alert and return (with NULL) */
 		setBackOutFlag(env, backOutFlagRaised);
 		omrthread_monitor_enter(_scanCacheMonitor);
-		if(_waitingCount) {
+		if (0 != _waitingCount) {
 			omrthread_monitor_notify_all(_scanCacheMonitor);
 		}
 		omrthread_monitor_exit(_scanCacheMonitor);
@@ -1463,7 +1468,13 @@ MM_Scavenger::copy(MM_EnvironmentStandard *env, MM_ForwardedHeader* forwardedHea
 	/* Concurrent Scavenger can update forwarding pointer only after the object has been copied
 	 * (since mutator may access the object as soon as forwarding pointer is installed) */
 	}
-	if (originalDestinationObjectPtr == (allowDuplicate ? (destinationObjectPtr = forwardedHeader->setForwardedObject(destinationObjectPtr)) : destinationObjectPtr)) {
+	if (allowDuplicate) {
+		/* On weak memory model, ensure that this candidate copy is visible
+		 * before (potentially) winning forwarding */
+		MM_AtomicOperations::storeSync();
+		destinationObjectPtr = forwardedHeader->setForwardedObject(destinationObjectPtr);
+	}
+	if (originalDestinationObjectPtr == destinationObjectPtr) {
 		/* Succeeded in forwarding the object */
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 
@@ -1798,6 +1809,16 @@ MM_Scavenger::getNextScanCache(MM_EnvironmentStandard *env)
 	bool doneFlag = false;
 	volatile uintptr_t doneIndex = _doneIndex;
 
+	if (checkAndSetShouldYieldFlag(env)) {
+		flushBuffersForGetNextScanCache(env);
+		omrthread_monitor_enter(_scanCacheMonitor);
+		if (0 != _waitingCount) {
+			omrthread_monitor_notify_all(_scanCacheMonitor);
+		}
+		omrthread_monitor_exit(_scanCacheMonitor);
+		return NULL;
+	}
+
 	/* Preference is to use survivor copy cache */
 	cache = env->_survivorCopyScanCache;
 	if (isWorkAvailableInCacheWithCheck(cache)) {
@@ -1836,7 +1857,7 @@ MM_Scavenger::getNextScanCache(MM_EnvironmentStandard *env)
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 #endif /* OMR_SCAVENGER_TRACE || J9MODRON_TGC_PARALLEL_STATISTICS */
 
- 	while (!doneFlag && !shouldAbortScanLoop()) {
+ 	while (!doneFlag && !shouldAbortScanLoop(env)) {
  		while (_cachedEntryCount > 0) {
  			cache = getNextScanCacheFromList(env);
 
@@ -1870,7 +1891,7 @@ MM_Scavenger::getNextScanCache(MM_EnvironmentStandard *env)
 				_extensions->copyScanRatio.reset(env, false);
 				omrthread_monitor_notify_all(_scanCacheMonitor);
 			} else {
-				while((0 == _cachedEntryCount) && (doneIndex == _doneIndex) && !shouldAbortScanLoop()) {
+				while((0 == _cachedEntryCount) && (doneIndex == _doneIndex) && !shouldAbortScanLoop(env)) {
 					flushBuffersForGetNextScanCache(env);
 #if defined(J9MODRON_TGC_PARALLEL_STATISTICS)
 					uint64_t waitEndTime, waitStartTime;
@@ -2033,7 +2054,7 @@ MM_Scavenger::completeScan(MM_EnvironmentStandard *env)
 			omrtty_printf("Forcing backout at workUnitIndex: %zu lastSyncPointReached: %s\n", env->getWorkUnitIndex(), env->_lastSyncPointReached);
 			setBackOutFlag(env, backOutFlagRaised);
 			omrthread_monitor_enter(_scanCacheMonitor);
-			if(_waitingCount) {
+			if (0 != _waitingCount) {
 				omrthread_monitor_notify_all(_scanCacheMonitor);
 			}
 			omrthread_monitor_exit(_scanCacheMonitor);
@@ -3111,13 +3132,13 @@ MM_Scavenger::copyCacheDistanceMetric(MM_CopyScanCacheStandard* copyCache)
 MMINLINE MM_CopyScanCacheStandard *
 MM_Scavenger::aliasToCopyCache(MM_EnvironmentStandard *env, GC_SlotObject *scannedSlot, MM_CopyScanCacheStandard* scanCache, MM_CopyScanCacheStandard* copyCache)
 {
-	/* Only alias a copy cache IF there are 0 threads waiting.  If the current thread is the only producer and
-	 * it aliases a copy cache then it will be the only thread able to consume.  This will alleviate the stalling issues
-	 * described in VMDESIGN 1359.
+	/* Only alias a copy cache IF there are <= _waitingCountAliasThreshold threads waiting (defaulted to 20% of active GC threads, option XXgc:aliasInhibitingThresholdPercentage).
+	 * If the current thread is the only producer and it aliases a copy cache then it will be the only thread able to consume.
+	 * This will alleviate the stalling issues.
 	 *
-	 * @NOTE this is likely too aggressive and should be relaxed.
+	 * @NOTE See Github Issue 3089 (Investigate Scavenger's Aliasing Inhibiting Condition)
 	 */
-	if (0 == _waitingCount) {
+	if (_waitingCount <= _waitingCountAliasThreshold) {
 		/* Only alias if the scanCache != copyCache. IF the caches are the same there is no benefit
 		 * to aliasing. The checks afterwards will ensure that a very similar copy order will happen
 		 * if the copyCache changes from the currently aliased scan cache
@@ -3201,6 +3222,28 @@ MM_Scavenger::restoreMasterThreadTenureTLHRemainders(MM_EnvironmentStandard *env
 		_extensions->_masterThreadTenureTLHRemainderTop = NULL;
 		_extensions->_masterThreadTenureTLHRemainderBase = NULL;
 	}
+}
+
+MMINLINE bool
+MM_Scavenger::checkAndSetShouldYieldFlag(MM_EnvironmentStandard *env) {
+#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+	/* Don't rely on various conditions being same during one concurrent phase.
+	 * If one GC thread decided that we need to yield, we must yield, there is no way back. Hence, we store the result in _shouldYield,
+	 * and rely on it for the rest of concurrent phase.
+	 * Master info if we should yield comes from exclusive VM access request being broadcasted to this thread (isExclusiveAccessRequestWaiting())
+	 * But since that request in the thread is not cleared even when implicit master GC thread enters STW phase, and since this yield check is invoked
+	 * in common code that can run both during STW and concurrent phase, we have to additionally check we are indeed in concurrent phase before deciding to yield.
+	 * Most of the time we could rely on being in 'concurrent_state_scan' but it's more reliable to actually check if exclusive access
+	 * is indeed being requested (hence scavenger_shouldYield() call too).
+	 */
+	if (!_shouldYield && env->isExclusiveAccessRequestWaiting() && _cli->scavenger_shouldYield()) {
+		_shouldYield = true;
+	}
+	return _shouldYield;
+#else
+	return false;
+#endif /* #if defined(OMR_GC_CONCURRENT_SCAVENGER) */
+
 }
 
 /****************************************
@@ -3530,8 +3573,8 @@ MM_Scavenger::completeBackOut(MM_EnvironmentStandard *env)
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 #endif /* OMR_SCAVENGER_TRACE_BACKOUT */
 
-	/* Ensure we've pushed all references from buffers out to the lists */
-	_cli->scavenger_flushReferenceObjects(env);
+	/* Ensure we've pushed all references from buffers out to the lists and flushed RS fragments*/
+	flushBuffersForGetNextScanCache(env);
 
 	/* Must synchronize to be sure all private caches have been flushed */
 	if (env->_currentTask->synchronizeGCThreadsAndReleaseMaster(env, UNIQUE_ID)) {
@@ -4621,7 +4664,7 @@ MM_Scavenger::scavengeRoots(MM_EnvironmentBase *env)
 {
 	Assert_MM_true(concurrent_state_roots == _concurrentState);
 
-	MM_ConcurrentScavengeTask scavengeTask(env, _dispatcher, this, MM_ConcurrentScavengeTask::SCAVENGE_ROOTS, U_64_MAX, NULL, env->_cycleState);
+	MM_ConcurrentScavengeTask scavengeTask(env, _dispatcher, this, MM_ConcurrentScavengeTask::SCAVENGE_ROOTS, UDATA_MAX, env->_cycleState);
 	_dispatcher->run(env, &scavengeTask);
 
 	return false;
@@ -4636,7 +4679,7 @@ MM_Scavenger::scavengeScan(MM_EnvironmentBase *envBase)
 
 	restoreMasterThreadTenureTLHRemainders(env);
 
-	MM_ConcurrentScavengeTask scavengeTask(env, _dispatcher, this, MM_ConcurrentScavengeTask::SCAVENGE_SCAN, U_64_MAX, NULL, env->_cycleState);
+	MM_ConcurrentScavengeTask scavengeTask(env, _dispatcher, this, MM_ConcurrentScavengeTask::SCAVENGE_SCAN, UDATA_MAX, env->_cycleState);
 	_dispatcher->run(env, &scavengeTask);
 
 	return false;
@@ -4651,7 +4694,7 @@ MM_Scavenger::scavengeComplete(MM_EnvironmentBase *envBase)
 
 	restoreMasterThreadTenureTLHRemainders(env);
 
-	MM_ConcurrentScavengeTask scavengeTask(env, _dispatcher, this, MM_ConcurrentScavengeTask::SCAVENGE_COMPLETE, U_64_MAX, NULL, env->_cycleState);
+	MM_ConcurrentScavengeTask scavengeTask(env, _dispatcher, this, MM_ConcurrentScavengeTask::SCAVENGE_COMPLETE, UDATA_MAX, env->_cycleState);
 	_dispatcher->run(env, &scavengeTask);
 
 	Assert_MM_true(_scavengeCacheFreeList.areAllCachesReturned());
@@ -4677,51 +4720,53 @@ MM_Scavenger::mutatorSetupForGC(MM_EnvironmentBase *envBase)
 }
 
 void
-MM_Scavenger::threadFinalReleaseCopyCaches(MM_EnvironmentBase *envBase, MM_EnvironmentBase *threadEnvironmentBase)
+MM_Scavenger::threadFinalReleaseCaches(MM_EnvironmentBase *envBase)
 {
 	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
-	MM_EnvironmentStandard *threadEnvironment = MM_EnvironmentStandard::getEnvironment(threadEnvironmentBase);
 
 	if (isConcurrentInProgress()) {
-		/* In a case of scavenge complete phase, master thread will act on behalf (use its own environment) of mutator threads
-		 * In a case of thread teardown or flushing caches for walk, caller ensures that own environment is used.
-		 */
-
-		Assert_MM_true(NULL == threadEnvironment->_deferredScanCache);
-
-		if (threadEnvironment->_survivorCopyScanCache) {
-			Assert_MM_true(threadEnvironment->_survivorCopyScanCache->flags & OMR_SCAVENGER_CACHE_TYPE_COPY);
-			threadEnvironment->_survivorCopyScanCache->flags &= ~OMR_SCAVENGER_CACHE_TYPE_COPY;
+		if (NULL != env->_deferredScanCache) {
+			Assert_MM_true(MUTATOR_THREAD != env->getThreadType());
 #if defined(J9MODRON_TGC_PARALLEL_STATISTICS)
 			env->_scavengerStats._releaseScanListCount += 1;
 #endif /* J9MODRON_TGC_PARALLEL_STATISTICS */
-			clearCache(env, threadEnvironment->_survivorCopyScanCache);
-			addCacheEntryToScanListAndNotify(env, threadEnvironment->_survivorCopyScanCache);
-			threadEnvironment->_survivorCopyScanCache = NULL;
-		}
-		if (threadEnvironment->_deferredCopyCache) {
-			Assert_MM_true(threadEnvironment->_deferredCopyCache->flags & OMR_SCAVENGER_CACHE_TYPE_CLEARED);
-			Assert_MM_true(threadEnvironment->_deferredCopyCache->flags & OMR_SCAVENGER_CACHE_TYPE_COPY);
-			threadEnvironment->_deferredCopyCache->flags &= ~OMR_SCAVENGER_CACHE_TYPE_COPY;
-#if defined(J9MODRON_TGC_PARALLEL_STATISTICS)
-			env->_scavengerStats._releaseScanListCount += 1;
-#endif /* J9MODRON_TGC_PARALLEL_STATISTICS */
-			addCacheEntryToScanListAndNotify(env, threadEnvironment->_deferredCopyCache);
-			threadEnvironment->_deferredCopyCache = NULL;
-		}
-		if (threadEnvironment->_tenureCopyScanCache) {
-			Assert_MM_true(threadEnvironment->_tenureCopyScanCache->flags & OMR_SCAVENGER_CACHE_TYPE_COPY);
-			threadEnvironment->_tenureCopyScanCache->flags &= ~OMR_SCAVENGER_CACHE_TYPE_COPY;
-#if defined(J9MODRON_TGC_PARALLEL_STATISTICS)
-			env->_scavengerStats._releaseScanListCount += 1;
-#endif /* J9MODRON_TGC_PARALLEL_STATISTICS */
-			clearCache(env, threadEnvironment->_tenureCopyScanCache);
-			addCacheEntryToScanListAndNotify(env, threadEnvironment->_tenureCopyScanCache);
-			threadEnvironment->_tenureCopyScanCache = NULL;
+			_scavengeCacheScanList.pushCache(env, env->_deferredScanCache);
+			env->_deferredScanCache = NULL;
 		}
 
-		abandonSurvivorTLHRemainder(threadEnvironment);
-		abandonTenureTLHRemainder(threadEnvironment, true);
+		if (NULL != env->_survivorCopyScanCache) {
+			Assert_MM_true(env->_survivorCopyScanCache->flags & OMR_SCAVENGER_CACHE_TYPE_COPY);
+			env->_survivorCopyScanCache->flags &= ~OMR_SCAVENGER_CACHE_TYPE_COPY;
+#if defined(J9MODRON_TGC_PARALLEL_STATISTICS)
+			env->_scavengerStats._releaseScanListCount += 1;
+#endif /* J9MODRON_TGC_PARALLEL_STATISTICS */
+			clearCache(env, env->_survivorCopyScanCache);
+			_scavengeCacheScanList.pushCache(env, env->_survivorCopyScanCache);
+			env->_survivorCopyScanCache = NULL;
+		}
+		if (NULL != env->_deferredCopyCache) {
+			Assert_MM_true(env->_deferredCopyCache->flags & OMR_SCAVENGER_CACHE_TYPE_CLEARED);
+			Assert_MM_true(env->_deferredCopyCache->flags & OMR_SCAVENGER_CACHE_TYPE_COPY);
+			env->_deferredCopyCache->flags &= ~OMR_SCAVENGER_CACHE_TYPE_COPY;
+#if defined(J9MODRON_TGC_PARALLEL_STATISTICS)
+			env->_scavengerStats._releaseScanListCount += 1;
+#endif /* J9MODRON_TGC_PARALLEL_STATISTICS */
+			_scavengeCacheScanList.pushCache(env, env->_deferredCopyCache);
+			env->_deferredCopyCache = NULL;
+		}
+		if (NULL != env->_tenureCopyScanCache) {
+			Assert_MM_true(env->_tenureCopyScanCache->flags & OMR_SCAVENGER_CACHE_TYPE_COPY);
+			env->_tenureCopyScanCache->flags &= ~OMR_SCAVENGER_CACHE_TYPE_COPY;
+#if defined(J9MODRON_TGC_PARALLEL_STATISTICS)
+			env->_scavengerStats._releaseScanListCount += 1;
+#endif /* J9MODRON_TGC_PARALLEL_STATISTICS */
+			clearCache(env, env->_tenureCopyScanCache);
+			_scavengeCacheScanList.pushCache(env, env->_tenureCopyScanCache);
+			env->_tenureCopyScanCache = NULL;
+		}
+
+		abandonSurvivorTLHRemainder(env);
+		abandonTenureTLHRemainder(env, true);
 	}
 }
 
@@ -4738,7 +4783,6 @@ MM_Scavenger::scavengeIncremental(MM_EnvironmentBase *env)
 		case concurrent_state_idle:
 		{
 			_concurrentState = concurrent_state_init;
-			_forceConcurrentTermination = false;
 			continue;
 		}
 		case concurrent_state_init:
@@ -4821,7 +4865,7 @@ MM_Scavenger::workThreadProcessRoots(MM_EnvironmentStandard *env)
 	 * This is important to do only for GC threads that will not be used in concurrent phase, but at this point
 	 * we don't know which threads Scheduler will not use, so we do it for every thread.
 	 */
-	threadFinalReleaseCopyCaches(env, env);
+	threadFinalReleaseCaches(env);
 
 	mergeThreadGCStats(env);
 }
@@ -4837,12 +4881,12 @@ MM_Scavenger::workThreadScan(MM_EnvironmentStandard *env)
 	rootScanner.scavengeRememberedSet(env);
 
 	completeScan(env);
-	// todo: are these two steps really necessary?
-	// we probably have to clear all things for master since it'll be doing final release/clear on behalf of mutator threads
-	// but is it really needed for slaves as well?
-	addCopyCachesToFreeList(env);
-	abandonSurvivorTLHRemainder(env);
-	abandonTenureTLHRemainder(env, true);
+
+	/* We might have yielded without exausting scan work. Push any open caches to the scan queue, so that GC threads from final STW phase pick them up.
+	 * Most of the time, STW phase will have a superset of GC threads, so they could just resume the work on their own caches,
+	 * but this is not 100% guarantied (the control of what threads are inolved is in Dispatcher's domain).
+	 */
+	threadFinalReleaseCaches(env);
 
 	mergeThreadGCStats(env);
 }
@@ -4904,18 +4948,34 @@ uintptr_t
 MM_Scavenger::masterThreadConcurrentCollect(MM_EnvironmentBase *env)
 {
 	if (concurrent_state_scan == _concurrentState) {
-		Assert_MM_true(concurrent_state_scan == _concurrentState || concurrent_state_idle == _concurrentState);
-
 		clearIncrementGCStats(env, false);
 
-		MM_ConcurrentScavengeTask scavengeTask(env, _dispatcher, this, MM_ConcurrentScavengeTask::SCAVENGE_SCAN, UDATA_MAX, &_forceConcurrentTermination, env->_cycleState);
+		MM_ConcurrentScavengeTask scavengeTask(env, _dispatcher, this, MM_ConcurrentScavengeTask::SCAVENGE_SCAN, UDATA_MAX, env->_cycleState);
 		/* Concurrent background task will run with different (typically lower) number of threads. */
 		_dispatcher->run(env, &scavengeTask, _extensions->concurrentScavengerBackgroundThreads);
 
-		/* we can't assert the work queue is empty. some mutator threads could have just flushed their copy caches, after the task terminated */
-		_concurrentState = concurrent_state_complete;
-		/* make allocate space non-allocatable to trigger the final GC phase */
-		_activeSubSpace->flip(env, MM_MemorySubSpaceSemiSpace::disable_allocation);
+		/* Now that we are done with concurrent scanning in this cycle (where we could possibly
+		 * be interested in its value), record shouldYield Flag for reporting purposes and reset it. */
+		if (_shouldYield) {
+			if (NULL == _extensions->gcExclusiveAccessThreadId) {
+				/* We terminated concurrent cycle due to a external request. We will not move to 'complete' phase,
+				 * but stay in concurrent scan phase and try to resume work after the external party is done 
+				 * (when we are able to regain VM access)
+				 */
+				getConcurrentPhaseStats()->_terminationRequestType = MM_ConcurrentPhaseStatsBase::terminationRequest_External;
+			} else {
+				/* Ran out of free space in allocate/survivor, or system/global GC */
+				getConcurrentPhaseStats()->_terminationRequestType = MM_ConcurrentPhaseStatsBase::terminationRequest_ByGC;
+				_concurrentState = concurrent_state_complete;
+			}
+			_shouldYield = false;
+		} else {
+			/* Exhausted scan work */
+			_concurrentState = concurrent_state_complete;
+
+			/* make allocate space non-allocatable to trigger the next GC phase */
+			_activeSubSpace->flip(env, MM_MemorySubSpaceSemiSpace::disable_allocation);
+		}
 
 		mergeIncrementGCStats(env, false);
 
@@ -4949,8 +5009,6 @@ void MM_Scavenger::preConcurrentInitializeStatsAndReport(MM_EnvironmentBase *env
 void MM_Scavenger::postConcurrentUpdateStatsAndReport(MM_EnvironmentBase *env, MM_ConcurrentPhaseStatsBase *stats, UDATA bytesConcurrentlyScanned)
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-
-	stats->_terminationWasRequested = _forceConcurrentTermination;
 
 	_extensions->incrementScavengerStats._endTime = omrtime_hires_clock();
 

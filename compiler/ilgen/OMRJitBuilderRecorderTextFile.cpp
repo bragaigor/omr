@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,24 +20,20 @@
  *******************************************************************************/
 
 #include <stdint.h>
-#include <iostream>
-#include <fstream>
 #include <cstring>
 
 #include "infra/Assert.hpp"
 #include "ilgen/JitBuilderRecorderTextFile.hpp"
 
-OMR::JitBuilderRecorderTextFile::JitBuilderRecorderTextFile(const TR::MethodBuilderRecorder *mb, const char *fileName)
-   : TR::JitBuilderRecorder(mb), _file(fileName, std::fstream::out | std::fstream::trunc)
+OMR::JitBuilderRecorderTextFile::JitBuilderRecorderTextFile(const TR::MethodBuilder *mb, const char *fileName)
+   : TR::JitBuilderRecorder(mb, fileName)
    {
-   start(); // initializes IDs 0 and 1 (reserved)
    }
 
 void
 OMR::JitBuilderRecorderTextFile::Close()
    {
-   end();
-   EndStatement();
+   TR::JitBuilderRecorder::Close();
    _file.close();
    }
 
@@ -108,7 +104,7 @@ OMR::JitBuilderRecorderTextFile::Value(const TR::IlValue *v)
    }
 
 void
-OMR::JitBuilderRecorderTextFile::Builder(const TR::IlBuilderRecorder *b)
+OMR::JitBuilderRecorderTextFile::Builder(const TR::IlBuilder *b)
    {
    if (b)
       _file << "B" << lookupID(b) << " ";

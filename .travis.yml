@@ -31,27 +31,12 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-    packages:
-      - libnuma-dev
-      - bison
-      - libdwarf-dev
-      - libelf-dev
 env:
   global:
-    - GTEST_COLOR=1
     - BUILD_JOBS=2
 matrix:
   include:
     ## Auto tool builds
-    # 64 bit Linux x86 compressed pointers
-    - os: linux
-      env: SPEC=linux_x86-64_cmprssptrs PLATFORM=amd64-linux64-gcc
-    # 64 bit Linux AArch64
-    - os: linux
-      env: SPEC=linux_aarch64 PLATFORM=aarch64-linux-gcc RUN_TEST=no
-    # 32-bit linux arm
-    - os: linux
-      env: SPEC=linux_arm PLATFORM=arm-linux-gcc RUN_TEST=no
     # Linter
     - os: linux
       addons:
@@ -67,23 +52,6 @@ matrix:
             - llvm-3.8-dev
       env: RUN_LINT=yes RUN_BUILD=no SPEC=linux_x86-64 PLATFORM=amd64-linux64-gcc LLVM_CONFIG=llvm-config-3.8 CLANG=clang++-3.8 CXX_PATH=clang++-3.8 CXX=clang++-3.8
       dist: trusty
-    ## CMake builds
-    #  Ninja builds
-    #  32 bit Linux x86
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - libnuma-dev
-            - bison
-            - libdwarf-dev
-            - libelf-dev 
-            - ninja-build
-            - gcc-multilib
-            - g++-multilib
-      env: BUILD_WITH_CMAKE=yes CMAKE_GENERATOR=Ninja CMAKE_DEFINES="-DOMR_ENV_DATA32=ON -DOMR_DDR=OFF -DOMR_JITBUILDER=OFF"
 before_script:
   - ulimit -c unlimited
   - ccache -s -z

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -29,8 +29,8 @@ namespace TR
    class JitBuilderRecorderBinaryBuffer : public OMR::JitBuilderRecorderBinaryBuffer
       {
       public:
-         JitBuilderRecorderBinaryBuffer(const TR::MethodBuilderRecorder *mb)
-            : OMR::JitBuilderRecorderBinaryBuffer(mb)
+         JitBuilderRecorderBinaryBuffer(const TR::MethodBuilder *mb, const char *fileName)
+            : OMR::JitBuilderRecorderBinaryBuffer(mb, fileName)
             { }
          virtual ~JitBuilderRecorderBinaryBuffer()
             { }

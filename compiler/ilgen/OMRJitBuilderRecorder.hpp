@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corp. and others
+ * Copyright (c) 2018, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -27,8 +27,8 @@
 #include <map>
 #include "ilgen/StatementNames.hpp"
 
-namespace TR { class IlBuilderRecorder; }
-namespace TR { class MethodBuilderRecorder; }
+namespace TR { class IlBuilder; }
+namespace TR { class MethodBuilder; }
 namespace TR { class IlType; }
 namespace TR { class IlValue; }
 
@@ -42,15 +42,15 @@ class JitBuilderRecorder
    typedef uint32_t                      TypeID;
    typedef std::map<const void *,TypeID> TypeMapID;
 
-   JitBuilderRecorder(const TR::MethodBuilderRecorder *mb);
+   JitBuilderRecorder(const TR::MethodBuilder *mb, const char *fileName);
    virtual ~JitBuilderRecorder();
 
-   void setMethodBuilderRecorder(TR::MethodBuilderRecorder *mb) {_mb = mb;}
+   void setMethodBuilderRecorder(TR::MethodBuilder *mb) {_mb = mb;}
 
    /**
     * @brief Subclasses override these functions to record to different output formats
     */
-   virtual void Close()                                       { }
+   virtual void Close();
    virtual void String(const char * const string)             { }
    virtual void Number(int8_t num)                            { }
    virtual void Number(int16_t num)                           { }
@@ -62,10 +62,11 @@ class JitBuilderRecorder
    virtual void Statement(const char *s)                      { }
    virtual void Type(const TR::IlType *type)                  { }
    virtual void Value(const TR::IlValue *v)                   { }
-   virtual void Builder(const TR::IlBuilderRecorder *b)       { }
+   virtual void Builder(const TR::MethodBuilder *b)           { }
+   virtual void Builder()                                     { }
    virtual void Location(const void * location)               { }
 
-   virtual void BeginStatement(const TR::IlBuilderRecorder *b, const char *s);
+   virtual void BeginStatement(const TR::MethodBuilder *b, const char *s);
    virtual void BeginStatement(const char *s);
    virtual void EndStatement()                                { }
 
@@ -83,10 +84,13 @@ class JitBuilderRecorder
    TypeID getNewID();
    TypeID myID();
 
-   const TR::MethodBuilderRecorder * _mb;
+   const TR::MethodBuilder * _mb;
    TypeID                            _nextID;
    TypeMapID                         _idMap;
    uint8_t                           _idSize;
+
+   std::fstream _file;
+   
    };
 
 } // namespace OMR

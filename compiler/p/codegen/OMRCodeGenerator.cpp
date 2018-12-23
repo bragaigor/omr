@@ -19,74 +19,74 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include <stdint.h>                                 // for int32_t, etc
-#include <stdio.h>                                  // for NULL
-#include <stdlib.h>                                 // for abs, atoi
-#include "codegen/AheadOfTimeCompile.hpp"           // for AheadOfTimeCompile
-#include "codegen/BackingStore.hpp"                 // for TR_BackingStore
-#include "codegen/CodeGenPhase.hpp"                 // for CodeGenPhase, etc
-#include "codegen/CodeGenerator.hpp"                // for CodeGenerator, etc
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "codegen/AheadOfTimeCompile.hpp"
+#include "codegen/BackingStore.hpp"
+#include "codegen/CodeGenPhase.hpp"
+#include "codegen/CodeGenerator.hpp"
 #include "codegen/CodeGenerator_inlines.hpp"
 #include "codegen/ConstantDataSnippet.hpp"
-#include "codegen/FrontEnd.hpp"                     // for feGetEnv, etc
-#include "codegen/GCStackAtlas.hpp"                 // for GCStackAtlas
-#include "codegen/GCStackMap.hpp"                   // for TR_GCStackMap, etc
-#include "codegen/InstOpCode.hpp"                   // for InstOpCode, etc
-#include "codegen/Instruction.hpp"                  // for Instruction, etc
-#include "codegen/Linkage.hpp"                      // for Linkage
+#include "codegen/FrontEnd.hpp"
+#include "codegen/GCStackAtlas.hpp"
+#include "codegen/GCStackMap.hpp"
+#include "codegen/InstOpCode.hpp"
+#include "codegen/Instruction.hpp"
+#include "codegen/Linkage.hpp"
 #include "codegen/LinkageConventionsEnum.hpp"
-#include "codegen/LiveRegister.hpp"                 // for TR_LiveRegisters, etc
-#include "codegen/Machine.hpp"                      // for Machine, etc
-#include "codegen/MemoryReference.hpp"              // for MemoryReference
-#include "codegen/RealRegister.hpp"                 // for RealRegister, etc
-#include "codegen/RecognizedMethods.hpp"            // for RecognizedMethod, etc
-#include "codegen/Register.hpp"                     // for Register
+#include "codegen/LiveRegister.hpp"
+#include "codegen/Machine.hpp"
+#include "codegen/MemoryReference.hpp"
+#include "codegen/RealRegister.hpp"
+#include "codegen/RecognizedMethods.hpp"
+#include "codegen/Register.hpp"
 #include "codegen/RegisterConstants.hpp"
 #include "codegen/RegisterDependency.hpp"
-#include "codegen/RegisterIterator.hpp"             // for RegisterIterator
-#include "codegen/RegisterPair.hpp"                 // for RegisterPair
+#include "codegen/RegisterIterator.hpp"
+#include "codegen/RegisterPair.hpp"
 #include "codegen/Relocation.hpp"
-#include "codegen/Snippet.hpp"                      // for Snippet, etc
+#include "codegen/Snippet.hpp"
 #include "codegen/TreeEvaluator.hpp"
-#include "compile/Compilation.hpp"                  // for Compilation, etc
+#include "compile/Compilation.hpp"
 #include "compile/ResolvedMethod.hpp"
 #include "compile/SymbolReferenceTable.hpp"
 #include "control/Options.hpp"
-#include "control/Options_inlines.hpp"              // for TR::Options, etc
-#include "control/Recompilation.hpp"                // for TR_Recompilation
+#include "control/Options_inlines.hpp"
+#include "control/Recompilation.hpp"
 #ifdef J9_PROJECT_SPECIFIC
-#include "control/RecompilationInfo.hpp"                // for TR_Recompilation
+#include "control/RecompilationInfo.hpp"
 #endif
 #include "env/CompilerEnv.hpp"
-#include "env/CPU.hpp"                              // for Cpu
-#include "env/PersistentInfo.hpp"                   // for PersistentInfo
+#include "env/CPU.hpp"
+#include "env/PersistentInfo.hpp"
 #include "env/Processors.hpp"
 #include "env/TRMemory.hpp"
-#include "env/jittypes.h"                           // for uintptrj_t, intptrj_t
-#include "il/Block.hpp"                             // for Block
-#include "il/DataTypes.hpp"                         // for DataTypes, etc
+#include "env/jittypes.h"
+#include "il/Block.hpp"
+#include "il/DataTypes.hpp"
 #include "il/ILOpCodes.hpp"
-#include "il/ILOps.hpp"                             // for ILOpCode, etc
-#include "il/Node.hpp"                              // for Node, vcount_t
+#include "il/ILOps.hpp"
+#include "il/Node.hpp"
 #include "il/Node_inlines.hpp"
-#include "il/Symbol.hpp"                            // for Symbol
-#include "il/SymbolReference.hpp"                   // for SymbolReference
-#include "il/TreeTop.hpp"                           // for TreeTop
-#include "il/TreeTop_inlines.hpp"                   // for TreeTop::getNode, etc
-#include "il/symbol/AutomaticSymbol.hpp"            // for AutomaticSymbol
-#include "il/symbol/LabelSymbol.hpp"                // for LabelSymbol, etc
-#include "il/symbol/MethodSymbol.hpp"               // for MethodSymbol
-#include "il/symbol/ParameterSymbol.hpp"            // for ParameterSymbol
+#include "il/Symbol.hpp"
+#include "il/SymbolReference.hpp"
+#include "il/TreeTop.hpp"
+#include "il/TreeTop_inlines.hpp"
+#include "il/symbol/AutomaticSymbol.hpp"
+#include "il/symbol/LabelSymbol.hpp"
+#include "il/symbol/MethodSymbol.hpp"
+#include "il/symbol/ParameterSymbol.hpp"
 #include "il/symbol/ResolvedMethodSymbol.hpp"
-#include "il/symbol/StaticSymbol.hpp"               // for StaticSymbol
-#include "infra/Array.hpp"                          // for TR_Array
-#include "infra/Assert.hpp"                         // for TR_ASSERT
-#include "infra/Bit.hpp"                            // for contiguousBits, etc
-#include "infra/BitVector.hpp"                      // for TR_BitVector, etc
-#include "infra/Cfg.hpp"                            // for CFG
-#include "infra/Link.hpp"                           // for TR_LinkHead
-#include "infra/List.hpp"                           // for List, etc
-#include "optimizer/Optimizer.hpp"                  // for Optimizer
+#include "il/symbol/StaticSymbol.hpp"
+#include "infra/Array.hpp"
+#include "infra/Assert.hpp"
+#include "infra/Bit.hpp"
+#include "infra/BitVector.hpp"
+#include "infra/Cfg.hpp"
+#include "infra/Link.hpp"
+#include "infra/List.hpp"
+#include "optimizer/Optimizer.hpp"
 #include "optimizer/RegisterCandidate.hpp"
 #include "optimizer/Structure.hpp"
 #include "optimizer/DataFlowAnalysis.hpp"
@@ -96,9 +96,9 @@
 #include "p/codegen/PPCOutOfLineCodeSection.hpp"
 #include "p/codegen/PPCSystemLinkage.hpp"
 #include "p/codegen/PPCTableOfConstants.hpp"
-#include "ras/Debug.hpp"                            // for TR_DebugBase
+#include "ras/Debug.hpp"
 #include "ras/DebugCounter.hpp"
-#include "runtime/Runtime.hpp"                      // for TR_LinkageInfo, etc
+#include "runtime/Runtime.hpp"
 
 #if defined(AIXPPC)
 #include <sys/debug.h>
@@ -144,9 +144,9 @@ OMR::Power::CodeGenerator::CodeGenerator() :
       self()->setTrackItems(NULL);
       }
 
-   self()->setStackPointerRegister(self()->machine()->getPPCRealRegister(_linkageProperties->getNormalStackPointerRegister()));
-   self()->setMethodMetaDataRegister(self()->machine()->getPPCRealRegister(_linkageProperties->getMethodMetaDataRegister()));
-   self()->setTOCBaseRegister(self()->machine()->getPPCRealRegister(_linkageProperties->getTOCBaseRegister()));
+   self()->setStackPointerRegister(self()->machine()->getRealRegister(_linkageProperties->getNormalStackPointerRegister()));
+   self()->setMethodMetaDataRegister(self()->machine()->getRealRegister(_linkageProperties->getMethodMetaDataRegister()));
+   self()->setTOCBaseRegister(self()->machine()->getRealRegister(_linkageProperties->getTOCBaseRegister()));
    self()->getLinkage()->initPPCRealRegisterLinkage();
    self()->getLinkage()->setParameterLinkageRegisterIndex(self()->comp()->getJittedMethodSymbol());
    self()->machine()->initREGAssociations();
@@ -242,9 +242,6 @@ OMR::Power::CodeGenerator::CodeGenerator() :
           self()->setSupportsArrayTranslateTROTNoBreak();
        }
 
-    if (!self()->comp()->getOption(TR_DisableShrinkWrapping))
-       self()->setSupportsShrinkWrapping();
-
    _numberBytesReadInaccessible = 0;
    _numberBytesWriteInaccessible = 4096;
 
@@ -290,20 +287,8 @@ OMR::Power::CodeGenerator::CodeGenerator() :
    if (TR::Compiler->target.cpu.getPPCSupportsLM())
       self()->setSupportsLM();
 
-   if(self()->getSupportsTM())
-      self()->setSupportsTMHashMapAndLinkedQueue();
-
    if (TR::Compiler->target.cpu.getPPCSupportsVMX() && TR::Compiler->target.cpu.getPPCSupportsVSX())
       self()->setSupportsAutoSIMD();
-
-   static bool disableTMDCAS = (feGetEnv("TR_DisablePPCTMDCAS") != NULL);
-   if (self()->getSupportsTM() && !disableTMDCAS &&
-       TR::Compiler->target.is64Bit() &&
-       !TR::Options::useCompressedPointers())
-      {
-      self()->setSupportsTMDoubleWordCASORSet();
-      }
-
 
    if (!self()->comp()->getOption(TR_DisableRegisterPressureSimulation))
       {
@@ -352,8 +337,8 @@ OMR::Power::CodeGenerator::CodeGenerator() :
 
    if (self()->comp()->getOptions()->getRegisterAssignmentTraceOption(TR_TraceRARegisterStates))
       {
-      self()->setGPRegisterIterator(new (self()->trHeapMemory()) TR::RegisterIterator(self()->machine(), TR_GPR));
-      self()->setFPRegisterIterator(new (self()->trHeapMemory()) TR::RegisterIterator(self()->machine(), TR_FPR));
+      self()->setGPRegisterIterator(new (self()->trHeapMemory()) TR::RegisterIterator(self()->machine(), TR::RealRegister::FirstGPR, TR::RealRegister::LastGPR));
+      self()->setFPRegisterIterator(new (self()->trHeapMemory()) TR::RegisterIterator(self()->machine(), TR::RealRegister::FirstFPR, TR::RealRegister::LastFPR));
       }
 
    self()->setSupportsProfiledInlining();
@@ -401,7 +386,7 @@ OMR::Power::CodeGenerator::generateSwitchToInterpreterPrePrologue(
       TR::Instruction *cursor,
       TR::Node *node)
    {
-   TR::Register   *gr0 = self()->machine()->getPPCRealRegister(TR::RealRegister::gr0);
+   TR::Register   *gr0 = self()->machine()->getRealRegister(TR::RealRegister::gr0);
    TR::ResolvedMethodSymbol *methodSymbol = self()->comp()->getJittedMethodSymbol();
    TR::SymbolReference    *revertToInterpreterSymRef = self()->symRefTab()->findOrCreateRuntimeHelper(TR_PPCrevertToInterpreterGlue, false, false, false);
    uintptrj_t             ramMethod = (uintptrj_t)methodSymbol->getResolvedMethod()->resolvedMethodAddress();
@@ -1595,319 +1580,6 @@ void OMR::Power::CodeGenerator::doPeephole()
    }
 // end of PPC Codegen Peephole routines
 
-
-// routines for shrinkWrapping
-//
-bool OMR::Power::CodeGenerator::processInstruction(TR::Instruction *instr,
-                                             TR_BitVector **registerUsageInfo,
-                                             int32_t &blockNum,
-                                             int32_t &blockMarker,
-                                             bool traceIt)
-   {
-   TR::Instruction *ppcInstr = instr;
-
-   if (ppcInstr->getOpCode().isCall())
-      {
-      TR::Node *callNode = ppcInstr->getNode();
-      if (callNode->getSymbolReference())
-         {
-         bool callPreservesRegisters = true;
-         TR::SymbolReference *symRef = callNode->getSymbolReference();
-         TR::MethodSymbol *m = NULL;
-         if (symRef->getSymbol()->isMethod())
-            {
-            m = symRef->getSymbol()->castToMethodSymbol();
-            if ((m->isHelper() && !m->preservesAllRegisters()) ||
-                m->isVMInternalNative() ||
-                m->isJITInternalNative() ||
-                m->isJNI() ||
-                m->isSystemLinkageDispatch() || (m->getLinkageConvention() == TR_System))
-               callPreservesRegisters = false;
-            }
-
-         if (!callPreservesRegisters)
-            {
-            if (traceIt)
-               traceMsg(self()->comp(), "call instr [%p] does not preserve regs\n", ppcInstr);
-            registerUsageInfo[blockNum]->setAll(TR::RealRegister::NumRegisters);
-            }
-         else
-            {
-            if (traceIt)
-               traceMsg(self()->comp(), "call instr [%p] preserves regs\n", ppcInstr);
-            }
-         }
-      }
-
-   switch (ppcInstr->getKind())
-      {
-      case OMR::Instruction::IsAdmin:
-         {
-         TR::Node *node = ((TR::PPCAdminInstruction *)ppcInstr)->getNode();
-         if (node)
-            {
-            TR::Block *block = node->getBlock();
-            if (node->getOpCodeValue() == TR::BBStart)
-               {
-               blockMarker = 1;
-               if (traceIt)
-                  traceMsg(self()->comp(), "Now generating register use information for block_%d\n", blockNum);
-               }
-            else if (node->getOpCodeValue() == TR::BBEnd)
-               {
-               blockMarker = 2;
-               if (traceIt)
-                  traceMsg(self()->comp(), "Done generating register use information for block_%d\n", blockNum);
-               }
-            }
-         return false;
-         }
-      case OMR::Instruction::IsTrg1:
-      case OMR::Instruction::IsTrg1Imm:
-      case OMR::Instruction::IsTrg1Src1:
-      case OMR::Instruction::IsTrg1Src1Imm:
-      case OMR::Instruction::IsTrg1Src1Imm2:
-      case OMR::Instruction::IsTrg1Src2:
-      case OMR::Instruction::IsTrg1Src2Imm:
-      case OMR::Instruction::IsTrg1Src3:
-      case OMR::Instruction::IsTrg1Mem:
-         {
-         int32_t tgtRegNum = ((TR::RealRegister*)((TR::PPCTrg1Instruction *)ppcInstr)->getTargetRegister())->getRegisterNumber();
-         if (traceIt)
-            traceMsg(self()->comp(), "instr [%p] USES register [%d]\n", ppcInstr, tgtRegNum);
-         registerUsageInfo[blockNum]->set(tgtRegNum);
-         return true;
-         }
-      case OMR::Instruction::IsControlFlow:
-         {
-         int32_t numTargets = ((TR::PPCControlFlowInstruction *)ppcInstr)->getNumTargets();
-         for (int32_t i = 0; i < numTargets; i++)
-            {
-            int32_t tgtRegNum = ((TR::RealRegister*)((TR::PPCControlFlowInstruction *)ppcInstr)->getTargetRegister(i))->getRegisterNumber();
-            if (traceIt)
-               traceMsg(self()->comp(), "control flow instr [%p] USES register [%d]\n", ppcInstr, tgtRegNum);
-            registerUsageInfo[blockNum]->set(tgtRegNum);
-            }
-         return true;
-         }
-      default:
-         {
-         return false;
-         }
-      }
-
-   return true;
-   }
-
-uint32_t OMR::Power::CodeGenerator::isPreservedRegister(int32_t regIndex)
-   {
-   // is register preserved in prologue
-   //
-   for (int32_t pindex = TR::RealRegister::gr15;
-         pindex <= TR::RealRegister::LastGPR;
-         pindex++)
-      {
-      TR::RealRegister::RegNum idx = (TR::RealRegister::RegNum)pindex;
-      if (idx == regIndex)
-         return pindex;
-      }
-   return -1;
-   }
-
-bool OMR::Power::CodeGenerator::isReturnInstruction(TR::Instruction *instr)
-   {
-   return (instr->getOpCodeValue() == TR::InstOpCode::ret);
-   }
-
-bool OMR::Power::CodeGenerator::isBranchInstruction(TR::Instruction *instr)
-   {
-   return (instr->isBranchOp() || instr->getOpCodeValue() == TR::InstOpCode::vgdnop);
-   }
-
-bool OMR::Power::CodeGenerator::isLabelInstruction(TR::Instruction *instr)
-   {
-   return (instr->isLabel());
-   }
-
-int32_t OMR::Power::CodeGenerator::isFenceInstruction(TR::Instruction *instr)
-   {
-   TR::Instruction *ppcInstr = instr;
-
-   if (ppcInstr->getOpCodeValue() == TR::InstOpCode::fence)
-      {
-      TR::Node *fenceNode = ppcInstr->getNode();
-      if (fenceNode->getOpCodeValue() == TR::BBStart)
-         return 1;
-      else if (fenceNode->getOpCodeValue() == TR::BBEnd)
-         return 2;
-      }
-
-   return 0;
-   }
-
-bool OMR::Power::CodeGenerator::isAlignmentInstruction(TR::Instruction *instr)
-   {
-   return false;
-   }
-
-TR::Instruction *
-OMR::Power::CodeGenerator::splitEdge(TR::Instruction *instr,
-                                 bool isFallThrough,
-                                 bool needsJump,
-                                 TR::Instruction *newSplitLabel,
-                                 TR::list<TR::Instruction*> *jmpInstrs,
-                                 bool firstJump)
-   {
-   // instr is the jump instruction containing the target
-   // this is the edge that needs to be split
-   // if !isFallThrough, then the instr points at the BBEnd
-   // of the block containing the jump
-   //
-   TR::LabelSymbol *newLabel = NULL;
-   if (!newSplitLabel)
-      newLabel = generateLabelSymbol(self());
-   else
-      {
-      newLabel = ((TR::PPCLabelInstruction *)newSplitLabel)->getLabelSymbol();
-      }
-   TR::LabelSymbol *targetLabel = NULL;
-   TR::Instruction *location = NULL;
-   if (isFallThrough)
-      {
-      location = instr;
-      }
-   else
-      {
-      TR::PPCLabelInstruction *labelInstr = (TR::PPCLabelInstruction *)instr;
-      targetLabel = labelInstr->getLabelSymbol();
-      labelInstr->setLabelSymbol(newLabel);
-      location = targetLabel->getInstruction()->getPrev();
-      // now fixup any remaining jmp instrs that jmp to the target
-      // so that they now jmp to the new label
-      //
-      for (auto jmpItr = jmpInstrs->begin(); jmpItr != jmpInstrs->end(); ++jmpItr)
-         {
-         TR::PPCLabelInstruction *l = (TR::PPCLabelInstruction *)(*jmpItr);
-         if (l->getLabelSymbol() == targetLabel)
-            {
-            traceMsg(self()->comp(), "split edge fixing jmp instr %p\n", (*jmpItr));
-            l->setLabelSymbol(newLabel);
-            }
-         }
-      }
-
-   TR::Instruction *cursor = newSplitLabel;
-   if (!cursor)
-      cursor = generateLabelInstruction(self(), TR::InstOpCode::label, location->getNode(), newLabel, location);
-
-   if (!isFallThrough && needsJump)
-      {
-      TR::Instruction *jmpLocation = cursor->getPrev();
-      TR::Instruction *i = generateLabelInstruction(self(), TR::InstOpCode::b, jmpLocation->getNode(), targetLabel, jmpLocation);
-      traceMsg(self()->comp(), "split edge jmp instr at [%p]\n", i);
-      }
-   return cursor;
-   }
-
-TR::Instruction *
-OMR::Power::CodeGenerator::splitBlockEntry(TR::Instruction *instr)
-   {
-   TR::LabelSymbol *newLabel = generateLabelSymbol(self());
-   TR::Instruction *location = instr->getPrev();
-   return generateLabelInstruction(self(), TR::InstOpCode::label, location->getNode(), newLabel, location);
-   }
-
-int32_t
-OMR::Power::CodeGenerator::computeRegisterSaveDescription(TR_BitVector *regs, bool populateInfo)
-   {
-   uint32_t rsd = 0;
-   // if the reg is present in this bitvector,
-   // then it must have been assigned.
-   //
-   TR_BitVectorIterator regIt(*regs);
-   while (regIt.hasMoreElements())
-      {
-      int32_t regIndex = self()->isPreservedRegister(regIt.getNextElement());
-      if (regIndex != -1)
-         {
-         rsd |= 1 << (regIndex - TR::RealRegister::gr15);
-         }
-      }
-   // place the register save size in the top half
-   rsd |= self()->getLinkage()->getRegisterSaveSize() << 17;
-   return rsd;
-   }
-
-void
-OMR::Power::CodeGenerator::processIncomingParameterUsage(TR_BitVector **registerUsageInfo, int32_t blockNum)
-   {
-   TR::ResolvedMethodSymbol             *bodySymbol = self()->comp()->getJittedMethodSymbol();
-   ListIterator<TR::ParameterSymbol>  paramIterator(&(bodySymbol->getParameterList()));
-   TR::ParameterSymbol               *paramCursor;
-
-   for (paramCursor = paramIterator.getFirst();
-       paramCursor != NULL;
-       paramCursor = paramIterator.getNext())
-      {
-      int32_t ai = paramCursor->getAllocatedIndex();
-      int32_t ai_l = paramCursor->getAllocatedLow();
-
-      traceMsg(self()->comp(), "found %d %d used as parms\n", ai, ai_l);
-      if (ai > 0)
-         registerUsageInfo[blockNum]->set(ai);
-      if (ai_l > 0)
-         registerUsageInfo[blockNum]->set(ai_l);
-      }
-   }
-
-void
-OMR::Power::CodeGenerator::updateSnippetMapWithRSD(TR::Instruction *instr, int32_t rsd)
-   {
-   // At this point, instr is a branch instruction
-   // determine if it branches to a snippet and if so
-   // mark the maps in the snippet with the right rsd
-   //
-   TR::PPCLabelInstruction *labelInstr = (TR::PPCLabelInstruction *)instr;
-   TR::LabelSymbol *targetLabel = labelInstr->getLabelSymbol();
-
-   TR_PPCOutOfLineCodeSection *oiCursor = self()->findOutLinedInstructionsFromLabel(targetLabel);
-   if (oiCursor)
-      {
-      TR::Instruction *cur = oiCursor->getFirstInstruction();
-      TR::Instruction *end = oiCursor->getAppendInstruction();
-      traceMsg(self()->comp(), "found oi start %p end %p\n", cur, end);
-      while (cur != end)
-         {
-         if (cur->needsGCMap())
-            {
-            TR_GCStackMap *map = cur->getGCMap();
-            if (map)
-               {
-               traceMsg(self()->comp(), "      instr %p rsd %x map %p\n", cur, rsd, map);
-               map->setRegisterSaveDescription(rsd);
-               }
-            }
-         cur = cur->getNext();
-         }
-      }
-   }
-
-bool
-OMR::Power::CodeGenerator::isTargetSnippetOrOutOfLine(TR::Instruction *instr, TR::Instruction **start, TR::Instruction **end)
-   {
-   TR::PPCLabelInstruction *labelInstr = (TR::PPCLabelInstruction *)instr;
-   TR::LabelSymbol *targetLabel = labelInstr->getLabelSymbol();
-   TR_PPCOutOfLineCodeSection *oiCursor = self()->findOutLinedInstructionsFromLabel(targetLabel);
-   if (oiCursor)
-      {
-      *start = oiCursor->getFirstInstruction();
-      *end = oiCursor->getAppendInstruction();
-      return true;
-      }
-   else
-      return false;
-   }
-
 bool OMR::Power::CodeGenerator::supportsAESInstructions()
    {
     if ( TR::Compiler->target.cpu.getPPCSupportsAES() && !self()->comp()->getOption(TR_DisableAESInHardware))
@@ -2029,9 +1701,8 @@ void OMR::Power::CodeGenerator::doBinaryEncoding()
    self()->alignBinaryBufferCursor();
 
    TR::Instruction *nop;
-   TR::Register *gr1 = self()->machine()->getPPCRealRegister(TR::RealRegister::gr1);
+   TR::Register *gr1 = self()->machine()->getRealRegister(TR::RealRegister::gr1);
    bool skipLabel = false;
-   static int count=0;
 
    bool  isPrivateLinkage = (self()->comp()->getJittedMethodSymbol()->getLinkageConvention() == TR_Private);
 
@@ -2043,9 +1714,8 @@ void OMR::Power::CodeGenerator::doBinaryEncoding()
          {
          if ((data.cursorInstruction)->isNopCandidate())
             {
-            uintptrj_t uselessFetched;
-
-            uselessFetched = ((uintptrj_t)self()->getBinaryBufferCursor()/4)%8;
+            TR::Instruction *nop;
+            uintptrj_t uselessFetched = ((uintptrj_t)self()->getBinaryBufferCursor()/4)%8;
 
             if (uselessFetched >= 8 - data.cursorInstruction->MAX_LOOP_ALIGN_NOPS())
                {
@@ -2264,7 +1934,7 @@ void OMR::Power::CodeGenerator::buildRegisterMapForInstruction(TR_GCStackMap *ma
    for (int i=TR::RealRegister::FirstGPR;
             i<=TR::RealRegister::LastGPR; i++)
       {
-      TR::RealRegister *realReg = self()->machine()->getPPCRealRegister(
+      TR::RealRegister *realReg = self()->machine()->getRealRegister(
               (TR::RealRegister::RegNum)i);
 
       if (realReg->getHasBeenAssignedInMethod())
@@ -2849,7 +2519,7 @@ void OMR::Power::CodeGenerator::setRealRegisterAssociation(TR::Register     *reg
    {
    if (!reg->isLive() || realNum == TR::RealRegister::NoReg)
       return;
-   TR::RealRegister *realReg = self()->machine()->getPPCRealRegister(realNum);
+   TR::RealRegister *realReg = self()->machine()->getRealRegister(realNum);
    self()->getLiveRegisters(reg->getKind())->setAssociation(reg, realReg);
    }
 
@@ -2859,7 +2529,7 @@ void OMR::Power::CodeGenerator::addRealRegisterInterference(TR::Register    *reg
    {
    if (!reg->isLive() || realNum == TR::RealRegister::NoReg)
       return;
-   TR::RealRegister *realReg = self()->machine()->getPPCRealRegister(realNum);
+   TR::RealRegister *realReg = self()->machine()->getRealRegister(realNum);
    reg->getLiveRegisterInfo()->addInterference(realReg->getRealRegisterMask());
    }
 
@@ -3353,7 +3023,7 @@ TR::Instruction *OMR::Power::CodeGenerator::generateDebugCounterBump(TR::Instruc
 
 bool OMR::Power::CodeGenerator::isGlobalRegisterAvailable(TR_GlobalRegisterNumber i, TR::DataType dt)
    {
-   return self()->machine()->getPPCRealRegister((TR::RealRegister::RegNum)self()->getGlobalRegister(i))->getState() == TR::RealRegister::Free;
+   return self()->machine()->getRealRegister((TR::RealRegister::RegNum)self()->getGlobalRegister(i))->getState() == TR::RealRegister::Free;
    }
 
 
@@ -3975,4 +3645,24 @@ bool OMR::Power::CodeGenerator::is64BitProcessor()
 bool OMR::Power::CodeGenerator::getSupportsIbyteswap()
    {
    return true;
+   }
+
+bool
+OMR::Power::CodeGenerator::supportsNonHelper(TR::SymbolReferenceTable::CommonNonhelperSymbol symbol)
+   {
+   bool result = false;
+
+   switch (symbol)
+      {
+      case TR::SymbolReferenceTable::atomicAddSymbol:
+      case TR::SymbolReferenceTable::atomicFetchAndAddSymbol:
+      case TR::SymbolReferenceTable::atomicSwapSymbol:
+         {
+         // Atomic non-helpers for Power only supported on 64-bit, for now
+         result = TR::Compiler->target.is64Bit();
+         break;
+         }
+      }
+
+   return result;
    }

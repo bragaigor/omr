@@ -227,7 +227,17 @@ TR_S390BinaryAnalyser::genericAnalyser(TR::Node * root,
                tempMR->enforce4KDisplacementLimit(secondChild, cg(), NULL);
                }
 
-            generateRXInstruction(cg(), memToRegOpCode, root, thirdReg, tempMR);
+            auto instructionFormat = TR::InstOpCode(memToRegOpCode).getInstructionFormat();
+
+            if (instructionFormat == RXE_FORMAT)
+               {
+               generateRXEInstruction(cg(), memToRegOpCode, root, thirdReg, tempMR, 0);
+               }
+            else
+               {
+               generateRXInstruction(cg(), memToRegOpCode, root, thirdReg, tempMR);
+               }
+
             tempMR->stopUsingMemRefRegister(cg());
             if (is16BitMemory2Operand)
                {
@@ -254,7 +264,17 @@ TR_S390BinaryAnalyser::genericAnalyser(TR::Node * root,
          tempMR->enforce4KDisplacementLimit(secondChild, cg(), NULL);
          }
 
-      generateRXInstruction(cg(), memToRegOpCode, root, firstRegister, tempMR);
+      auto instructionFormat = TR::InstOpCode(memToRegOpCode).getInstructionFormat();
+
+      if (instructionFormat == RXE_FORMAT)
+         {
+         generateRXEInstruction(cg(), memToRegOpCode, root, firstRegister, tempMR, 0);
+         }
+      else
+         {
+         generateRXInstruction(cg(), memToRegOpCode, root, firstRegister, tempMR);
+         }
+
       tempMR->stopUsingMemRefRegister(cg());
       if (is16BitMemory2Operand)
          cg()->decReferenceCount(secondChild->getFirstChild());
@@ -397,7 +417,7 @@ TR_S390BinaryAnalyser::longSubtractAnalyser(TR::Node * root)
       bool zArchTrexsupported = performTransformation(comp, "O^O Use SL/SLB for long sub.");
 
       TR::Register * highDiff = NULL;
-      TR::LabelSymbol * doneLSub = TR::LabelSymbol::create(cg()->trHeapMemory(),cg());
+      TR::LabelSymbol * doneLSub = generateLabelSymbol(cg());
       if (getCopyReg1())
          {
          TR::Register * lowThird = cg()->allocateRegister();

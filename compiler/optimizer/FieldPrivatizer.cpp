@@ -85,6 +85,15 @@ TR_FieldPrivatizer::TR_FieldPrivatizer(TR::OptimizationManager *manager)
 
 int32_t TR_FieldPrivatizer::perform()
    {
+
+   // Need to confirm places calling opCodeFor* APIs are doing the right
+   // thing for readbar and wrtbar. All the transformations applied to normal
+   // load/store s should be applied to rd/wrtbar s. However, we need to be
+   // careful about the difference in the shape of the trees and the
+   // mapping relationship between different loads and stores
+   if (comp()->incompleteOptimizerSupportForReadWriteBarriers())
+      return 0;
+
    TR::StackMemoryRegion stackMemoryRegion(*trMemory());
 
    _postDominators = NULL;
@@ -749,7 +758,7 @@ void TR_FieldPrivatizer::privatizeFields(TR::Node *node, bool postDominatesEntry
                if (opCode.isStore())
                   {
                   _needToStoreBack->set(autoForField->getReferenceNumber());
-                  if (node->getOpCodeValue() == TR::wrtbar)
+                  if (node->getOpCodeValue() == TR::awrtbar)
                      {
                      node->getChild(1)->recursivelyDecReferenceCount();
                      node->setNumChildren(1);

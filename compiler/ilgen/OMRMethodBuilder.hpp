@@ -27,7 +27,6 @@
 #include <fstream>
 #include "ilgen/IlBuilder.hpp"
 #include "env/TypedAllocator.hpp"
-#include "ilgen/MethodBuilderRecorder.hpp"
 
 // Maximum length of _definingLine string (including null terminator)
 #define MAX_LINE_NUM_LEN 7
@@ -36,33 +35,54 @@ class TR_BitVector;
 namespace TR { class BytecodeBuilder; }
 namespace TR { class ResolvedMethod; }
 namespace TR { class SymbolReference; }
-namespace TR { class JitBuilderRecorder; }
 namespace TR { class VirtualMachineState; }
 
 namespace TR { class SegmentProvider; }
 namespace TR { class Region; }
 class TR_Memory;
 
+#ifndef TR_ALLOC
+#define TR_ALLOC(x)
+#endif
+
+
+extern "C"
+{
+typedef bool (*RequestFunctionCallback)(void *client, const char *name);
+}
+
 namespace OMR
 {
 
-class MethodBuilder : public TR::MethodBuilderRecorder
+class MethodBuilder : public TR::IlBuilder
    {
    public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
-   MethodBuilder(TR::TypeDictionary *types, TR::VirtualMachineState *vmState = NULL, TR::JitBuilderRecorder *recorder = NULL);
+   MethodBuilder(TR::TypeDictionary *types, TR::VirtualMachineState *vmState = NULL);
    MethodBuilder(TR::MethodBuilder *callerMB, TR::VirtualMachineState *vmState = NULL);
-
    virtual ~MethodBuilder();
 
    virtual void setupForBuildIL();
 
-   virtual bool injectIL();
+   /**
+    * @brief returns the next index to be used for new values
+    * @returns the next value index
+    * If this method build is an inlined MethodBuilder, then the answer to
+    * this query is delegated to the caller's MethodBuilder, which means
+    * only the top-level MethodBuilder object assigns value IDs.
+    */
+   int32_t getNextValueID();
+
+   bool usesBytecodeBuilders()                               { return _useBytecodeBuilders; }
+   void setUseBytecodeBuilders()                             { _useBytecodeBuilders = true; }
 
    void addToAllBytecodeBuildersList(TR::BytecodeBuilder *bcBuilder);
    void addToTreeConnectingWorklist(TR::BytecodeBuilder *builder);
    void addToBlockCountingWorklist(TR::BytecodeBuilder *builder);
+
+   virtual TR::VirtualMachineState *vmState()                { return _vmState; }
+   virtual void setVMState(TR::VirtualMachineState *vmState) { _vmState = vmState; }
 
    virtual bool isMethodBuilder()                            { return true; }
    virtual TR::MethodBuilder *asMethodBuilder();
@@ -72,8 +92,8 @@ class MethodBuilder : public TR::MethodBuilderRecorder
    const char *getDefiningFile()                             { return _definingFile; }
    const char *getDefiningLine()                             { return _definingLine; }
 
-   const char *getMethodName()                               { return _methodName; }
-   void AllLocalsHaveBeenDefined();
+   const char *GetMethodName()                               { return _methodName; }
+   void AllLocalsHaveBeenDefined()                           { _newSymbolsAreTemps = true; }
 
    TR::IlType *getReturnType()                               { return _returnType; }
    int32_t getNumParameters()                                { return _numParameters; }
@@ -93,12 +113,10 @@ class MethodBuilder : public TR::MethodBuilderRecorder
 
    TR::ResolvedMethod *lookupFunction(const char *name);
 
-   TR::BytecodeBuilder *OrphanBytecodeBuilder(int32_t bcIndex=0, char *name=NULL);
-
-   void AppendBuilder(TR::BytecodeBuilder *bb);
+   void AppendBuilder(TR::BytecodeBuilder *bb) { AppendBytecodeBuilder(bb); }
    void AppendBuilder(TR::IlBuilder *b)    { this->OMR::IlBuilder::AppendBuilder(b); }
 
-   void DefineFile(const char *file);
+   void DefineFile(const char *file)                         { _definingFile = file; }
 
    void DefineLine(const char *line);
    void DefineLine(int line);
@@ -123,13 +141,21 @@ class MethodBuilder : public TR::MethodBuilderRecorder
                        int32_t          numParms,
                        TR::IlType     ** parmTypes);
 
+   int32_t Compile(void **entry);
+
    /**
     * @brief will be called if a Call is issued to a function that has not yet been defined, provides a
     *        mechanism for MethodBuilder subclasses to provide method lookup on demand rather than all up
     *        front via the constructor.
     * @returns true if the function was found and DefineFunction has been called for it, otherwise false
     */
-   virtual bool RequestFunction(const char *name) { return false; }
+   virtual bool RequestFunction(const char *name)
+      {
+      if (_clientCallbackRequestFunction)
+         return _clientCallbackRequestFunction(_client, name);
+
+      return false;
+      }
 
    /**
     * @brief append the first bytecode builder object to this method
@@ -223,6 +249,37 @@ class MethodBuilder : public TR::MethodBuilderRecorder
     * @returns the directly inlining MethodBuilder or NULL if no MethodBuilder inlined this one
     */
    TR::MethodBuilder *callerMethodBuilder();
+   
+   /**
+    * @brief returns the client object associated with this object, allocating it if necessary
+    */
+   void *client();
+
+   /**
+    * @brief Store callback function to be called on client when RequestFunction is called
+    */
+   void setClientCallback_RequestFunction(void *callback)
+      {
+      _clientCallbackRequestFunction = (RequestFunctionCallback) callback;
+      }
+
+   /**
+    * @brief Set the Client Allocator function
+    */
+   static void setClientAllocator(ClientAllocator allocator)
+      {
+      _clientAllocator = allocator;
+      }
+
+   /**
+    * @brief Set the Get Impl function
+    *
+    * @param getter function pointer to the impl getter
+    */
+   static void setGetImpl(ImplGetter getter)
+      {
+      _getImpl = getter;
+      }
 
    protected:
    virtual uint32_t countBlocks();
@@ -251,6 +308,11 @@ class MethodBuilder : public TR::MethodBuilderRecorder
       } MemoryManager;
 
    MemoryManager memoryManager;
+
+   /**
+    * @brief client callback function to call when RequestFunction is called
+    */
+   RequestFunctionCallback     _clientCallbackRequestFunction;
 
    // These values are typically defined outside of a compilation
    const char                * _methodName;
@@ -297,16 +359,26 @@ class MethodBuilder : public TR::MethodBuilderRecorder
    TR::IlType                * _cachedParameterTypesArray[10];
 
    bool                        _newSymbolsAreTemps;
+   int32_t                     _nextValueID;
 
+   bool                        _useBytecodeBuilders;
    uint32_t                    _numBlocksBeforeWorklist;
    List<TR::BytecodeBuilder> * _countBlocksWorklist;
    List<TR::BytecodeBuilder> * _connectTreesWorklist;
    List<TR::BytecodeBuilder> * _allBytecodeBuilders;
+   TR::VirtualMachineState   * _vmState;
+
+   TR_BitVector              * _bytecodeWorklist;
+   TR_BitVector              * _bytecodeHasBeenInWorklist;
 
    int32_t                     _inlineSiteIndex;
    int32_t                     _nextInlineSiteIndex;
    TR::IlBuilder             * _returnBuilder;
    const char                * _returnSymbolName;
+
+private:
+   static ClientAllocator      _clientAllocator;
+   static ImplGetter _getImpl;
    };
 
 } // namespace OMR
