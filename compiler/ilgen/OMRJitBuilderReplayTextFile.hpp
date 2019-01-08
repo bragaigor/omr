@@ -108,6 +108,13 @@
     void handleIndexAt(TR::IlBuilder * ilmb, char * tokens);
 
     int8_t consume8bitNumber();
+    int16_t consume16bitNumber();
+    int32_t consume32bitNumber();
+    int64_t consume64bitNumber();
+    float consumeFloatNumber();
+    double consumeDoubleNumber();
+    const char * consumeStatement();
+    TR::IlType * consumeType();
     TR::IlValue * consumeValue();
     const char * const consumeString();
     TypeID consumeID();
