@@ -649,13 +649,48 @@ OMR::JitBuilderReplayTextFile::consume8bitNumber()
 TR::IlValue * 
 OMR::JitBuilderReplayTextFile::consumeValue()
    {
-   uint32_t tempID;
-   if (!(_file >> tempID));
+   // Form: V###
+   // e.g. V31
+
+   std::string tempStr; 
+   if (!(_file >> tempStr));
       TR_ASSERT_FATAL(0, "Unable to read file at consumeValue.");
-      
-   TypeID typeID = tempID;
+   TypeID typeID = stoi(tempStr.substr(1, tempStr.length()));
+
    TypePointer valPointer = lookupPointer(typeID);
    return static_cast<TR::IlValue *>(valPointer);
+   }
+
+const char * const 
+OMR::JitBuilderReplayTextFile::consumeString()
+   {
+   // Form: "strLen [StringName]"
+   // e.g. "16 [DefineReturnType]"
+
+   std::string firstPart;
+   std::string secondPart;
+   if (!(_file >> firstPart));
+      TR_ASSERT_FATAL(0, "Unable to read file (firstPart) at consumeString.");
+   uint32_t strLen = stoi(firstPart.substr(1, firstPart.length()));
+
+   if (!(_file >> secondPart));
+      TR_ASSERT_FATAL(0, "Unable to read file (secondPart) at consumeString.");
+   const char * const serviceString = strdup(secondPart.substr(1, strLen).c_str());
+   return serviceString;
+   }
+
+const uint32_t
+OMR::JitBuilderReplayTextFile::consumeID()
+   {
+   // Form: ID##
+   // e.g. ID2
+
+   std::string tempStr; 
+   if (!(_file >> tempStr));
+      TR_ASSERT_FATAL(0, "Unable to read file at consumeID.");
+   TypeID typeID = stoi(tempStr.substr(2, tempStr.length()));
+
+   return typeID;
    }
 
 void

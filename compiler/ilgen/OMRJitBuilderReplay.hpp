@@ -57,20 +57,20 @@ class JitBuilderReplay
     void StoreReservedIDs();
 
     virtual void consumeStart()                         { }
-    virtual const char * const consumeString()          { }
-    virtual int8_t consume8bitNumber()                  { }
-    virtual int16_t consume16bitNumber()                { }
-    virtual int32_t consume32bitNumber()                { }
-    virtual int64_t consume64bitNumber()                { }
-    virtual float consumeFloatNumber()                  { }
-    virtual double consumeDoubleNumber()                { }
-    virtual TypeID consumeID()                          { }
-    virtual const char * consumeStatement()             { }
+    virtual const char * const consumeString()          { return NULL; }
+    virtual int8_t consume8bitNumber()                  { return 0; }
+    virtual int16_t consume16bitNumber()                { return 0; }
+    virtual int32_t consume32bitNumber()                { return 0; }
+    virtual int64_t consume64bitNumber()                { return 0; }
+    virtual float consumeFloatNumber()                  { return 0.0F; }
+    virtual double consumeDoubleNumber()                { return 0.0; }
+    virtual TypeID consumeID()                          { return 0; }
+    virtual const char * consumeStatement()             { return NULL; }
     virtual TR::IlType * consumeType()                  { return static_cast<TR::IlType *>(0); }
     virtual TR::IlValue * consumeValue()                { return static_cast<TR::IlValue *>(0); }
     virtual TR::MethodBuilder * consumeMethodBuilder()  { return NULL; }
     virtual void consumeBuilder()                       { }
-    virtual const void * consumeLocation()              { }
+    virtual const void * consumeLocation()              { return NULL; }
     virtual void consumeEndStatement()                  { }
 
     // Define Map that maps IDs to pointers

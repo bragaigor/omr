@@ -109,6 +109,8 @@
 
     int8_t consume8bitNumber();
     TR::IlValue * consumeValue();
+    const char * const consumeString();
+    TypeID consumeID();
 
     uint32_t getNumberFromToken(char * token);
 
