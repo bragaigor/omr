@@ -44,19 +44,12 @@ OMR::JitBuilderReplay::start() {
 void
 OMR::JitBuilderReplay::StoreReservedIDs()
    {
-      StoreIDPointerPair(0, 0);
-      StoreIDPointerPair(1, (void *)1);
+      registerMapping(0, 0);
+      registerMapping(1, (void *)1);
    }
 
 void
-OMR::JitBuilderReplay::initializeMethodBuilder(TR::MethodBuilder * replay)
-   {
-       _mb = replay;
-       StoreIDPointerPair((TypeID)2, replay);
-   }
-
-void
-OMR::JitBuilderReplay::StoreIDPointerPair(TypeID ID, TypePointer ptr)
+OMR::JitBuilderReplay::registerMapping(TypeID ID, TypePointer ptr)
    {
      TypeMapPointer::iterator it = _pointerMap.find(ID);
      if (it != _pointerMap.end())

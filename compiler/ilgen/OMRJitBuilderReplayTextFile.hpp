@@ -43,7 +43,7 @@
     JitBuilderReplayTextFile(const char *fileName);
 
     void start();
-    void processFirstLineFromTextFile();
+    void consumeStart();
     char * getLineAsChar();
     char * getTokensFromLine(std::string);
 
@@ -107,12 +107,12 @@
     void handleIfCmpEqualZero(TR::IlBuilder * ilmb, char * tokens);
     void handleIndexAt(TR::IlBuilder * ilmb, char * tokens);
 
+    int8_t consume8bitNumber();
+
     uint32_t getNumberFromToken(char * token);
 
     private:
     std::fstream _file;
-    std::istringstream _fileStream;
-    bool _isFile;
 
     };
 

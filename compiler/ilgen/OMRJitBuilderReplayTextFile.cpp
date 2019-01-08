@@ -33,7 +33,7 @@
 //  #define DEBUG
 
  OMR::JitBuilderReplayTextFile::JitBuilderReplayTextFile(const char *fileName)
-    : TR::JitBuilderReplay(), _file(fileName, std::fstream::in), _isFile(true)
+    : TR::JitBuilderReplay(), _file(fileName, std::fstream::in)
     {
     start();
     #ifdef DEBUG
@@ -45,7 +45,7 @@ void
 OMR::JitBuilderReplayTextFile::start()
    {
    TR::JitBuilderReplay::start();
-   processFirstLineFromTextFile();
+   consumeStart(); // TODO: delete
    }
 
 char *
@@ -54,21 +54,14 @@ OMR::JitBuilderReplayTextFile::getLineAsChar()
    char * lineAsChar;
    std::string line;
 
-   if(_isFile)
-      {
-      std::getline(_file, line);
-      }
-   else
-      {
-      std::getline(_fileStream, line);
-      }
+   std::getline(_file, line);
 
    lineAsChar = getTokensFromLine(line);
    return lineAsChar;
    }
 
 void
-OMR::JitBuilderReplayTextFile::processFirstLineFromTextFile()
+OMR::JitBuilderReplayTextFile::consumeStart()
    {
     char * token;
     token = getLineAsChar();
@@ -123,7 +116,7 @@ OMR::JitBuilderReplayTextFile::addIDPointerPairToMap(char * tokens)
 
        char * idPointer = getServiceStringFromToken(std::string(tokens));
 
-       StoreIDPointerPair(ID, idPointer);
+       registerMapping(ID, idPointer);
    }
 
 char *
@@ -520,7 +513,7 @@ void OMR::JitBuilderReplayTextFile::handlePrimitiveType(TR::IlBuilder * mb, char
     TR::DataType dt((TR::DataTypes)value);
     TR::IlType *type = mb->typeDictionary()->PrimitiveType(dt);
 
-    StoreIDPointerPair(ID, type);
+    registerMapping(ID, type);
    }
 
 void
@@ -640,7 +633,17 @@ OMR::JitBuilderReplayTextFile::handleConstInt8(TR::IlBuilder * ilmb, char * toke
 
      int8_t value = atoi(tokens);
      IlValue * val = ilmb->ConstInt8(value);
-     StoreIDPointerPair(ID, val);
+     registerMapping(ID, val);
+   }
+
+int8_t 
+OMR::JitBuilderReplayTextFile::consume8bitNumber()
+   {
+   int32_t num; // Recorder records as int32_t
+   if (!(_file >> num));
+      TR_ASSERT_FATAL(0, "Unable to read file at consume8bitNumber.");
+  
+   return (int8_t)num;
    }
 
 void
@@ -655,7 +658,7 @@ OMR::JitBuilderReplayTextFile::handleConstInt32(TR::IlBuilder * ilmb, char * tok
    uint32_t value = getNumberFromToken(tokens);
 
    IlValue * val = ilmb->ConstInt32(value);
-   StoreIDPointerPair(ID, val);
+   registerMapping(ID, val);
    }
 
 void
@@ -670,7 +673,7 @@ OMR::JitBuilderReplayTextFile::handleConstInt64(TR::IlBuilder * ilmb, char * tok
 
    int64_t value = atol(tokens);
    IlValue * val = ilmb->ConstInt64(value);
-   StoreIDPointerPair(ID, val);
+   registerMapping(ID, val);
    }
 
 void
@@ -685,7 +688,7 @@ OMR::JitBuilderReplayTextFile::handleConstDouble(TR::IlBuilder * ilmb, char * to
 
    double value = atof(tokens);
    IlValue * val = ilmb->ConstDouble(value);
-   StoreIDPointerPair(ID, val);
+   registerMapping(ID, val);
    }
 
 void
@@ -704,7 +707,7 @@ OMR::JitBuilderReplayTextFile::handleConstAddress(TR::IlBuilder * ilmb, char * t
 
    void * value = (void *) address;
    IlValue * val = ilmb->ConstAddress(value);
-   StoreIDPointerPair(ID, val);
+   registerMapping(ID, val);
    }
 
 void
@@ -726,7 +729,7 @@ OMR::JitBuilderReplayTextFile::handleLoad(TR::IlBuilder * ilmb, char * tokens)
    const char * defineLoadParam = getServiceStringFromToken(std::string(tokens));
 
    IlValue * loadVal = ilmb->Load(defineLoadParam);
-   StoreIDPointerPair(ID, loadVal);
+   registerMapping(ID, loadVal);
    }
 
 void
@@ -750,7 +753,7 @@ OMR::JitBuilderReplayTextFile::handleLoadAt(TR::IlBuilder * ilmb, char * tokens)
    TR::IlValue * param2 = static_cast<TR::IlValue *>(lookupPointer(valueID));
 
    IlValue * loadVal = ilmb->LoadAt(param1, param2);
-   StoreIDPointerPair(storeID, loadVal);
+   registerMapping(storeID, loadVal);
    }
 
 void
@@ -817,7 +820,7 @@ OMR::JitBuilderReplayTextFile::handleAdd(TR::IlBuilder * ilmb, char * tokens)
 
    TR::IlValue * addResult = ilmb->Add(param1IlValue, param2IlValue);
 
-   StoreIDPointerPair(IDtoStore, addResult);
+   registerMapping(IDtoStore, addResult);
    }
 
 void
@@ -842,7 +845,7 @@ OMR::JitBuilderReplayTextFile::handleSub(TR::IlBuilder * ilmb, char * tokens)
 
   TR::IlValue * subResult = ilmb->Sub(param1IlValue, param2IlValue);
 
-  StoreIDPointerPair(IDtoStore, subResult);
+  registerMapping(IDtoStore, subResult);
   }
 
 void
@@ -866,7 +869,7 @@ OMR::JitBuilderReplayTextFile::handleMul(TR::IlBuilder * ilmb, char * tokens)
   TR::IlValue * param2IlValue = static_cast<TR::IlValue *>(lookupPointer(param2ID));
   TR::IlValue * addResult = ilmb->Mul(param1IlValue, param2IlValue);
 
-  StoreIDPointerPair(IDtoStore, addResult);
+  registerMapping(IDtoStore, addResult);
   }
 
 void
@@ -888,7 +891,7 @@ OMR::JitBuilderReplayTextFile::handleDiv(TR::IlBuilder * ilmb, char * tokens)
 
   TR::IlValue * divResult = ilmb->Div(param1IlValue, param2IlValue);
 
-  StoreIDPointerPair(IDtoStore, divResult);
+  registerMapping(IDtoStore, divResult);
   }
 
 void
@@ -910,7 +913,7 @@ OMR::JitBuilderReplayTextFile::handleAnd(TR::IlBuilder * ilmb, char * tokens)
 
    TR::IlValue * andResult = ilmb->And(param1IlValue, param2IlValue);
 
-   StoreIDPointerPair(IDtoStore, andResult);
+   registerMapping(IDtoStore, andResult);
    }
 
 void
@@ -932,7 +935,7 @@ OMR::JitBuilderReplayTextFile::handleOr(TR::IlBuilder * ilmb, char * tokens)
 
    TR::IlValue * orResult = ilmb->Or(param1IlValue, param2IlValue);
 
-   StoreIDPointerPair(IDtoStore, orResult);
+   registerMapping(IDtoStore, orResult);
    }
 
 void
@@ -954,7 +957,7 @@ OMR::JitBuilderReplayTextFile::handleXor(TR::IlBuilder * ilmb, char * tokens)
 
    TR::IlValue * xorResult = ilmb->Xor(param1IlValue, param2IlValue);
 
-   StoreIDPointerPair(IDtoStore, xorResult);
+   registerMapping(IDtoStore, xorResult);
    }
 
 void
@@ -975,7 +978,7 @@ OMR::JitBuilderReplayTextFile::handleNewIlBuilder(TR::IlBuilder * ilmb, char * t
     //initialize a variable of type 'TR::IlValue *' with an rvalue of type
     //'void'
 
-  StoreIDPointerPair(IDtoStore, newBuilder);
+  registerMapping(IDtoStore, newBuilder);
   }
 
 void
@@ -999,7 +1002,7 @@ OMR::JitBuilderReplayTextFile::handleLessThan(TR::IlBuilder * ilmb, char * token
 
   TR::IlValue * lessThanResult = ilmb->LessThan(leftValue, rightValue);
 
-  StoreIDPointerPair(IDtoStore, lessThanResult);
+  registerMapping(IDtoStore, lessThanResult);
 }
 
 void
@@ -1023,7 +1026,7 @@ OMR::JitBuilderReplayTextFile::handleCreateLocalArray(TR::IlBuilder * ilmb, char
 
     TR::IlValue * lArray = ilmb->CreateLocalArray((int32_t)param1, param2);
 
-    StoreIDPointerPair(IDtoStore, lArray);
+    registerMapping(IDtoStore, lArray);
     }
 
 void
@@ -1044,7 +1047,7 @@ OMR::JitBuilderReplayTextFile::handleGreaterThan(TR::IlBuilder * ilmb, char * to
 
   TR::IlValue * result = ilmb->GreaterThan(leftValue, rightValue);
 
-  StoreIDPointerPair(IDtoStore, result);
+  registerMapping(IDtoStore, result);
 }
 
 void
@@ -1065,7 +1068,7 @@ OMR::JitBuilderReplayTextFile::handleNotEqualTo(TR::IlBuilder * ilmb, char * tok
 
   TR::IlValue * result = ilmb->NotEqualTo(leftValue, rightValue);
 
-  StoreIDPointerPair(IDtoStore, result);
+  registerMapping(IDtoStore, result);
 }
 
 void
@@ -1156,21 +1159,21 @@ OMR::JitBuilderReplayTextFile::handleForLoop(TR::IlBuilder * ilmb, char * tokens
       {
       TR::IlBuilder *continueBuilder = NULL;
       ilmb->ForLoop(boolParam, indVar, &body, NULL, &continueBuilder, initValue, iterateValue, incrementValue);
-      StoreIDPointerPair(continueID, continueBuilder);
+      registerMapping(continueID, continueBuilder);
       }
    else if(continueID == 0)
       {
       TR::IlBuilder *breakBuilder = NULL;
       ilmb->ForLoop(boolParam, indVar, &body, &breakBuilder, NULL, initValue, iterateValue, incrementValue);
-      StoreIDPointerPair(breakID, breakBuilder);
+      registerMapping(breakID, breakBuilder);
       }
    else
       {
       TR::IlBuilder *continueBuilder = NULL;
       TR::IlBuilder *breakBuilder = NULL;
       ilmb->ForLoop(boolParam, indVar, &body, &breakBuilder, &continueBuilder, initValue, iterateValue, incrementValue);
-      StoreIDPointerPair(continueID, continueBuilder);
-      StoreIDPointerPair(breakID, breakBuilder);
+      registerMapping(continueID, continueBuilder);
+      registerMapping(breakID, breakBuilder);
       }
   }
 
@@ -1212,7 +1215,7 @@ OMR::JitBuilderReplayTextFile::handleCall(TR::IlBuilder * ilmb, char * tokens)
       {
       TR_ASSERT_FATAL(NULL != returnValue, "Call did not return a result as expected");
       uint32_t IDtoStore = getNumberFromToken(tokens);
-      StoreIDPointerPair(IDtoStore, returnValue);
+      registerMapping(IDtoStore, returnValue);
       }
 
    //TODO free values.....
@@ -1240,7 +1243,7 @@ OMR::JitBuilderReplayTextFile::handleConvertTo(TR::IlBuilder * ilmb, char * toke
 
    TR::IlValue * addResult = ilmb->ConvertTo(param1IlValue, param2IlValue);
 
-   StoreIDPointerPair(IDtoStore, addResult);
+   registerMapping(IDtoStore, addResult);
    }
 
 void
@@ -1262,7 +1265,7 @@ OMR::JitBuilderReplayTextFile::handlePointerType(TR::IlBuilder * ilmb, char * to
 
    TR::IlType * addResult = ilmb->typeDictionary()->PointerTo(param1IlValue);
 
-   StoreIDPointerPair(IDtoStore, addResult);
+   registerMapping(IDtoStore, addResult);
    }
 
 void
@@ -1307,7 +1310,7 @@ OMR::JitBuilderReplayTextFile::handleUnsignedShiftR(TR::IlBuilder * ilmb, char *
 
    TR::IlValue * result = ilmb->UnsignedShiftR(v, amount);
 
-   StoreIDPointerPair(IDtoStore, result);
+   registerMapping(IDtoStore, result);
    }
 
 void
@@ -1352,7 +1355,7 @@ OMR::JitBuilderReplayTextFile::handleIndexAt(TR::IlBuilder * ilmb, char * tokens
 
    TR::IlValue * result = ilmb->IndexAt(dt, base, index);
 
-   StoreIDPointerPair(IDtoStore, result);
+   registerMapping(IDtoStore, result);
    }
 
 bool
