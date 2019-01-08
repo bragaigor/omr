@@ -27,10 +27,10 @@
 #include <map>
 #include "ilgen/StatementNames.hpp"
 
-namespace TR { class IlBuilderReplay; }
-namespace TR { class MethodBuilder; }
 namespace TR { class MethodBuilder; }
 namespace TR { class IlBuilder; }
+namespace TR { class IlType; }
+namespace TR { class IlValue; }
 
 namespace OMR
 {
