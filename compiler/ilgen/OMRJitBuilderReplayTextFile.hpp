@@ -108,6 +108,7 @@
     void handleIndexAt(TR::IlBuilder * ilmb, char * tokens);
 
     int8_t consume8bitNumber();
+    TR::IlValue * consumeValue();
 
     uint32_t getNumberFromToken(char * token);
 

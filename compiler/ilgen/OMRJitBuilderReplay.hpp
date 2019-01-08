@@ -65,10 +65,10 @@ class JitBuilderReplay
     virtual float consumeFloatNumber()                  { }
     virtual double consumeDoubleNumber()                { }
     virtual TypeID consumeID()                          { }
-    virtual const char consumeStatement()               { }
-    virtual TR::IlType * consumeType()                    { return static_cast<TR::IlType *>(0); }
-    virtual TR::IlValue * consumeValue()                  { return static_cast<TR::IlValue *>(0); }
-    virtual TR::MethodBuilder * consumeMethodBuilder()    { return NULL; }
+    virtual const char * consumeStatement()             { }
+    virtual TR::IlType * consumeType()                  { return static_cast<TR::IlType *>(0); }
+    virtual TR::IlValue * consumeValue()                { return static_cast<TR::IlValue *>(0); }
+    virtual TR::MethodBuilder * consumeMethodBuilder()  { return NULL; }
     virtual void consumeBuilder()                       { }
     virtual const void * consumeLocation()              { }
     virtual void consumeEndStatement()                  { }

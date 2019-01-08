@@ -646,6 +646,18 @@ OMR::JitBuilderReplayTextFile::consume8bitNumber()
    return (int8_t)num;
    }
 
+TR::IlValue * 
+OMR::JitBuilderReplayTextFile::consumeValue()
+   {
+   uint32_t tempID;
+   if (!(_file >> tempID));
+      TR_ASSERT_FATAL(0, "Unable to read file at consumeValue.");
+      
+   TypeID typeID = tempID;
+   TypePointer valPointer = lookupPointer(typeID);
+   return static_cast<TR::IlValue *>(valPointer);
+   }
+
 void
 OMR::JitBuilderReplayTextFile::handleConstInt32(TR::IlBuilder * ilmb, char * tokens)
    {
