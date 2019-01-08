@@ -66,9 +66,9 @@ class JitBuilderReplay
     virtual double consumeDoubleNumber()                      { }
     virtual TypeID consumeID()                                { }
     virtual const char consumeStatement()                     { }
-    virtual const TR::IlType consumeType()                    { }
-    virtual const TR::IlValue consumeValue()                  { }
-    virtual const TR::MethodBuilder consumeMethodBuilder()    { }
+    virtual TR::IlType consumeType()                    { }
+    virtual TR::IlValue consumeValue()                  { }
+    virtual TR::MethodBuilder consumeMethodBuilder()    { }
     virtual void consumeBuilder()                             { }
     virtual const void * consumeLocation()                    { }
     virtual void consumeEndStatement()                        { }
