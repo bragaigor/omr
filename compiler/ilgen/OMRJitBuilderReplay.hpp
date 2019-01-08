@@ -56,22 +56,22 @@ class JitBuilderReplay
     virtual void start();
     void StoreReservedIDs();
 
-    virtual void consumeStart()                               { }
-    virtual const char * const consumeString()                { }
-    virtual int8_t consume8bitNumber()                        { }
-    virtual int16_t consume16bitNumber()                      { }
-    virtual int32_t consume32bitNumber()                      { }
-    virtual int64_t consume64bitNumber()                      { }
-    virtual float consumeFloatNumber()                        { }
-    virtual double consumeDoubleNumber()                      { }
-    virtual TypeID consumeID()                                { }
-    virtual const char consumeStatement()                     { }
-    virtual TR::IlType consumeType()                    { }
-    virtual TR::IlValue consumeValue()                  { }
-    virtual TR::MethodBuilder consumeMethodBuilder()    { }
-    virtual void consumeBuilder()                             { }
-    virtual const void * consumeLocation()                    { }
-    virtual void consumeEndStatement()                        { }
+    virtual void consumeStart()                         { }
+    virtual const char * const consumeString()          { }
+    virtual int8_t consume8bitNumber()                  { }
+    virtual int16_t consume16bitNumber()                { }
+    virtual int32_t consume32bitNumber()                { }
+    virtual int64_t consume64bitNumber()                { }
+    virtual float consumeFloatNumber()                  { }
+    virtual double consumeDoubleNumber()                { }
+    virtual TypeID consumeID()                          { }
+    virtual const char consumeStatement()               { }
+    virtual TR::IlType * consumeType()                    { return static_cast<TR::IlType *>(0); }
+    virtual TR::IlValue * consumeValue()                  { return static_cast<TR::IlValue *>(0); }
+    virtual TR::MethodBuilder * consumeMethodBuilder()    { return NULL; }
+    virtual void consumeBuilder()                       { }
+    virtual const void * consumeLocation()              { }
+    virtual void consumeEndStatement()                  { }
 
     // Define Map that maps IDs to pointers
 
