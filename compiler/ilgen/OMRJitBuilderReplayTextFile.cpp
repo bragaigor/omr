@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018, 2018 IBM Corp. and others
+ * Copyright (c) 2018, 2019 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -773,6 +773,41 @@ OMR::JitBuilderReplayTextFile::consumeID()
    return typeID;
    }
 
+TR::IlBuilder * 
+OMR::JitBuilderReplayTextFile::consumeBuilder()
+   {
+   // Form: B### or Def
+   // e.g. B31, Def...
+
+   std::string tempStr; 
+   if (!(_file >> tempStr));
+      TR_ASSERT_FATAL(0, "Unable to read file at consumeIlBuilder.");
+   
+   if(tempStr.at(0) != 'B') { // It is "Def"
+      TR_ASSERT_FATAL(0, "Try to lookup non existing IlBuilder, found Def.");
+      // TODO: Insert stuff in the map. Use "registerMapping" here or just return NULL?
+   }
+
+   TypeID typeID = stoi(tempStr.substr(1));
+
+   TypePointer builderPointer = lookupPointer(typeID);
+   return static_cast<TR::IlBuilder *>(builderPointer);
+   }
+
+const void * 
+OMR::JitBuilderReplayTextFile::consumeLocation()
+   {
+   // Form: {#location}
+   // e.g. {0x02F3DA922}
+
+   std::string tempStr; 
+   if (!(_file >> tempStr));
+      TR_ASSERT_FATAL(0, "Unable to read file at consumeLocation.");
+   const char * locationPtr = tempStr.substr(1, tempStr.length() - 2).c_str();
+
+   return static_cast<const void *>(locationPtr);
+   }
+
 void
 OMR::JitBuilderReplayTextFile::handleConstInt32(TR::IlBuilder * ilmb, char * tokens)
    {
@@ -1505,8 +1540,6 @@ OMR::JitBuilderReplayTextFile::parseConstructor()
          char * tokens;
          bool constructorFlag = true;
 
-         std::string textLine;
-
          while(constructorFlag)
          {
             tokens = getLineAsChar();
@@ -1534,8 +1567,6 @@ OMR::JitBuilderReplayTextFile::parseBuildIL()
 
    char * tokens;
    bool buildIlFlag = true;
-
-   std::string textLine;
 
    while(buildIlFlag)
       {
