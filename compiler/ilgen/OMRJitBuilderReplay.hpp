@@ -54,20 +54,20 @@ class JitBuilderReplay
     * (consumers)
     */
 
-    virtual void consumeStart()                         { }
-    virtual const char * const consumeString()          { return NULL; }
-    virtual int8_t consume8bitNumber()                  { return 0; }
-    virtual int16_t consume16bitNumber()                { return 0; }
-    virtual int32_t consume32bitNumber()                { return 0; }
-    virtual int64_t consume64bitNumber()                { return 0; }
-    virtual float consumeFloatNumber()                  { return 0.0F; }
-    virtual double consumeDoubleNumber()                { return 0.0; }
-    virtual TypeID consumeID()                          { return 0; }
-    virtual const char * consumeStatement()             { return NULL; } 
-    virtual TR::IlType * consumeType()                  { return static_cast<TR::IlType *>(0); }
-    virtual TR::IlValue * consumeValue()                { return static_cast<TR::IlValue *>(0); }
-    virtual TR::IlBuilder * consumeBuilder()            { return NULL; }
-    virtual const void * consumeLocation()              { return NULL; }
+    virtual void ConsumeStart()                         { }
+    virtual const char * const ConsumeString()          { return NULL; }
+    virtual int8_t Consume8bitNumber()                  { return 0; }
+    virtual int16_t Consume16bitNumber()                { return 0; }
+    virtual int32_t Consume32bitNumber()                { return 0; }
+    virtual int64_t Consume64bitNumber()                { return 0; }
+    virtual float ConsumeFloatNumber()                  { return 0.0F; }
+    virtual double ConsumeDoubleNumber()                { return 0.0; }
+    virtual TypeID ConsumeID()                          { return 0; }
+    virtual const char * ConsumeStatement()             { return NULL; } 
+    virtual TR::IlType * ConsumeType()                  { return static_cast<TR::IlType *>(0); }
+    virtual TR::IlValue * ConsumeValue()                { return static_cast<TR::IlValue *>(0); }
+    virtual TR::IlBuilder * ConsumeBuilder()            { return NULL; }
+    virtual const void * ConsumeLocation()              { return NULL; }
 
     // Define Map that maps IDs to pointers
 

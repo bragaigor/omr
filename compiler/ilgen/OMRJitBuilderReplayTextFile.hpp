@@ -43,26 +43,21 @@
     * @brief Consumers for what has been recorded 
     * (consumers)
     */
-   
-    void               consumeStart();
-    int8_t             consume8bitNumber();
-    int16_t            consume16bitNumber();
-    int32_t            consume32bitNumber();
-    int64_t            consume64bitNumber();
-    float              consumeFloatNumber();
-    double             consumeDoubleNumber();
-    const char *       consumeStatement();
-    TR::IlType *       consumeType();
-    TR::IlValue *      consumeValue();
-    const char * const consumeString();
-    TypeID             consumeID();
-    TR::IlBuilder *    consumeBuilder();
-    const void *       consumeLocation();
 
-    private:
-
-    char * getLineAsChar();
-    char * getTokensFromLine(std::string currentLine);
+    void               ConsumeStart();
+    int8_t             Consume8bitNumber();
+    int16_t            Consume16bitNumber();
+    int32_t            Consume32bitNumber();
+    int64_t            Consume64bitNumber();
+    float              ConsumeFloatNumber();
+    double             ConsumeDoubleNumber();
+    const char *       ConsumeStatement();
+    TR::IlType *       ConsumeType();
+    TR::IlValue *      ConsumeValue();
+    const char * const ConsumeString();
+    TypeID             ConsumeID();
+    TR::IlBuilder *    ConsumeBuilder();
+    const void *       ConsumeLocation();
 
     };
 

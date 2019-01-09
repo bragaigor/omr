@@ -35,34 +35,13 @@
     {
     }
 
-char *
-OMR::JitBuilderReplayTextFile::getLineAsChar()
-   {
-   char * lineAsChar;
-   std::string line;
-
-   std::getline(_file, line);
-
-   lineAsChar = getTokensFromLine(line);
-   return lineAsChar;
-   }
-
-char *
-OMR::JitBuilderReplayTextFile::getTokensFromLine(std::string currentLine)
-   {
-      char * line = strdup(currentLine.c_str());
-      char * token = std::strtok(line, StatementName::SPACE);
-
-      return token;
-}
-
 void
-OMR::JitBuilderReplayTextFile::consumeStart()
+OMR::JitBuilderReplayTextFile::ConsumeStart()
    {
    // Expected Form: "strLen [RecordSignature]" VERSION_MAJOR VERSION_MINOR VERSION_PATCH
    // e.g. "4 [JBIL]" 0 0 0 
 
-   const char * const recordSignature = consumeString(); // Consumes first 2 tokens 
+   const char * const recordSignature = ConsumeString(); // Consumes first 2 tokens 
 
    int16_t version_major;
    int16_t version_minor;
@@ -78,7 +57,7 @@ OMR::JitBuilderReplayTextFile::consumeStart()
    }
 
 int8_t 
-OMR::JitBuilderReplayTextFile::consume8bitNumber()
+OMR::JitBuilderReplayTextFile::Consume8bitNumber()
    {
    // Expected Form: ##
    // e.g. 71
@@ -91,7 +70,7 @@ OMR::JitBuilderReplayTextFile::consume8bitNumber()
    }
 
 int16_t 
-OMR::JitBuilderReplayTextFile::consume16bitNumber()
+OMR::JitBuilderReplayTextFile::Consume16bitNumber()
    {
    // Expected Form: ###
    // e.g. 591
@@ -104,7 +83,7 @@ OMR::JitBuilderReplayTextFile::consume16bitNumber()
    }
 
 int32_t 
-OMR::JitBuilderReplayTextFile::consume32bitNumber()
+OMR::JitBuilderReplayTextFile::Consume32bitNumber()
    {
    // Expected Form: ####
    // e.g. 539
@@ -117,7 +96,7 @@ OMR::JitBuilderReplayTextFile::consume32bitNumber()
    }
 
 int64_t 
-OMR::JitBuilderReplayTextFile::consume64bitNumber()
+OMR::JitBuilderReplayTextFile::Consume64bitNumber()
    {
    // Expected Form: #####
    // e.g. 6234
@@ -130,7 +109,7 @@ OMR::JitBuilderReplayTextFile::consume64bitNumber()
    }
 
 float 
-OMR::JitBuilderReplayTextFile::consumeFloatNumber()
+OMR::JitBuilderReplayTextFile::ConsumeFloatNumber()
    {
    // Expected Form: ##.##
    // e.g. 34.2
@@ -143,7 +122,7 @@ OMR::JitBuilderReplayTextFile::consumeFloatNumber()
    }
 
 double 
-OMR::JitBuilderReplayTextFile::consumeDoubleNumber()
+OMR::JitBuilderReplayTextFile::ConsumeDoubleNumber()
    {
    // Expected Form: ##.##
    // e.g. 34.2
@@ -156,7 +135,7 @@ OMR::JitBuilderReplayTextFile::consumeDoubleNumber()
    }
 
 const char * 
-OMR::JitBuilderReplayTextFile::consumeStatement()
+OMR::JitBuilderReplayTextFile::ConsumeStatement()
    {
    // Expected Form: S###
    // e.g. S36
@@ -171,7 +150,7 @@ OMR::JitBuilderReplayTextFile::consumeStatement()
    }
 
 TR::IlType * 
-OMR::JitBuilderReplayTextFile::consumeType()
+OMR::JitBuilderReplayTextFile::ConsumeType()
    {
    // Expected Form: T###
    // e.g. T12
@@ -186,7 +165,7 @@ OMR::JitBuilderReplayTextFile::consumeType()
    }
 
 TR::IlValue * 
-OMR::JitBuilderReplayTextFile::consumeValue()
+OMR::JitBuilderReplayTextFile::ConsumeValue()
    {
    // Expected Form: V###
    // e.g. V31
@@ -201,7 +180,7 @@ OMR::JitBuilderReplayTextFile::consumeValue()
    }
 
 const char * const 
-OMR::JitBuilderReplayTextFile::consumeString()
+OMR::JitBuilderReplayTextFile::ConsumeString()
    {
    // Expected Form: "strLen [StringName]"
    // e.g. "16 [DefineReturnType]"
@@ -219,7 +198,7 @@ OMR::JitBuilderReplayTextFile::consumeString()
    }
 
 const uint32_t
-OMR::JitBuilderReplayTextFile::consumeID()
+OMR::JitBuilderReplayTextFile::ConsumeID()
    {
    // Expected Form: ID##
    // e.g. ID8
@@ -233,7 +212,7 @@ OMR::JitBuilderReplayTextFile::consumeID()
    }
 
 TR::IlBuilder * 
-OMR::JitBuilderReplayTextFile::consumeBuilder()
+OMR::JitBuilderReplayTextFile::ConsumeBuilder()
    {
    // Expected Form: B### or Def
    // e.g. B31, Def ...
@@ -254,7 +233,7 @@ OMR::JitBuilderReplayTextFile::consumeBuilder()
    }
 
 const void * 
-OMR::JitBuilderReplayTextFile::consumeLocation()
+OMR::JitBuilderReplayTextFile::ConsumeLocation()
    {
    // Expected Form: {#location}
    // e.g. {0x02F3DA922}
