@@ -28,8 +28,10 @@
  #include "ilgen/MethodBuilder.hpp"
 
 
- OMR::JitBuilderReplay::JitBuilderReplay()
+ OMR::JitBuilderReplay::JitBuilderReplay(const char *fileName)
+    : _file(fileName, std::fstream::in)
     {
+    start();
     }
 
  OMR::JitBuilderReplay::~JitBuilderReplay()
@@ -37,34 +39,35 @@
     }
 
 void
-OMR::JitBuilderReplay::start() {
+OMR::JitBuilderReplay::start() 
+   {
    StoreReservedIDs();
-}
+   }
 
 void
 OMR::JitBuilderReplay::StoreReservedIDs()
    {
-      registerMapping(0, 0);
-      registerMapping(1, (void *)1);
+   registerMapping(0, 0);
+   registerMapping(1, (void *)1);
    }
 
 void
 OMR::JitBuilderReplay::registerMapping(TypeID ID, TypePointer ptr)
    {
-     TypeMapPointer::iterator it = _pointerMap.find(ID);
-     if (it != _pointerMap.end())
-        TR_ASSERT_FATAL(0, "Unexpected pointer already defined for ID %d", ID);
+   TypeMapPointer::iterator it = _pointerMap.find(ID);
+   if (it != _pointerMap.end())
+      TR_ASSERT_FATAL(0, "Unexpected pointer already defined for ID %d", ID);
 
-     _pointerMap.insert(std::make_pair(ID, ptr));
+   _pointerMap.insert(std::make_pair(ID, ptr));
    }
 
 OMR::JitBuilderReplay::TypePointer
 OMR::JitBuilderReplay::lookupPointer(TypeID id)
    {
-     TypeMapPointer::iterator it = _pointerMap.find(id);
-     if (it == _pointerMap.end())
-        TR_ASSERT_FATAL(0, "Attempt to lookup an id that has not yet been created");
+   TypeMapPointer::iterator it = _pointerMap.find(id);
+   if (it == _pointerMap.end())
+      TR_ASSERT_FATAL(0, "Attempt to lookup an id that has not yet been created");
 
-     TypePointer pointer = it->second;
-     return pointer;
+   TypePointer pointer = it->second;
+   return pointer;
    }

@@ -39,23 +39,22 @@ class JitBuilderReplay
    {
    public:
    
-   enum MethodFlag { CONSTRUCTOR_FLAG, BUILDIL_FLAG };
-
    typedef const uint32_t                      TypeID;
    typedef void *                              TypePointer;
-   typedef std::map<TypeID, TypePointer> TypeMapPointer;
+   typedef std::map<TypeID, TypePointer>       TypeMapPointer;
 
-   JitBuilderReplay();
+   JitBuilderReplay(const char *fileName);
    virtual ~JitBuilderReplay();
 
+   void start();
+   void StoreReservedIDs();
+
    /**
-    * @brief Subclasses override these functions to replay from different input formats
-    * (helpers)
+    * @brief Consumers for what has been recorded 
+    * (consumers)
     */
 
-    virtual void start();
-    void StoreReservedIDs();
-
+    virtual void consumeStart()                         { }
     virtual const char * const consumeString()          { return NULL; }
     virtual int8_t consume8bitNumber()                  { return 0; }
     virtual int16_t consume16bitNumber()                { return 0; }
@@ -75,11 +74,11 @@ class JitBuilderReplay
     virtual void registerMapping(TypeID, TypePointer);
 
     protected:
-    const TR::MethodBuilder *         _mb;
     TypeMapPointer                    _pointerMap;
-    uint8_t                           _idSize;
 
     TypePointer lookupPointer(TypeID id);
+
+    std::fstream _file;
     
    };
 
