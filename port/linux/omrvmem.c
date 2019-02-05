@@ -64,6 +64,7 @@
 #endif
 
 #define INVALID_KEY -1
+#define FILE_NAME_SIZE 18
 
 #if 0
 #define OMRVMEM_DEBUG
@@ -961,51 +962,78 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 	 * Any changes made here may need to be reflected in that version.
 	 */
 	int fd = -1;
+	int ft = -1;
 	int flags = MAP_PRIVATE;
 	void *result = NULL;
 	int protectionFlags = PROT_NONE;
+	BOOLEAN useBackingFile = FALSE;
 
 	Trc_PRT_vmem_default_reserve_entry(address, byteAmount);
 
+	if(mode & OMRPORT_VMEM_MEMORY_MODE_FILE_HANDLE) {
+		useBackingFile = TRUE;
+	} else {
 #if defined(MAP_ANONYMOUS)
-	flags |= MAP_ANONYMOUS;
+		flags |= MAP_ANONYMOUS;
+		useBackingFile = FALSE;
 #elif defined(MAP_ANON)
-	flags |= MAP_ANON;
+		flags |= MAP_ANON;
+		useBackingFile = FALSE;
 #else
-	fd = portLibrary->file_open(portLibrary, "/dev/zero", EsOpenRead | EsOpenWrite, 0);
-	if (-1 != fd)
+		useBackingFile = TRUE;
 #endif
-	{
-		if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
-			protectionFlags = get_protectionBits(mode);
-		} else {
-			flags |= MAP_NORESERVE;
+	}
+
+	char filename[FILE_NAME_SIZE];
+	if (useBackingFile) {
+		char int_str[FILE_NAME_SIZE / 2 + 1];
+		sprintf(int_str, "%09d", getpid()); // Max pid in 64bit system is 4194304. Pads with zeros.
+		strcpy(filename, "tempfile");
+		strcat(filename, int_str);
+
+		fd = portLibrary->file_open(portLibrary, filename, EsOpenRead | EsOpenWrite | EsOpenCreate, 0);
+		identifier->fd = fd;
+		omrfile_unlink(portLibrary, filename);
+		ft = ftruncate(fd, byteAmount);
+		if (fd == -1 || ft == -1) {
+			Trc_PRT_vmem_default_reserve_failed(address, byteAmount);
+			update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL);
+			Trc_PRT_vmem_default_reserve_exit(result, address, byteAmount);
+			return result;
 		}
+	}
 
-		/* do NOT use the MAP_FIXED flag on Linux. With this flag, Linux may return
-		 * an address that has already been reserved.
-		 */
-		result = mmap(address, (size_t)byteAmount, protectionFlags, flags, fd, 0);
+	
+	if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
+		protectionFlags = get_protectionBits(mode);
+	} else {
+		flags |= MAP_NORESERVE;
+	}
 
-#if !defined(MAP_ANONYMOUS) && !defined(MAP_ANON)
-		portLibrary->file_close(portLibrary, fd);
-#endif
+	/* do NOT use the MAP_FIXED flag on Linux. With this flag, Linux may return
+	 * an address that has already been reserved.
+	 */
+	result = mmap(address, (size_t)byteAmount, protectionFlags, flags, fd, 0);
 
-		if (MAP_FAILED == result) {
-			result = NULL;
-		} else {
-			/* Update identifier and commit memory if required, else return reserved memory */
-			update_vmemIdentifier(identifier, result, result, byteAmount, mode, pageSize, OMRPORT_VMEM_PAGE_FLAG_NOT_USED, OMRPORT_VMEM_RESERVE_USED_MMAP, category);
-			omrmem_categories_increment_counters(category, byteAmount);
-			if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
-				if (NULL == omrvmem_commit_memory(portLibrary, result, byteAmount, identifier)) {
-					/* If the commit fails free the memory */
-					omrvmem_free_memory(portLibrary, result, byteAmount, identifier);
-					result = NULL;
-				}
+	if(useBackingFile) {
+		portLibrary->file_close(portLibrary, fd); //Switch to unlink?
+	}
+
+	if (MAP_FAILED == result) {
+		result = NULL;
+	} else {
+		/* Update identifier and commit memory if required, else return reserved memory */
+		update_vmemIdentifier(identifier, result, result, byteAmount, mode, pageSize, OMRPORT_VMEM_PAGE_FLAG_NOT_USED, OMRPORT_VMEM_RESERVE_USED_MMAP, category);
+		omrmem_categories_increment_counters(category, byteAmount);
+		if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
+			if (NULL == omrvmem_commit_memory(portLibrary, result, byteAmount, identifier)) {
+				/* If the commit fails free the memory */
+				omrvmem_free_memory(portLibrary, result, byteAmount, identifier);
+				result = NULL;
 			}
 		}
 	}
+
 
 	if (NULL == result) {
 		Trc_PRT_vmem_default_reserve_failed(address, byteAmount);
