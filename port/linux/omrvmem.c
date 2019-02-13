@@ -1048,6 +1048,114 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 	return result;
 }
 
+void
+getAddressesOffset(struct J9PortVmemIdentifier *oldIdentifier, void* addresses[], int addressesCount, long *offsets)
+{
+	void *address = oldIdentifier->address;
+	int i = 0;
+
+	for(; i < addressesCount; i++) {
+		long offset = (char *)(addresses[i]) - (char *)(address);
+		offsets[i] = offset*sizeof(char);
+	}
+}
+
+/**
+ *  Maps a contiguous region of memory to double map addresses[] passed in. 
+ *  
+ *  @param OMRPortLibrary       *portLibrary                            [in] The portLibrary object
+ *  @param void*                addressesOffeset[]                              [in] Addresses to be double mapped
+ *  @param uintptr_t            byteAmount                                      [in] Total size to allocate for contiguous block of memory
+ *  @param struct J9PortVmemIdentifier *oldIdentifier   [in]  old Identifier containing file descriptor
+ *  @param struct J9PortVmemIdentifier *newIdentifier   [out] new Identifier for new block of memory. The structure to be updated
+ *  @param uintptr_t            mode,           [in] Access Mode
+ *  @paramuintptr_t             pageSize,       [in] onstant describing pageSize
+ *  @param OMRMemCategory       *category       [in] Memory allocation category
+ */
+
+void *
+omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* addresses[], uintptr_t addressSize, uintptr_t byteAmount, struct J9PortVmemIdentifier *oldIdentifier, struct J9PortVmemIdentifier *newIdentifier, uintptr_t mode, uintptr_t pageSize, OMRMemCategory *category)
+{
+	int protectionFlags = PROT_READ | PROT_WRITE;
+	int flags = MAP_PRIVATE | MAP_ANON;
+	int fd = -1;
+	void* contiguousMap = NULL;
+
+	if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
+		protectionFlags = get_protectionBits(mode);
+	}
+
+	contiguousMap = mmap(
+			NULL,
+			byteAmount,
+			protectionFlags,
+			flags,
+			fd,
+			0);
+
+	if (contiguousMap == MAP_FAILED) {
+		contiguousMap = NULL;
+	} else {
+		/* Update identifier and commit memory if required, else return reserved memory */
+		update_vmemIdentifier(newIdentifier, contiguousMap, contiguousMap, byteAmount, mode, pageSize, OMRPORT_VMEM_PAGE_FLAG_NOT_USED, OMRPORT_VMEM_RESERVE_USED_MMAP, category);
+		omrmem_categories_increment_counters(category, byteAmount); // TODO: Might not need this 
+		if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
+			if (NULL == omrvmem_commit_memory(portLibrary, contiguousMap, byteAmount, newIdentifier)) {
+				/* If the commit fails free the memory */
+#if defined(OMRVMEM_DEBUG)
+				printf("omrvmem_commit_memory failed at contiguous_region_reserve_memory.\n");
+				fflush(stdout);
+#endif
+				contiguousMap = NULL;
+			}
+		}
+	}
+
+	// Perform double mapping 
+	if(contiguousMap != NULL) {
+		flags = MAP_SHARED | MAP_FIXED; // Must be shared, SIGSEGV otherwise
+		int addressesCount = (sizeof(addresses)/sizeof(*addresses)); // (*(&addresses + 1) - addresses)
+		long addressesOffeset[addressesCount];
+		getAddressesOffset(oldIdentifier, addresses, addressesCount, addressesOffeset);
+		fd = oldIdentifier->fd;
+
+		size_t i;
+		for (i = 0; i < addressesCount; i++) {
+			void *nextAddress = (void *)(contiguousMap+i*addressSize);
+			void *address = mmap(
+					nextAddress,
+					addressSize,
+					protectionFlags,
+					flags,
+					fd,
+					addressesOffeset[i]);
+
+			if (address == MAP_FAILED) {
+#if defined(OMRVMEM_DEBUG)
+				printf("Failed to mmap address[%d] at mmapContiguous()\n", i);
+				fflush(stdout);
+#endif
+				contiguousMap = NULL;
+				break;
+			} else if (nextAddress != address) {
+#if defined(OMRVMEM_DEBUG)
+				printf("Map failed to provide the correct address. nextAddress %p != %p\n", nextAddress, address);
+				fflush(stdout);
+#endif
+				contiguousMap = NULL;
+				break;
+			}
+		}
+	}
+
+	if (contiguousMap == NULL) {
+		update_vmemIdentifier(newIdentifier, NULL, NULL, 0, 0, 0, 0, 0, NULL);
+		omrvmem_free_memory(portLibrary, contiguousMap, byteAmount, newIdentifier); // TODO: Might not need this. This also decrement counters. 
+	}
+
+	return contiguousMap;
+}
+
 /**
  * @internal
  * Update J9PortVmIdentifier structure
