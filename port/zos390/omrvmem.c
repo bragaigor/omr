@@ -1440,7 +1440,8 @@ rangeIsValid(struct J9PortVmemIdentifier *identifier, void *address, uintptr_t b
 void *
 omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* addresses[], uintptr_t addressSize, uintptr_t byteAmount, struct J9PortVmemIdentifier *oldIdentifier, struct J9PortVmemIdentifier *newIdentifier, uintptr_t mode, uintptr_t pageSize, OMRMemCategory *category)
 {
-        return NULL;
+	portLibrary->error_set_last_error(portLibrary,  errno, OMRPORT_ERROR_VMEM_NOT_SUPPORTED);
+	return NULL;
 }
 
 intptr_t
