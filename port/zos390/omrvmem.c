@@ -1437,6 +1437,12 @@ rangeIsValid(struct J9PortVmemIdentifier *identifier, void *address, uintptr_t b
 	return isValid;
 }
 
+void *
+omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* addresses[], uintptr_t addressSize, uintptr_t byteAmount, struct J9PortVmemIdentifier *oldIdentifier, struct J9PortVmemIdentifier *newIdentifier, uintptr_t mode, uintptr_t pageSize, OMRMemCategory *category)
+{
+        return NULL;
+}
+
 intptr_t
 omrvmem_numa_set_affinity(struct OMRPortLibrary *portLibrary, uintptr_t numaNode, void *address, uintptr_t byteAmount, struct J9PortVmemIdentifier *identifier)
 {

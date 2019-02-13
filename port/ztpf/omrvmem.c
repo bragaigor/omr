@@ -1503,6 +1503,12 @@ getMemoryInRangeForDefaultPages(struct OMRPortLibrary *portLibrary,
 	return memoryPointer;
 }
 
+void *
+omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* addresses[], uintptr_t addressSize, uintptr_t byteAmount, struct J9PortVmemIdentifier *oldIdentifier, struct J9PortVmemIdentifier *newIdentifier, uintptr_t mode, uintptr_t pageSize, OMRMemCategory *category)
+{
+        return NULL;
+}
+
 /**
  * Allocates memory in specified range using a best effort approach
  * (unless OMRPORT_VMEM_STRICT_ADDRESS flag is used) and returns a pointer
