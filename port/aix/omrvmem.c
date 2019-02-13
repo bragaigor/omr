@@ -820,6 +820,12 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 	return result;
 }
 
+void *
+omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* addresses[], uintptr_t addressSize, uintptr_t byteAmount, struct J9PortVmemIdentifier *oldIdentifier, struct J9PortVmemIdentifier *newIdentifier, uintptr_t mode, uintptr_t pageSize, OMRMemCategory *category)
+{
+	return NULL;
+}
+
 /**
  * Get protection bits when reserving memory with the default page size
  *
