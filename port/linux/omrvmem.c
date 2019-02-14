@@ -993,7 +993,7 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 
 		fd = portLibrary->file_open(portLibrary, filename, EsOpenRead | EsOpenWrite | EsOpenCreate, 0);
 		identifier->fd = fd;
-		omrfile_unlink(portLibrary, filename);
+		portLibrary->file_unlink(filename);
 		ft = ftruncate(fd, byteAmount);
 		if (fd == -1 || ft == -1) {
 			Trc_PRT_vmem_default_reserve_failed(address, byteAmount);
