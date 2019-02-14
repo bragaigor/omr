@@ -1044,18 +1044,21 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 	return result;
 }
 
+/*
 void
 getAddressesOffset(struct J9PortVmemIdentifier *oldIdentifier, void* addresses[], int addressesCount, long *offsets)
 {
 	void *address = oldIdentifier->address;
 	int i = 0;
-
+	
+	printf("Inside getAddressesOffset()\n");
 	for(; i < addressesCount; i++) {
 		long offset = (char *)(addresses[i]) - (char *)(address);
 		offsets[i] = offset*sizeof(char);
+		printf("offsets[%d] = %zu\n", i, offsets[i]);
 	}
 }
-
+*/
 /**
  *  Maps a contiguous region of memory to double map addresses[] passed in. 
  *  
@@ -1070,12 +1073,13 @@ getAddressesOffset(struct J9PortVmemIdentifier *oldIdentifier, void* addresses[]
  */
 
 void *
-omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* addresses[], uintptr_t addressSize, uintptr_t byteAmount, struct J9PortVmemIdentifier *oldIdentifier, struct J9PortVmemIdentifier *newIdentifier, uintptr_t mode, uintptr_t pageSize, OMRMemCategory *category)
+omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* addresses[], uintptr_t addressesCount, uintptr_t addressSize, struct J9PortVmemIdentifier *oldIdentifier, struct J9PortVmemIdentifier *newIdentifier, uintptr_t mode, uintptr_t pageSize, OMRMemCategory *category)
 {
 	int protectionFlags = PROT_READ | PROT_WRITE;
 	int flags = MAP_PRIVATE | MAP_ANON;
 	int fd = -1;
 	void* contiguousMap = NULL;
+	uintptr_t byteAmount = addressesCount * addressSize;
 
 	if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
 		protectionFlags = get_protectionBits(mode);
@@ -1110,34 +1114,45 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* a
 	// Perform double mapping 
 	if(contiguousMap != NULL) {
 		flags = MAP_SHARED | MAP_FIXED; // Must be shared, SIGSEGV otherwise
-		int addressesCount = (sizeof(addresses)/sizeof(*addresses)); // (*(&addresses + 1) - addresses)
-		long addressesOffeset[addressesCount];
-		getAddressesOffset(oldIdentifier, addresses, addressesCount, addressesOffeset);
+		// int addressesCount = (sizeof(addresses)/sizeof(*addresses)); 
+		printf("Found %zu arraylet leaves.\n", addressesCount);
+		int j = 0;
+		for(j = 0; j < 8; j++) {
+			printf("addresses[%d] = %p\n", j, addresses[j]);
+		}
+		// long addressesOffeset[addressesCount];
+		// getAddressesOffset(oldIdentifier, addresses, addressesCount, addressesOffeset);
 		fd = oldIdentifier->fd;
 
+		printf("Contiguous address is: %p\n", contiguousMap);
+		printf("About to double map arraylets.\n");
 		size_t i;
 		for (i = 0; i < addressesCount; i++) {
 			void *nextAddress = (void *)(contiguousMap+i*addressSize);
+			long addressOffset = ((char *)addresses[i] - (char *)oldIdentifier->address) * sizeof(char);
+			printf("offsets[%zu] = %zu\n", i, addressOffset);
 			void *address = mmap(
 					nextAddress,
 					addressSize,
 					protectionFlags,
 					flags,
 					fd,
-					addressesOffeset[i]);
+					addressOffset);
+
+			printf("address returned = %p, should nextAddress[%zu] = %p\n", address, i, nextAddress);
 
 			if (address == MAP_FAILED) {
-#if defined(OMRVMEM_DEBUG)
-				printf("Failed to mmap address[%d] at mmapContiguous()\n", i);
+// #if defined(OMRVMEM_DEBUG)
+				printf("Failed to mmap address[%zu] at mmapContiguous()\n", i);
 				fflush(stdout);
-#endif
+// #endif
 				contiguousMap = NULL;
 				break;
 			} else if (nextAddress != address) {
-#if defined(OMRVMEM_DEBUG)
+// #if defined(OMRVMEM_DEBUG)
 				printf("Map failed to provide the correct address. nextAddress %p != %p\n", nextAddress, address);
 				fflush(stdout);
-#endif
+// #endif
 				contiguousMap = NULL;
 				break;
 			}
@@ -1145,8 +1160,7 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* a
 	}
 
 	if (contiguousMap == NULL) {
-		update_vmemIdentifier(newIdentifier, NULL, NULL, 0, 0, 0, 0, 0, NULL);
-		omrvmem_free_memory(portLibrary, contiguousMap, byteAmount, newIdentifier); // TODO: Might not need this. This also decrement counters. 
+		omrvmem_free_memory(portLibrary, contiguousMap, byteAmount, newIdentifier); 
 	}
 
 	return contiguousMap;
