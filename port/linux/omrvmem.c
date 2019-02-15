@@ -984,8 +984,8 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 #endif
 	}
 
-	char filename[FILE_NAME_SIZE];
 	if (useBackingFile) {
+		char filename[FILE_NAME_SIZE];
 		char int_str[FILE_NAME_SIZE / 2 + 1];
 		sprintf(int_str, "%09d", getpid()); // Max pid in 64bit system is 4194304. Pads with zeros.
 		strcpy(filename, "tempfile");
