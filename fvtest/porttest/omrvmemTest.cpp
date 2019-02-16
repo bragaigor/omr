@@ -428,7 +428,7 @@ TEST(PortVmemTest, vmem_test_file_handle)
 		uintptr_t initialBlocks = 0;
 		uintptr_t initialBytes = 0;
 
-		printf("************** This is the pageSizes[%d] = %d bytes! System pagesize: %zu *******************\n", i, pageSizes[i], getpagesize()); // 270662976 bytes
+		// printf("************** This is the pageSizes[%d] = %d bytes! System pagesize: %zu *******************\n", i, pageSizes[i], getpagesize()); // 270662976 bytes
 
 		/* Sample baseline category data */
 		getPortLibraryMemoryCategoryData(OMRPORTLIB, &initialBlocks, &initialBytes);
@@ -530,7 +530,7 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 	char *lastErrorMessage = NULL;
 	int32_t lastErrorNumber = 0;
 	size_t HEAP_SIZE = SIXTEEN_MB; // 16MB
-	uintptr_t pageSize = getpagesize();
+	// uintptr_t pageSize = getpagesize();
 	size_t arrayletLeafSize = SIXTEEN_KB; // 16KB
 	char vals[ARRAYLET_COUNT] = {'3', '5', '6', '8', '9', '0', '1', '2'};
         size_t totalArrayletSize = 0;
@@ -540,6 +540,7 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 
 	/* First get all the supported page sizes */
 	pageSizes = omrvmem_supported_page_sizes();
+	uintptr_t pageSize = pageSizes[0];
 #if defined(J9ZOS390)
 	pageFlags = omrvmem_supported_page_flags();
 #endif /* J9ZOS390 */
@@ -549,7 +550,7 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 		uintptr_t initialBlocks = 0;
 		uintptr_t initialBytes = 0;
 
-		printf("************** Double Mapping test. Allocating %zu bytes for heap! System pagesize: %zu *******************\n", HEAP_SIZE, getpagesize()); // 270662976 bytes
+		printf("************** Double Mapping test. Allocating %zu bytes for heap! System pagesize: %zu *******************\n", HEAP_SIZE, pageSize); // 270662976 bytes
 
 		/* Sample baseline category data */
 		getPortLibraryMemoryCategoryData(OMRPORTLIB, &initialBlocks, &initialBytes);
@@ -564,7 +565,7 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 		memPtr = (char *)omrvmem_reserve_memory(
 						0, HEAP_SIZE, &vmemID,
 						OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_COMMIT | OMRPORT_VMEM_MEMORY_MODE_FILE_HANDLE | OMRPORT_VMEM_MEMORY_MODE_DOUBLE_MAP,
-						getpagesize(), OMRMEM_CATEGORY_PORT_LIBRARY);
+						pageSize, OMRMEM_CATEGORY_PORT_LIBRARY);
 
 
 		/* did we get any memory? */
