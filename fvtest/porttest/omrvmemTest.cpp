@@ -45,6 +45,8 @@
 #define TWO_GIG_BAR 0x7FFFFFFF
 #define ONE_MB (1*1024*1024)
 #define FOUR_KB (4*1024)
+#define SIXTEEN_KB (16*1024)
+#define SIXTEEN_MB (0x1000000LL)
 #define TWO_GB	(0x80000000LL)
 #define SIXTY_FOUR_GB (0x1000000000LL)
 
@@ -54,6 +56,7 @@
 #define D512M (512*1024*1024)
 #define D256M (256*1024*1024)
 #define DEFAULT_NUM_ITERATIONS 50
+#define ARRAYLET_COUNT 8
 
 #define MAX_ALLOC_SIZE 256 /**<@internal largest size to allocate */
 
@@ -526,10 +529,12 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 	int32_t rc = 0;
 	char *lastErrorMessage = NULL;
 	int32_t lastErrorNumber = 0;
-	size_t HEAP_SIZE = 16777216; // 16MB
+	size_t HEAP_SIZE = SIXTEEN_MB; // 16MB
 	uintptr_t pageSize = getpagesize();
-	const int32_t ARRAYLET_COUNT = 8;
-	size_t arrayletLeafSize = 16384 * 4; // 16KB
+	size_t arrayletLeafSize = SIXTEEN_KB; // 16KB
+	char vals[ARRAYLET_COUNT] = {'3', '5', '6', '8', '9', '0', '1', '2'};
+        size_t totalArrayletSize = 0;
+        void* arrayletLeaveAddrs[ARRAYLET_COUNT];
 
 	reportTestEntry(OMRPORTLIB, testName);
 
@@ -558,7 +563,7 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 #endif /* J9ZOS390 */
 		memPtr = (char *)omrvmem_reserve_memory(
 						0, HEAP_SIZE, &vmemID,
-						OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_COMMIT | OMRPORT_VMEM_MEMORY_MODE_FILE_HANDLE,
+						OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_COMMIT | OMRPORT_VMEM_MEMORY_MODE_FILE_HANDLE | OMRPORT_VMEM_MEMORY_MODE_DOUBLE_MAP,
 						getpagesize(), OMRMEM_CATEGORY_PORT_LIBRARY);
 
 
@@ -598,22 +603,21 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 		/* can we read and write to the memory? */
 		omrstr_printf(allocName, allocNameSize, "omrvmem_reserve_memory(%d)", HEAP_SIZE);
 		verifyMemory(OMRPORTLIB, testName, memPtr, HEAP_SIZE, allocName);
-		printf("Memory verified successfully. Double mapping test starting...");
+		printf("Memory verified successfully. Double mapping test starting...\n");
 		{
-			/* 
- 			 * Create arraylets offset. How many?
- 			 * Calculate their exact address by adding it to memPtr (heap base address)
- 			 * Calculate total arraylet size (sum of arraylet leaves)
- 			 * oldIdentifier is vmemID, which will have the address of the heap
- 			 * Create a newIdentifier which will contain the new information for the contiguous block of memory
- 			 * mode: OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_COMMIT
- 			 * category: OMRMEM_CATEGORY_PORT_LIBRARY
- 			 */
-			long arrayLetOffsets[ARRAYLET_COUNT] = {0, HEAP_SIZE / 128, HEAP_SIZE / 32, HEAP_SIZE / 8, HEAP_SIZE / 2, (HEAP_SIZE / 2) + (HEAP_SIZE / 128), (HEAP_SIZE / 2) + (HEAP_SIZE / 32), (HEAP_SIZE / 2) + (HEAP_SIZE / 8)};
+			/* Initialize arraylet offsets to different ranges */
+			printf("\t************************ Offset must be multiple of: %zu\n", sysconf(_SC_PAGE_SIZE));
+			long arrayLetOffsets[ARRAYLET_COUNT];
+			/* Must be multiple of pagesize: sysconf(_SC_PAGE_SIZE) */
+			arrayLetOffsets[0] = 0;
+                        arrayLetOffsets[1] = HEAP_SIZE / 64;
+                        arrayLetOffsets[2] = HEAP_SIZE / 32;
+                        arrayLetOffsets[3] = HEAP_SIZE / 8;
+                        arrayLetOffsets[4] = HEAP_SIZE / 2;
+                        arrayLetOffsets[5] = (HEAP_SIZE / 2) + (HEAP_SIZE / 64);
+                        arrayLetOffsets[6] = (HEAP_SIZE / 2) + (HEAP_SIZE / 32);
+                        arrayLetOffsets[7] = (HEAP_SIZE / 2) + (HEAP_SIZE / 8);
 
-			char vals[ARRAYLET_COUNT] = {'3', '5', '6', '8', '9', '0', '1', '2'};
-			size_t totalArrayletSize = 0;
-			void* arrayletLeaveAddrs[ARRAYLET_COUNT];
 			int i = 0;
 			printf("memPtr = %p\n", memPtr); // TODO: DELETE
 			for(; i < ARRAYLET_COUNT; i++) {
@@ -622,12 +626,12 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 				totalArrayletSize += arrayletLeafSize;
 				printf(". arrayletLeaveAddrs[%d] = %p\n", i, arrayletLeaveAddrs[i]); // TODO: DELETE
 			}
-			printf("Arraylet leaves combined have size of %u bytes\n", totalArrayletSize);
+			printf("Arraylet leaves combined have size of %u bytes\n", totalArrayletSize); //TODO: DELETE
 			
 			for(i = 0; i < ARRAYLET_COUNT; i++) {
 				memset(arrayletLeaveAddrs[i], vals[i%ARRAYLET_COUNT], arrayletLeafSize);
 			}
-			printf("Arraylet initialization complete.\n");
+			printf("Arraylet initialization complete.\n"); // TODO: DELETE
 			
 			OMRMemCategory *category = omrmem_get_category(OMRMEM_CATEGORY_PORT_LIBRARY);
 
@@ -638,9 +642,26 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 										pageSize,
 										category);
 			if(contiguous == NULL) {
-				printf("Double mapping failed!!\n");
+				portTestEnv->log(LEVEL_ERROR, "***Double mapping failed \n");
+				lastErrorMessage = (char *)omrerror_last_error_message();
+                        	lastErrorNumber = omrerror_last_error_number();
+				if (OMRPORT_ERROR_VMEM_OPFAILED == lastErrorNumber) {
+                                	goto exit;
+                        	}
+                        	outputErrorMessage(PORTTEST_ERROR_ARGS, "unable to reserve and and double map 0x%zx bytes with page size 0x%zx.\n"
+                                	        "\tlastErrorNumber=%d, lastErrorMessage=%s\n", HEAP_SIZE, pageSize, lastErrorNumber, lastErrorMessage);
+
+                        	if (OMRPORT_ERROR_VMEM_INSUFFICENT_RESOURCES == lastErrorNumber) {
+                                	portTestEnv->log(LEVEL_ERROR, "Portable error OMRPORT_ERROR_VMEM_INSUFFICENT_RESOURCES...\n");
+                                	portTestEnv->changeIndent(1);
+                                	portTestEnv->log(LEVEL_ERROR, "REBOOT THE MACHINE to free up resources AND TRY THE TEST AGAIN\n");
+                                	portTestEnv->changeIndent(-1);
+                        	}
+                        	goto exit;
 			} else {
 				printf("Double mapping successfull!!\n");
+				// TODO: Check if changing contiguous block of memory also changes heap.
+				// TODO: Call free/delete on contiguous block of memory.
 			}
 		}
 		/* free the memory (reuse the vmemID) */
