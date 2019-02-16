@@ -607,7 +607,7 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 		printf("Memory verified successfully. Double mapping test starting...\n");
 		{
 			/* Initialize arraylet offsets to different ranges */
-			printf("\t************************ Offset must be multiple of: %zu\n", sysconf(_SC_PAGE_SIZE));
+			// printf("\t************************ Offset must be multiple of: %zu\n", sysconf(_SC_PAGE_SIZE));
 			long arrayLetOffsets[ARRAYLET_COUNT];
 			/* Must be multiple of pagesize: sysconf(_SC_PAGE_SIZE) */
 			arrayLetOffsets[0] = 0;
