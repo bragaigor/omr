@@ -514,6 +514,99 @@ exit:
 	reportTestExit(OMRPORTLIB, testName);
 }
 
+/**
+ * @internal
+ * Helper function for memory management verification.
+ * 
+ * Given a pointer to an memory chunk verify it is
+ * \arg a non NULL pointer
+ * \arg correct size
+ * \arg writeable
+ * \arg aligned
+ * \arg double aligned
+ * 
+ * @param[in] portLibrary The port library under test
+ * @param[in] testName The name of the test requesting this functionality
+ * @param[in] pageSize
+ * @param[in] arraylet leaf size
+ * @param[in] contiguous block of memory pointer
+ * @param[in] arraylet leaves addresses
+ * @param[in] allocName Calling function name to display in errors
+ */
+static void 
+verifyContiguousMem(struct OMRPortLibrary *portLibrary, const char *testName, size_t pagesize, size_t arrayletSize, void * contiguous, void* addresses[], const char *allocName) 
+{
+	OMRPORT_ACCESS_FROM_OMRPORT(portLibrary);
+	char * contiguousMap = (char*)contiguous;
+	int32_t i = 0;
+	int32_t firstBytes = 32;
+	int32_t jump = 48;
+	int32_t secondBytes = 16;
+
+	/* First need to verify if arraylet leaves contain the appropriate data */
+	// TODO
+	for(i = 0; i < ARRAYLET_COUNT * arrayletSize; i++) {
+		printf("%c",((char*)contiguous)[i]);
+	}
+	printf("\n\n");
+	return;
+
+	for(i = 0; i < ARRAYLET_COUNT; i++) {
+		/* Get the address representing the beginning of each arraylet */
+		char *arrayletData = contiguousMap + (i * arrayletSize);
+
+		/* write a pattern to the first page of each arraylet to verify proper mappings */
+		memset(arrayletData, '*', firstBytes);
+		char *arrayletData2 = arrayletData + jump;
+		memset(arrayletData2, '*', secondBytes);
+
+		/* Write to the first byte of each of the other pages in the arraylet to ensure all pages are touched */
+		for (int j = 1; j < (arrayletSize / pagesize); j++) {
+			char *pageData = arrayletData + (j * pagesize);
+			*pageData = '*';
+		}
+	}
+
+	/* Verify if addresses were modified with the above changes */
+	for(i = 0; i < ARRAYLET_COUNT; i++) {
+		char *address = (char*)addresses[i];
+		char *arrayletData = contiguousMap + (i * arrayletSize);
+
+		/* Verify first 32 chars are * (asterisks) */
+		int32_t j = 0;
+		for(; j < firstBytes; j++) {
+			if(arrayletData[j] == '*' && arrayletData[j] == address[j]) {} /* Good */
+			else {
+				printf("\t######### arrayletData[%zu] = %c, address[%zu] = %c. Arraylet address: %p\n", j, arrayletData[j], j, address[j], address);
+				printf("Verification 0failed at arraylet index: %zu. Double mapping failed!!!!\n", i);
+				outputErrorMessage(PORTTEST_ERROR_ARGS, "%s failed double mapping test at 0\n", allocName);
+				return;
+			}
+		}
+		char *arrayletData2 = arrayletData + jump;
+		char *address2 = address + jump;
+		for(j = 0; j < secondBytes; j++) {
+                        if(arrayletData2[j] == '*' && arrayletData2[j] == address2[j]) {} /* Good */
+                        else {
+                                printf("Verification 1 failed at arraylet index: %zu. Double mapping failed!!!!\n", i);
+				outputErrorMessage(PORTTEST_ERROR_ARGS, "%s failed double mapping test at 1\n", allocName);
+				return;
+                        }
+                }
+		/* Verify first byte of each of the other pages in the arraylet to ensure all pages were modified in the heap */
+                for (j = 1; j < (arrayletSize / pagesize); j++) {
+                        char *pageData = arrayletData + (j * pagesize);
+			char *addressData = address + (j * pagesize);
+			if(*pageData == '*' && *pageData == *addressData) {} /* Good */
+                        else {
+                                printf("Verification 2 failed at arraylet index: %zu. Double mapping failed!!!!\n", i);
+				outputErrorMessage(PORTTEST_ERROR_ARGS, "%s failed double mapping test at 2\n", allocName);
+				return;
+                        }
+                }
+	}
+}
+
 TEST(PortVmemTest, vmem_test_double_mapping)
 {
 	portTestEnv->changeIndent(1);
@@ -564,6 +657,7 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 			continue;
 		}
 #endif /* J9ZOS390 */
+		/* TODO: Heap memory must be shared (shm_open(), shm_unlink()) in order to work */
 		memPtr = (char *)omrvmem_reserve_memory(
 						0, HEAP_SIZE, &vmemID,
 						OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_COMMIT | OMRPORT_VMEM_MEMORY_MODE_FILE_HANDLE | OMRPORT_VMEM_MEMORY_MODE_DOUBLE_MAP,
@@ -664,7 +758,21 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 			} else {
 				printf("Double mapping successfull!!\n");
 				// TODO: Check if changing contiguous block of memory also changes heap.
-				// TODO: Call free/delete on contiguous block of memory.
+				verifyContiguousMem(OMRPORTLIB, testName, pageSize, arrayletLeafSize, contiguous, arrayletLeaveAddrs, allocName);
+
+				/* Calls free/delete on contiguous block of memory. */
+				uintptr_t byteAmount = ARRAYLET_COUNT * arrayletLeafSize;
+				int32_t rc_contiguous = omrvmem_free_memory(contiguous, byteAmount, &newIdentifier);
+				if (rc_contiguous != 0) {
+					printf("Error when trying to free contiguous block of memory\n");
+                        		outputErrorMessage(
+                                		PORTTEST_ERROR_ARGS,
+                                		"omrvmem_free_memory returned %i when trying to free 0x%zx bytes at 0x%zx\n",
+                                		rc_contiguous, byteAmount, contiguous);
+                        		goto exit;
+                		} else {
+					printf("Successfully freed contiguous block of memory!!!!\n");
+				}
 			}
 		}
 		/* free the memory (reuse the vmemID) */
