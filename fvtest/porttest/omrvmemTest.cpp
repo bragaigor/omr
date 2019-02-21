@@ -545,12 +545,14 @@ verifyContiguousMem(struct OMRPortLibrary *portLibrary, const char *testName, si
 
 	/* First need to verify if arraylet leaves contain the appropriate data */
 	// TODO
+	/*
 	for(i = 0; i < ARRAYLET_COUNT * arrayletSize; i++) {
 		printf("%c",((char*)contiguous)[i]);
 	}
 	printf("\n\n");
-	return;
+	*/
 
+	printf("\t############################ About to fill contiguous region of memory with asterisks!!!\n");
 	for(i = 0; i < ARRAYLET_COUNT; i++) {
 		/* Get the address representing the beginning of each arraylet */
 		char *arrayletData = contiguousMap + (i * arrayletSize);
@@ -566,9 +568,10 @@ verifyContiguousMem(struct OMRPortLibrary *portLibrary, const char *testName, si
 			*pageData = '*';
 		}
 	}
-
+	printf("\t############################ Now need to verify if addresses changed accordinly!!!\n");
 	/* Verify if addresses were modified with the above changes */
 	for(i = 0; i < ARRAYLET_COUNT; i++) {
+		printf("\t############################ Verifying arraylet: %zu\n", i);
 		char *address = (char*)addresses[i];
 		char *arrayletData = contiguousMap + (i * arrayletSize);
 
@@ -660,7 +663,7 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 		/* TODO: Heap memory must be shared (shm_open(), shm_unlink()) in order to work */
 		memPtr = (char *)omrvmem_reserve_memory(
 						0, HEAP_SIZE, &vmemID,
-						OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_COMMIT | OMRPORT_VMEM_MEMORY_MODE_FILE_HANDLE | OMRPORT_VMEM_MEMORY_MODE_DOUBLE_MAP,
+						OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_COMMIT | OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN,
 						pageSize, OMRMEM_CATEGORY_PORT_LIBRARY);
 
 
