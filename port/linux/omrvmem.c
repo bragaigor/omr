@@ -48,9 +48,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <sys/shm.h>
-#include <sys/stat.h> 
-#include <fcntl.h>
 
 #if defined(OMR_PORT_NUMA_SUPPORT)
 #include <numaif.h>
