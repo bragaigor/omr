@@ -700,7 +700,7 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, uintptr_t by
 	uintptr_t allocSize = 0;
 	uintptr_t allocator = OMRPORT_VMEM_RESERVE_USED_INVALID;
 
-	if(mode & OMRPORT_VMEM_MEMORY_MODE_FILE_HANDLE) {
+	if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN) {
 		portLibrary->error_set_last_error(portLibrary,  errno, OMRPORT_ERROR_VMEM_NOT_SUPPORTED);
 		return ptr;
 	}

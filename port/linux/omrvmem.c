@@ -48,6 +48,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <sys/shm.h>
+#include <sys/stat.h> 
+#include <fcntl.h>
 
 #if defined(OMR_PORT_NUMA_SUPPORT)
 #include <numaif.h>
@@ -966,72 +969,80 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 	int flags = MAP_PRIVATE;
 	void *result = NULL;
 	int protectionFlags = PROT_NONE;
+	BOOLEAN useBackingSharedFile = FALSE;
 	BOOLEAN useBackingFile = FALSE;
 
 	Trc_PRT_vmem_default_reserve_entry(address, byteAmount);
 
-	if(mode & OMRPORT_VMEM_MEMORY_MODE_FILE_HANDLE) {
-		useBackingFile = TRUE;
+	if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN) {
+		useBackingSharedFile = TRUE;
 	} else {
 #if defined(MAP_ANONYMOUS)
 		flags |= MAP_ANONYMOUS;
-		useBackingFile = FALSE;
+		useBackingSharedFile = FALSE;
 #elif defined(MAP_ANON)
 		flags |= MAP_ANON;
-		useBackingFile = FALSE;
+		useBackingSharedFile = FALSE;
 #else
 		useBackingFile = TRUE;
 #endif
 	}
 
-	if (useBackingFile) {
+	if (useBackingSharedFile) {
 		char filename[FILE_NAME_SIZE];
 		char int_str[FILE_NAME_SIZE / 2 + 1];
-		sprintf(int_str, "%09d", getpid()); // Max pid in 64bit system is 4194304. Pads with zeros.
+		sprintf(int_str, "%09d", getpid()); // Max pid in 64bit system is 4194304.
 		strcpy(filename, "tempfile");
 		strcat(filename, int_str);
-
-		fd = portLibrary->file_open(portLibrary, filename, EsOpenRead | EsOpenWrite | EsOpenCreate, 0);
+	
+		fd = shm_open(filename, O_RDWR | O_CREAT, 0600);
 		identifier->fd = fd;
-		portLibrary->file_unlink(portLibrary, filename);
+		shm_unlink(filename);
 		ft = ftruncate(fd, byteAmount);
+
 		if (fd == -1 || ft == -1) {
 			Trc_PRT_vmem_default_reserve_failed(address, byteAmount);
 			update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL);
 			Trc_PRT_vmem_default_reserve_exit(result, address, byteAmount);
 			return result;
 		}
+	} else if(useBackingFile) {
+		fd = portLibrary->file_open(portLibrary, "/dev/zero", EsOpenRead | EsOpenWrite, 0);
 	}
 
+	if((fd == -1 && (!useBackingSharedFile && !useBackingFile)) || 
+	   (fd != -1 && (useBackingSharedFile || useBackingFile))) {
 	
-	if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
-		protectionFlags = get_protectionBits(mode);
-	} else {
-		flags |= MAP_NORESERVE;
-	}
-
-	/* do NOT use the MAP_FIXED flag on Linux. With this flag, Linux may return
-	 * an address that has already been reserved.
-	 */
-	result = mmap(address, (size_t)byteAmount, protectionFlags, flags, fd, 0);
-
-	if(useBackingFile) {
-		portLibrary->file_close(portLibrary, fd); //Switch to unlink?
-	}
-
-	if (MAP_FAILED == result) {
-		result = NULL;
-	} else {
-		/* Update identifier and commit memory if required, else return reserved memory */
-		update_vmemIdentifier(identifier, result, result, byteAmount, mode, pageSize, OMRPORT_VMEM_PAGE_FLAG_NOT_USED, OMRPORT_VMEM_RESERVE_USED_MMAP, category);
-		omrmem_categories_increment_counters(category, byteAmount);
 		if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
-			if (NULL == omrvmem_commit_memory(portLibrary, result, byteAmount, identifier)) {
-				/* If the commit fails free the memory */
-				omrvmem_free_memory(portLibrary, result, byteAmount, identifier);
-				result = NULL;
+			protectionFlags = get_protectionBits(mode);
+		} else {
+			flags |= MAP_NORESERVE;
+		}
+
+		/* do NOT use the MAP_FIXED flag on Linux. With this flag, Linux may return
+		 * an address that has already been reserved.
+		 */
+		result = mmap(address, (size_t)byteAmount, protectionFlags, flags, fd, 0);
+
+		if(useBackingFile) {
+			portLibrary->file_close(portLibrary, fd); 
+		}
+	
+		if (MAP_FAILED == result) {
+			result = NULL;
+		} else {
+			/* Update identifier and commit memory if required, else return reserved memory */
+			update_vmemIdentifier(identifier, result, result, byteAmount, mode, pageSize, OMRPORT_VMEM_PAGE_FLAG_NOT_USED, OMRPORT_VMEM_RESERVE_USED_MMAP, category);
+			omrmem_categories_increment_counters(category, byteAmount);
+			if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
+				if (NULL == omrvmem_commit_memory(portLibrary, result, byteAmount, identifier)) {
+					/* If the commit fails free the memory */
+					omrvmem_free_memory(portLibrary, result, byteAmount, identifier);
+					result = NULL;
+				}
 			}
 		}
+
 	}
 
 

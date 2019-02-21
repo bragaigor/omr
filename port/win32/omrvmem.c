@@ -791,7 +791,7 @@ getMemoryInRange(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier
 	static int count = 0;
 #endif
 
-	if(mode & OMRPORT_VMEM_MEMORY_MODE_FILE_HANDLE) {
+	if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN) {
 		portLibrary->error_set_last_error(portLibrary,  errno, OMRPORT_ERROR_VMEM_NOT_SUPPORTED);
 		return memoryPointer;
 	}
