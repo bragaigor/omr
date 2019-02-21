@@ -534,7 +534,7 @@ exit:
  * @param[in] allocName Calling function name to display in errors
  */
 static void 
-verifyContiguousMem(struct OMRPortLibrary *portLibrary, const char *testName, size_t pagesize, size_t arrayletSize, void * contiguous, void* addresses[], const char *allocName) 
+verifyContiguousMem(struct OMRPortLibrary *portLibrary, const char *testName, size_t pagesize, size_t arrayletSize, void * contiguous, void* addresses[], char *vals, const char *allocName) 
 {
 	OMRPORT_ACCESS_FROM_OMRPORT(portLibrary);
 	char * contiguousMap = (char*)contiguous;
@@ -543,14 +543,20 @@ verifyContiguousMem(struct OMRPortLibrary *portLibrary, const char *testName, si
 	int32_t jump = 48;
 	int32_t secondBytes = 16;
 
-	/* First need to verify if arraylet leaves contain the appropriate data */
-	// TODO
-	/*
-	for(i = 0; i < ARRAYLET_COUNT * arrayletSize; i++) {
-		printf("%c",((char*)contiguous)[i]);
+	/* Verify if arraylet leaves and contiguous block of memory contain expected data */
+	for(i = 0; i < ARRAYLET_COUNT; i++) {
+		char *address = (char*)addresses[i];
+                char *arrayletData = contiguousMap + (i * arrayletSize);
+		printf("\tvals[%zu] = %c, address[%zu] = %c, arrayletData[%zu] = %c\n", i, vals[i], i, address[i], i, arrayletData[i]);
+		int32_t j = 0;
+		for(; j < arrayletSize; j++) {
+			if(address[j] == vals[i] && address[j] == arrayletData[j]) {} /* Good */
+			else {
+				outputErrorMessage(PORTTEST_ERROR_ARGS, "%s failed address verification.\n", allocName);
+				return;	
+			}
+		}
 	}
-	printf("\n\n");
-	*/
 
 	printf("\t############################ About to fill contiguous region of memory with asterisks!!!\n");
 	for(i = 0; i < ARRAYLET_COUNT; i++) {
@@ -660,7 +666,6 @@ TEST(PortVmemTest, vmem_test_double_mapping)
 			continue;
 		}
 #endif /* J9ZOS390 */
-		/* TODO: Heap memory must be shared (shm_open(), shm_unlink()) in order to work */
 		memPtr = (char *)omrvmem_reserve_memory(
 						0, HEAP_SIZE, &vmemID,
 						OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_COMMIT | OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN,
@@ -760,10 +765,10 @@ TEST(PortVmemTest, vmem_test_double_mapping)
                         	goto exit;
 			} else {
 				printf("Double mapping successfull!!\n");
-				// TODO: Check if changing contiguous block of memory also changes heap.
-				verifyContiguousMem(OMRPORTLIB, testName, pageSize, arrayletLeafSize, contiguous, arrayletLeaveAddrs, allocName);
+				/* Check if changing contiguous block of memory also changes heap. */
+				verifyContiguousMem(OMRPORTLIB, testName, pageSize, arrayletLeafSize, contiguous, arrayletLeaveAddrs, vals, allocName);
 
-				/* Calls free/delete on contiguous block of memory. */
+				/* Free contiguous block of memory. */
 				uintptr_t byteAmount = ARRAYLET_COUNT * arrayletLeafSize;
 				int32_t rc_contiguous = omrvmem_free_memory(contiguous, byteAmount, &newIdentifier);
 				if (rc_contiguous != 0) {
