@@ -986,12 +986,8 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 	}
 
 	if (useBackingSharedFile) {
-		char filename[FILE_NAME_SIZE];
-		char int_str[FILE_NAME_SIZE / 2 + 1];
-		sprintf(int_str, "%09d", getpid()); // Max pid in 64bit system is 4194304.
-		strcpy(filename, "tempfile");
-		strcat(filename, int_str);
-	
+		char filename[FILE_NAME_SIZE + 1];
+		sprintf(filename, "tempfile%09d", getpid()); // Max pid in 64bit system is 4194304.
 		fd = shm_open(filename, O_RDWR | O_CREAT, 0600);
 		identifier->fd = fd;
 		shm_unlink(filename);
