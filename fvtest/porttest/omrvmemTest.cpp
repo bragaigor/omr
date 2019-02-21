@@ -393,16 +393,16 @@ exit:
 
 /**
  * Get all the page sizes and make sure we can allocate a memory chunk for each page size.
- * This particular test is testing the flag OMRPORT_VMEM_MEMORY_MODE_FILE_HANDLE where it
- * forces default_pageSize_reserve_memory to mmap using a file handle.
+ * This particular test is testing the flag OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN where it
+ * forces default_pageSize_reserve_memory to mmap using a shared file handle.
  * 
  * Checks that each allocation manipulates the memory categories appropriately.
  */
-TEST(PortVmemTest, vmem_test_file_handle)
+TEST(PortVmemTest, vmem_test_shared_file_handle)
 {
 	portTestEnv->changeIndent(1);
 	OMRPORT_ACCESS_FROM_OMRPORT(portTestEnv->getPortLibrary());
-	const char *testName = "omrvmem_test_file_handle";
+	const char *testName = "omrvmem_test_shared_file_handle";
 	char *memPtr = NULL;
 	uintptr_t *pageSizes = NULL;
 #if defined(J9ZOS390)
@@ -442,7 +442,7 @@ TEST(PortVmemTest, vmem_test_file_handle)
 #endif /* J9ZOS390 */
 		memPtr = (char *)omrvmem_reserve_memory(
 						0, pageSizes[i], &vmemID,
-						OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_COMMIT | OMRPORT_VMEM_MEMORY_MODE_FILE_HANDLE,
+						OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_COMMIT | OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN,
 						pageSizes[i], OMRMEM_CATEGORY_PORT_LIBRARY);
 
 
@@ -465,6 +465,8 @@ TEST(PortVmemTest, vmem_test_file_handle)
 			}
 			goto exit;
 		} else {
+			/* Need to close the file handle since it was not closed by reserve API */
+			OMRPORTLIB->file_close(OMRPORTLIB, vmemID.fd);
 			uintptr_t finalBlocks = 0;
 			uintptr_t finalBytes = 0;
 			portTestEnv->log("reserved and committed 0x%zx bytes with page size 0x%zx at address 0x%zx\n", pageSizes[i], vmemID.pageSize, memPtr);
