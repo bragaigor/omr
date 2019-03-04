@@ -369,7 +369,9 @@ TraceEvent=Trc_MM_CompactScheme_evacuateSubArea_subAreaCompactedAFreeSpaceRemain
 TraceEvent=Trc_MM_CompactScheme_evacuateSubArea_subAreaCompactedBFreeSpaceIgnored Overhead=1 Level=1 Group=compact Template="Sub area (%p,%p) compacted (B), moved %zu bytes, %zu free (ignored)"
 TraceEvent=Trc_MM_CompactScheme_evacuateSubArea_subAreaCompactedBFreeSpaceRemaining Overhead=1 Level=1 Group=compact Template="Sub area (%p,%p) compacted (B), moved %zu bytes, %zu free"
 
+TraceEntry=Trc_MM_createVirtualMemoryForHeap_Entry Overhead=1 Level=1 Group=arraylet Template="createVirtualMemoryForHeap entry point"
 TraceEvent=Trc_MM_createVirtualMemoryForHeap_setMode Overhead=1 Level=1 Group=arraylet Template="Add mode OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN to heap creating for shared file"
+TraceExit=Trc_MM_createVirtualMemoryForHeap_Exit Overhead=1 Level=1 Group=arraylet Template="createVirtualMemoryForHeap exit point"
 
 TraceEvent=Trc_MM_ReclaimDelegate_compactRegionSelectionTime Overhead=1 Level=1 Group=oracle Template="Reclaim delegate, compact region selection time %llu us"
 

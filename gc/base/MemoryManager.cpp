@@ -61,6 +61,7 @@ MM_MemoryManager::initialize(MM_EnvironmentBase* env)
 bool
 MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryHandle* handle, uintptr_t heapAlignment, uintptr_t size, uintptr_t tailPadding, void* preferredAddress, void* ceiling)
 {
+	Trc_MM_createVirtualMemoryForHeap_Entry(env->getLanguageVMThread());
 	Assert_MM_true(NULL != handle);
 	MM_GCExtensionsBase* extensions = env->getExtensions();
 
@@ -385,6 +386,7 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 	valgrindCreateMempool(extensions, env, (uintptr_t)handle->getMemoryBase());
 #endif /* defined(OMR_VALGRIND_MEMCHECK) */
 
+	Trc_MM_createVirtualMemoryForHeap_Exit(env->getLanguageVMThread());
 	return NULL != instance;
 }
 
