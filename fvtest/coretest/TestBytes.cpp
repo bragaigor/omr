@@ -62,7 +62,7 @@ TEST(TestBytes, IsPow2)
 	EXPECT_FALSE(isPow2(6));
 	EXPECT_FALSE(isPow2(7));
 	EXPECT_FALSE(isPow2(9));
-	EXPECT_FALSE(isPow2(SIZE_MAX));
+	EXPECT_FALSE(isPow2(std::numeric_limits<size_t>::max()));
 }
 
 TEST(TestBytes, AlignedUnsafe)
@@ -180,8 +180,8 @@ TEST(TestBytes, AlignAndOverflow)
 TEST(TestBytes, AlignMaximumSizeFor16byteAlignment)
 {
 	// hand crafted maximums for a 16 byte alignment
-	EXPECT_EQ(SIZE_MAX - 15, align(SIZE_MAX - 17, 16));
-	EXPECT_EQ(SIZE_MAX, align(SIZE_MAX, 1));
+	EXPECT_EQ(std::numeric_limits<size_t>::max() - 15, align(std::numeric_limits<size_t>::max() - 17, 16));
+	EXPECT_EQ(std::numeric_limits<size_t>::max(), align(std::numeric_limits<size_t>::max(), 1));
 }
 
 }  // namespace OMR

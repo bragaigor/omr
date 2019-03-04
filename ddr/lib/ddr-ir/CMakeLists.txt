@@ -41,3 +41,7 @@ set_property(TARGET omr_ddr_ir PROPERTY CXX_STANDARD 11)
 target_link_libraries(omr_ddr_ir
 	omr_ddr_base
 )
+
+target_compile_definitions(omr_ddr_ir
+	PRIVATE __STDC_LIMIT_MACROS
+)

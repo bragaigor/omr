@@ -33,3 +33,7 @@ target_link_libraries(omr_ddr_blobgen
 	omr_ddr_macros
 	omr_ddr_scanner
 )
+
+target_compile_definitions(omr_ddr_blobgen
+	PRIVATE __STDC_LIMIT_MACROS
+)
