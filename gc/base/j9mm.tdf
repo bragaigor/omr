@@ -201,7 +201,7 @@ TraceEntry=Trc_MM_ParallelHeapWalker_allObjectsDoParallel_Entry Overhead=1 Level
 TraceExit=Trc_MM_ParallelHeapWalker_allObjectsDoParallel_Exit Overhead=1 Level=1 Template="Trc_MM_ParallelHeapWalker_allObjectsDoParallel_Exit: heapChunkFactor=%zu, parallelChunkSize=0x%zx, objects walked by this thread=%zu"
 TraceExit=Trc_MM_MemorySubSpace_garbageCollect_Exit4 Overhead=9 Level=9 Template="MM_MemorySubSpace_garbageCollect Exit4 Concurrent kickoff forced"
 
-TraceEntry=Trc_MM_Scavenger_masterThreadGarbageCollect_Entry Overhead=1 Level=1 Template="Scavenger start"
+TraceEntry=Trc_MM_Scavenger_masterThreadGarbageCollect_Entry Overhead=1 Level=1 Template="Scavenger start HAHA I am here catch me!!!"
 TraceEvent=Trc_MM_Scavenger_masterThreadGarbageCollect_setFailedTenureFlag Overhead=1 Level=1 Group=percolate Template="Setting failed tenure flag. _failedTenureLargest = %zu"
 TraceExit=Trc_MM_Scavenger_masterThreadGarbageCollect_Exit Overhead=1 Level=1 Template="Scavenger end"
 
