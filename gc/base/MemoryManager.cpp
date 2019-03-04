@@ -95,6 +95,11 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 		}
 	}
 
+	if(extensions->isVLHGC()) {
+		Trc_MM_createVirtualMemoryForHeap_setMode(env->getLanguageVMThread());
+		mode |= OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN;
+	}
+
 #if defined(OMR_GC_MODRON_SCAVENGER)
 	if (extensions->enableSplitHeap) {
 		/* currently (ceiling != NULL) is using to recognize CompressedRefs so must be NULL for 32 bit platforms */
