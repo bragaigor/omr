@@ -985,6 +985,8 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 #endif
 	}
 
+	printf("\n$$ In default_pageSize_reserve_memory(), am I using backingSharedFile? %d $$\n", useBackingSharedFile);
+
 	if (useBackingSharedFile) {
 		flags = MAP_SHARED;
 		char filename[FILE_NAME_SIZE + 1];
@@ -993,6 +995,8 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 		identifier->fd = fd;
 		shm_unlink(filename);
 		ft = ftruncate(fd, byteAmount);
+
+		printf("\n$$ In default_pageSize_reserve_memory(), Allocating heap using shm_open(). $$\n");
 
 		if (fd == -1 || ft == -1) {
 			Trc_PRT_vmem_default_reserve_failed(address, byteAmount);

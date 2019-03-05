@@ -98,6 +98,7 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 
 	if(extensions->isVLHGC()) {
 		Trc_MM_createVirtualMemoryForHeap_setMode(env->getLanguageVMThread());
+		printf("\nIn MM_MemoryManager::createVirtualMemoryForHeap. Adding OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN to mode.\n");
 		mode |= OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN;
 	}
 
