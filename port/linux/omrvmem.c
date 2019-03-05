@@ -985,8 +985,6 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 #endif
 	}
 
-	printf("\n$$ In default_pageSize_reserve_memory(), am I using backingSharedFile? %d $$\n", useBackingSharedFile);
-
 	if (useBackingSharedFile) {
 		flags = MAP_SHARED;
 		char filename[FILE_NAME_SIZE + 1];
