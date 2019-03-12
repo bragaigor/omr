@@ -376,7 +376,9 @@ target_include_directories(omrport_obj PRIVATE
 # This flag indicates that we are compiling the port library
 target_compile_definitions(omrport_obj PRIVATE -DOMRPORT_LIBRARY_DEFINE)
 
-
+if(OMR_HOST_OS STREQUAL "linux")
+    target_link_libraries(omrport PRIVATE rt)
+endif()
 
 #TODO hack to get to compile. Need platform checks
 if(NOT OMR_HOST_OS STREQUAL "win")
