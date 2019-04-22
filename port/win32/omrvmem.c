@@ -31,6 +31,7 @@
 #include <pdh.h>
 #include <pdhmsg.h>
 #include <psapi.h>
+#include <time.h>
 
 #include "omrport.h"
 #include "omrportpriv.h"
@@ -1625,6 +1626,8 @@ OLD_IMPL:
 void *
 omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, uintptr_t *addresses, uintptr_t addressesCount, uintptr_t addressSize, uintptr_t byteAmount, struct J9PortVmemIdentifier *oldIdentifier, struct J9PortVmemIdentifier *newIdentifier, uintptr_t mode, uintptr_t pageSize, OMRMemCategory *category)
 {
+	clock_t start, middle, end;
+	double elapsedTime;
 	BOOLEAN successfulContiguousMap = FALSE;
 	BOOLEAN shouldUnmapAddr = FALSE;
 	DWORD flAllocationType = MEM_RESERVE;
@@ -1636,6 +1639,7 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, uintptr
 	GetSystemInfo(&systemInfo);
 #endif /* defined(OMRVMEM_DEBUG) */
 	byteAmount = addressesCount * addressSize;
+	start = clock();
 
 	/* Creates contiguous memory space for arraylets */
 	contiguousMap = VirtualAlloc(
@@ -1653,6 +1657,9 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, uintptr
 		update_vmemIdentifier(newIdentifier, (void *)contiguousMap, (void *)contiguousMap, byteAmount, mode, pageSize, OMRPORT_VMEM_PAGE_FLAG_NOT_USED, category, NULL);
 		omrmem_categories_increment_counters(category, byteAmount);
 	}
+	middle = clock();
+	elapsedTime = ((double) (middle - start));
+	printf("\tTook %f seconds to create contiguous block of memory\n", elapsedTime);
 
 	/* MUST free this address to map the file view */
 	if (VirtualFree(contiguousMap, 0, MEM_RELEASE) == 0) {
@@ -1668,7 +1675,7 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, uintptr
 	   In a normal application, this is not necessary because arraylets
 	   are only stored in regions that were commited already */
 
-
+	middle = clock();
 	/* Perform double mapping  */
 	if(contiguousMap != NULL) {
 		SIZE_T i;
@@ -1719,6 +1726,12 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, uintptr
 		}
 		contiguousMap = NULL;
 	}
+
+	end = clock();
+	elapsedTime = (double) (end - middle);
+	printf("\tTook %f seconds to create double map of arraylets\n", elapsedTime);
+	elapsedTime = (double) (end - start);
+	printf("\tTotal time in seconds spent on omrvmem_get_contiguous_region_memory %f\n", elapsedTime);
 
 	return contiguousMap;
 }
