@@ -978,7 +978,7 @@ typedef struct J9PortVmemIdentifier {
 	uintptr_t pageFlags;
 	uintptr_t mode;
 	uintptr_t allocator;
-#if defined(LINUX)
+#if (defined(LINUX) || defined(AIXPPC))
 	int fd;
 #elif (defined(WINDOWS) || defined(WIN32))
 	void *fd;

@@ -75,6 +75,8 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 
 	uintptr_t allocateSize = size;
 
+	printf("\tAllocating heap of size: %zu size requested\n", (size_t)allocateSize);
+
 	uintptr_t concurrentScavengerPageSize = 0;
 	if (extensions->isConcurrentScavengerHWSupported()) {
 		OMRPORT_ACCESS_FROM_ENVIRONMENT(env);
