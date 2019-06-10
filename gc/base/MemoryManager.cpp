@@ -101,6 +101,9 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 	if(extensions->isVLHGC() && extensions->indexableObjectModel.isDoubleMappingEnabled()) {
 		mode |= OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN;
 	}
+#if defined(AIXPPC)
+	mode |= OMRPORT_VMEM_MEMORY_MODE_MMAP_AIX;
+#endif
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
 #if defined(OMR_GC_MODRON_SCAVENGER)

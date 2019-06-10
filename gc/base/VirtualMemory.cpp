@@ -72,6 +72,7 @@ MM_VirtualMemory::initialize(MM_EnvironmentBase* env, uintptr_t size, void* pref
 	/* there is no memory taken already */
 	Assert_MM_true(NULL == _heapBase);
 
+	printf("size = %zu, _tailPadding = %zu\n", (size_t)size, (size_t)_tailPadding);
 	uintptr_t allocateSize = size + _tailPadding;
 
 	J9PortVmemParams params;

@@ -227,6 +227,8 @@ MM_Configuration::createHeap(MM_EnvironmentBase* env, uintptr_t heapBytesRequest
 		}
 	}
 
+	printf("##\tMM_MemoryManager::newInstance(env) called successfully\n");
+
 	if (NULL == extensions->heapRegionManager) {
 		extensions->heapRegionManager = createHeapRegionManager(env);
 		if (NULL == extensions->heapRegionManager) {
@@ -234,22 +236,34 @@ MM_Configuration::createHeap(MM_EnvironmentBase* env, uintptr_t heapBytesRequest
 		}
 	}
 
+	printf("##\tcreateHeapRegionManager(env) called successfully\n");
+
 	MM_Heap* heap = createHeapWithManager(env, heapBytesRequested, extensions->heapRegionManager);
+	printf("##\tcreateHeapWithManager(env, ...) called successfully\n");
 	if (NULL != heap) {
 		if (!heap->initializeHeapRegionManager(env, extensions->heapRegionManager)) {
+			printf("##!!!!!!!!!!##\tCall to initializeHeapRegionManager() FAILED!!!\n");
 			heap->kill(env);
 			heap = NULL;
 		}
 
+		printf("##\tCall to initializeHeapRegionManager() SUCCEDED!!!\n");
+
 		if (!initializeRunTimeObjectAlignmentAndCRShift(env, heap)) {
+			printf("##!!!!!!!!!!##\tCall to initializeRunTimeObjectAlignmentAndCRShift() FAILED!!!\n");
 			heap->kill(env);
 			heap = NULL;
 		}
+
+		printf("##\tCall to initializeRunTimeObjectAlignmentAndCRShift() SUCCEDED!!!\n");
 
 		extensions->heap = heap;
 		if (!_delegate.heapInitialized(env)) {
+			printf("######### Heap NOT initialized successfully! Calling heap->kill(env)\n");
 			heap->kill(env);
 			heap = NULL;
+		} else {
+			printf("######### Heap initialized successfully!!!!! ############\n");
 		}
 
 		/* VM Design 1869: kill the heap if it was allocated but not in the area requested by the fvtest options and then let it fall through to the normal error handling */

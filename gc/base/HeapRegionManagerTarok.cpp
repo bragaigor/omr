@@ -221,6 +221,7 @@ MM_HeapRegionManagerTarok::internalLinkRegions(MM_EnvironmentBase *env, MM_HeapR
 bool
 MM_HeapRegionManagerTarok::enableRegionsInTable(MM_EnvironmentBase *env, MM_MemoryHandle *handle)
 {
+	printf("\t\t###\tInside MM_HeapRegionManagerTarok::enableRegionsInTable()\n");
 	bool result = true;
 	MM_GCExtensionsBase *extensions = env->getExtensions();
 	MM_MemoryManager *memoryManager = extensions->memoryManager;
@@ -228,6 +229,7 @@ MM_HeapRegionManagerTarok::enableRegionsInTable(MM_EnvironmentBase *env, MM_Memo
 	void *highHeapEdge = memoryManager->getHeapTop(handle);
 	
 	/* maintained for RTJ */
+	printf("\t\t###\nAbout to call setNodeAndLinkRegions()\n");
 	setNodeAndLinkRegions(env, lowHeapEdge, highHeapEdge, 0);
 
 	return result;
@@ -238,11 +240,13 @@ MM_HeapRegionManagerTarok::setNodeAndLinkRegions(MM_EnvironmentBase *env, void *
 {
 	uintptr_t regionCount = 0;
 	MM_HeapRegionDescriptor *firstRegion = NULL;
+	printf("\t\t######\tInside MM_HeapRegionManagerTarok::setNodeAndLinkRegions()\n");
 
 	Trc_MM_HeapRegionManager_enableRegionsInTable_Entry(env->getLanguageVMThread(), lowHeapEdge, highHeapEdge, numaNode);
 	if (highHeapEdge > lowHeapEdge) {
 		for (uint8_t* address = (uint8_t*)lowHeapEdge; address < highHeapEdge; address += getRegionSize()) {
 			MM_HeapRegionDescriptor *region = tableDescriptorForAddress(address);
+			printf("\t\t######\nAbout to call region->setNumaNode(numaNode)\n");
 			region->setNumaNode(numaNode);
 			regionCount += 1;
 		}
@@ -250,6 +254,7 @@ MM_HeapRegionManagerTarok::setNodeAndLinkRegions(MM_EnvironmentBase *env, void *
 		firstRegion = tableDescriptorForAddress(lowHeapEdge);
 		firstRegion->_nextInSet = _freeRegionTable[numaNode];
 		_freeRegionTable[numaNode] = firstRegion;
+		printf("\t\t######\nAbout to call internalLinkRegions(env, firstRegion, regionCount)\n");
 		internalLinkRegions(env, firstRegion, regionCount);
 	}
 	Trc_MM_HeapRegionManager_enableRegionsInTable_Exit(env->getLanguageVMThread(), regionCount, firstRegion, numaNode);

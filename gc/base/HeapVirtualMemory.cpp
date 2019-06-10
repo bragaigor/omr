@@ -397,6 +397,7 @@ bool
 MM_HeapVirtualMemory::initializeHeapRegionManager(MM_EnvironmentBase* env, MM_HeapRegionManager* manager)
 {
 	bool result = false;
+	printf("\t#######\tInside MM_HeapVirtualMemory::initializeHeapRegionManager()\n");
 
 	/* since this kind of heap is backed by contiguous memory, tell the heap region manager (which was just
 	 * initialized by super) that we want to enable this range of regions for later use.
@@ -406,6 +407,7 @@ MM_HeapVirtualMemory::initializeHeapRegionManager(MM_EnvironmentBase* env, MM_He
 	void* heapTop = memoryManager->getHeapTop(&_vmemHandle);
 
 	if (manager->setContiguousHeapRange(env, heapBase, heapTop)) {
+		printf("\t#######\tsetContiguousHeapRange is set calling manager->enableRegionsInTable()\n");
 		result = manager->enableRegionsInTable(env, &_vmemHandle);
 	}
 
