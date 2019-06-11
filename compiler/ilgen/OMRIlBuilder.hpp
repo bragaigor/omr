@@ -230,6 +230,8 @@ public:
 
    TR::IlValue *Copy(TR::IlValue *value);
 
+   TR::IlConst *ToIlConst(TR::IlValue *value);
+
    // constants
    TR::IlValue *NullAddress();
    TR::IlValue *ConstInt8(int8_t value);
@@ -507,6 +509,7 @@ public:
    void IfThenElse(TR::IlBuilder **thenPath,
                    TR::IlBuilder **elsePath,
                    TR::IlValue *condition);
+                   
    virtual void IfThen(TR::IlBuilder **thenPath, TR::IlValue *condition)
       {
       IfThenElse(thenPath, NULL, condition);
@@ -526,7 +529,7 @@ public:
                JBCase** cases);
 
    /**
-    * @brief Generates a lookup switch-case control flow structure (vararg overload).
+    * @brief Generates a switch-case control flow structure (vararg overload).
     *
     * Instead of taking an array of pointers to JBCase instances, this overload
     * takes a pointer to each instance as a separate varargs argument.
@@ -542,17 +545,15 @@ public:
                ...);
 
    /**
-    * @brief Generates a table switch-case control flow structure.
+    * @brief Generates a switch-case control flow structure.
     *
     * @param selectorValue the IlValue to switch on.
     * @param defaultBuilder the builder for the default case.
-    * @param generateBoundsCheck generate the bounds check or not for the range of the cases
     * @param numCases the number of cases.
     * @param cases array of pointers to JBCase instances corresponding to each case.
     */
    void TableSwitch(TR::IlValue * selectorValue,
                TR::IlBuilder **defaultBuilder,
-               bool generateBoundsCheck,
                uint32_t numCases,
                JBCase** cases);
 
@@ -564,13 +565,40 @@ public:
     *
     * @param selectorValue the IlValue to switch on.
     * @param defaultBuilder the builder for the default case.
-    * @param generateBoundsCheck generate the bounds check or not for the range of the cases
     * @param numCases the number of cases.
     * @param ... the list of pointers to JBCase instances corresponding to each case.
     */
    void TableSwitch(TR::IlValue * selectorValue,
                TR::IlBuilder **defaultBuilder,
-               bool generateBoundsCheck,
+               uint32_t numCases,
+               ...);
+
+   /**
+    * @brief Generates a switch-case control flow structure.
+    *
+    * @param selectionVar the variable to switch on.
+    * @param defaultBuilder the builder for the default case.
+    * @param numCases the number of cases.
+    * @param cases array of pointers to JBCase instances corresponding to each case.
+    */
+   void ComputedGoto(const char *selectionVar,
+               TR::IlBuilder **defaultBuilder,
+               uint32_t numCases,
+               JBCase** cases);
+
+   /**
+    * @brief Generates a switch-case control flow structure (vararg overload).
+    *
+    * Instead of taking an array of pointers to JBCase instances, this overload
+    * takes a pointer to each instance as a separate varargs argument.
+    *
+    * @param selectionVar the variable to switch on.
+    * @param defaultBuilder the builder for the default case.
+    * @param numCases the number of cases.
+    * @param ... the list of pointers to JBCase instances corresponding to each case.
+    */
+   void ComputedGoto(const char *selectionVar,
+               TR::IlBuilder **defaultBuilder,
                uint32_t numCases,
                ...);
 
@@ -583,8 +611,8 @@ public:
     * @return JBCase* pointer to instance of JBCase representing the specified case.
     */
    JBCase * MakeCase(int32_t caseValue,
-                     TR::IlBuilder **caseBuilder,
-                     int32_t caseFallsThrough);
+                    TR::IlBuilder **caseBuilder,
+                    int32_t caseFallsThrough);
 
    // select
    /**

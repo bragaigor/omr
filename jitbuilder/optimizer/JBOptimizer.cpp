@@ -124,13 +124,46 @@ static const OptimizationStrategy JBwarmStrategyOpts[] =
    { OMR::treeSimplification                                                       },
    { OMR::trivialDeadTreeRemoval,                    OMR::IfEnabled                },
 
+//   { OMR::inductionVariableAnalysis,   OMR::IfLoops },
+//   { OMR::loopCanonicalization,         OMR::IfLoops    },
+//   { OMR::loopVersioner,                },
+//   { OMR::globalDeadStoreElimination,                  OMR::IfLoops                  },
+//   { OMR::deadTreesElimination,                                                  },
+//   { OMR::localReordering,                            }, // if required or if not done earlier
+//   { OMR::basicBlockOrdering,                        OMR::IfLoops                    }, // required for loop reduction
+//   { OMR::treeSimplification                                                    },
+//   { OMR::loopReduction                                                         },
+//   { OMR::treeSimplification                                                    },
+
+//   { OMR::basicBlockOrdering,                        OMR::IfLoops                  }, // clean up block order for loop canonicalization, if it will run
+//   { OMR::globalValuePropagation,                    OMR::IfMoreThanOneBlock       },
+//   { OMR::expressionsSimplification,                         },
+//   { OMR::treeSimplification                                                       },
+//   { OMR::localCSE                                                                 },
+//   { OMR::globalValuePropagation,                    OMR::IfMoreThanOneBlock       },
+//   { OMR::treeSimplification                                                       },
+
    { OMR::basicBlockOrdering,                        OMR::IfLoops                  }, // clean up block order for loop canonicalization, if it will run
+
+   { OMR::loopCanonicalization,                      OMR::IfLoops                  }, // canonicalization must run before inductionVariableAnalysis else indvar data gets messed up
+   { OMR::inductionVariableAnalysis,                 OMR::IfLoops                  }, // needed for loop unroller
+   { OMR::globalValuePropagation,                    OMR::IfMoreThanOneBlock       },
+   { OMR::expressionsSimplification,                         },
+   { OMR::treeSimplification                                                       },
+   { OMR::localCSE                                                                 },
+   { OMR::globalValuePropagation,                    OMR::IfMoreThanOneBlock       },
+   { OMR::treeSimplification                                                       },
    { OMR::loopCanonicalization,                      OMR::IfLoops                  }, // canonicalization must run before inductionVariableAnalysis else indvar data gets messed up
    { OMR::inductionVariableAnalysis,                 OMR::IfLoops                  }, // needed for loop unroller
    { OMR::generalLoopUnroller,                       OMR::IfLoops                  },
    { OMR::basicBlockExtension,                       OMR::MarkLastRun              }, // clean up order and extend blocks now
    { OMR::treeSimplification                                                       },
    { OMR::localCSE                                                                 },
+
+//   { OMR::localValuePropagation,                                                   },
+//   { OMR::localCSE                                                                 },
+//   { OMR::localValuePropagation,                                                   },
+
    { OMR::treeSimplification,                        OMR::IfEnabled                },
    { OMR::trivialDeadTreeRemoval,                    OMR::IfEnabled                },
    { OMR::cheapTacticalGlobalRegisterAllocatorGroup                                },
@@ -197,6 +230,14 @@ Optimizer::Optimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymb
       new (comp->allocator()) TR::OptimizationManager(self(), TR_TrivialInliner::create, OMR::inlining);
    _opts[OMR::switchAnalyzer] =
       new (comp->allocator()) TR::OptimizationManager(self(), TR::SwitchAnalyzer::create, OMR::switchAnalyzer);
+   _opts[OMR::expressionsSimplification] =
+      new (comp->allocator()) TR::OptimizationManager(self(), TR_ExpressionsSimplification::create, OMR::expressionsSimplification);
+//   _opts[OMR::loopVersioner] =
+//      new (comp->allocator()) TR::OptimizationManager(self(), TR_LoopVersioner::create, OMR::loopVersioner);
+//   _opts[OMR::localReordering] =
+//      new (comp->allocator()) TR::OptimizationManager(self(), TR_LocalReordering::create, OMR::localReordering);
+//   _opts[OMR::loopReduction] =
+//     new (comp->allocator()) TR::OptimizationManager(self(), TR_LoopReducer::create, OMR::loopReduction);
 
    // Initialize optimization groups
    _opts[OMR::cheapTacticalGlobalRegisterAllocatorGroup] =

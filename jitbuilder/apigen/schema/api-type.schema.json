@@ -27,15 +27,18 @@
         "MethodBuilder",
         "JBCase",
         "JBCondition",
+        "IlConst",
         "IlReference",
         "IlType",
         "IlValue",
+        "RuntimeBuilder",
         "ThunkBuilder",
         "TypeDictionary",
         "VirtualMachineOperandArray",
         "VirtualMachineOperandStack",
         "VirtualMachineRegister",
         "VirtualMachineRegisterInStruct",
+        "VirtualMachineStack",
         "VirtualMachineState"
      ]
 }

@@ -43,6 +43,7 @@
 #include "ilgen/IlGeneratorMethodDetails_inlines.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/IlInjector.hpp"
+#include "ilgen/IlConst.hpp"
 #include "ilgen/IlReference.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/BytecodeBuilder.hpp"
@@ -274,6 +275,26 @@ OMR::IlBuilder::Copy(TR::IlValue *value)
    TraceIL("IlBuilder[ %p ]::Copy value (%d) dataType (%d) to newVal (%d) at cpIndex (%d)\n", this, value->getID(), dt, newVal->getID(), newSymRef->getCPIndex());
 
    return newVal;
+   }
+
+TR::IlConst *
+OMR::IlBuilder::ToIlConst(TR::IlValue *value)
+   {
+   TR::Node *valueNode = loadValue(value);
+   TR_ASSERT(valueNode->getOpCode().isLoadConst(), "ToIlConst called on node which is not loadConst");
+   TR::Node *n = valueNode->duplicateTree();
+   // make sure TreeTop is well formed
+   TR::Node *ttNode = n;
+   if (!ttNode->getOpCode().isTreeTop())
+      ttNode = TR::Node::create(TR::treetop, 1, n);
+
+   TR::TreeTop *tt = TR::TreeTop::create(_comp, ttNode);
+   _currentBlock->append(tt);
+   TR::IlConst *retVal = new (_comp->trHeapMemory()) TR::IlConst(n, tt, _currentBlock, _methodBuilder);
+
+   TraceIL("IlBuilder[ %p ]::ToIlConst value (%d) dataType (%d) to newVal (%d)\n", this, value->getID(), value->getDataType(), retVal->getID());
+
+   return retVal;
    }
 
 TR::TreeTop *
@@ -2769,6 +2790,168 @@ OMR::IlBuilder::generateSwitchCases(TR::Node *switchNode, TR::Node *defaultNode,
    AppendBuilder(*defaultBuilder);
 
    AppendBuilder(breakBuilder);
+   }
+
+void
+OMR::IlBuilder::TableSwitch(const char *selectionVar,
+                  TR::IlBuilder **defaultBuilder,
+                  uint32_t numCases,
+                  JBCase **cases)
+   {
+   TR::IlValue *selectorValue = Load(selectionVar);
+   TR_ASSERT(selectorValue->getDataType() == TR::Int32, "TableSwitch only supports selector having type Int32");
+   if (numCases > 0)
+      {
+      int32_t low = cases[0]->_value;
+      int32_t high = cases[numCases - 1]->_value;
+      if (low != 0)
+         selectorValue = Sub(selectorValue, ConstInt32(low));
+      }
+
+   *defaultBuilder = createBuilderIfNeeded(*defaultBuilder);
+
+   TR::Node *defaultNode = TR::Node::createCase(0, (*defaultBuilder)->getEntry()->getEntry());
+   TR::Node *tableNode = TR::Node::create(TR::table, numCases + 2, loadValue(selectorValue), defaultNode);
+   tableNode->setIsSafeToSkipTableBoundCheck(true);
+
+   // get the lookup tree into this builder, even though we haven't completely filled it in yet
+   genTreeTop(tableNode);
+   TR::Block *tableBlock = _currentBlock;
+
+   // make sure no fall through edge created from the lookup
+   appendNoFallThroughBlock();
+
+   TR::IlBuilder *breakBuilder = OrphanBuilder();
+
+   TR_Array<TR::Node *> caseTargets(_comp->trMemory(), numCases * sizeof(TR::Node *), true, stackAlloc);
+
+   // each case handler is a sequence of two builder objects: first the one passed in via `cases`,
+   //   and second a builder that branches to the breakBuilder (unless this case falls through)
+   for (int32_t c=0;c < numCases;c++)
+      {
+      int32_t value = cases[c]->_value;
+      TR::IlBuilder *handler = NULL;
+      TR::IlBuilder *builder = cases[c]->_builder;
+      if (!cases[c]->_fallsThrough)
+         {
+         handler = OrphanBuilder();
+
+         handler->AppendBuilder(builder);
+
+         // handle "break" with a separate builder so user can add whatever they want into caseBuilders[c]
+         TR::IlBuilder *branchToBreak = OrphanBuilder();
+         branchToBreak->Goto(&breakBuilder);
+         handler->AppendBuilder(branchToBreak);
+         }
+      else
+         {
+         handler = builder;
+         }
+
+      TR::Block *caseBlock = handler->getEntry();
+      cfg()->addEdge(tableBlock, caseBlock);
+      AppendBuilder(handler);
+
+      caseTargets[c] = TR::Node::createCase(0, caseBlock->getEntry());//, value);
+      tableNode->setAndIncChild(c+2, caseTargets[c]);
+      }
+
+   cfg()->addEdge(tableBlock, (*defaultBuilder)->getEntry());
+   AppendBuilder(*defaultBuilder);
+
+   AppendBuilder(breakBuilder);
+   }
+
+void
+OMR::IlBuilder::TableSwitch(const char *selectionVar,
+                  TR::IlBuilder **defaultBuilder,
+                  uint32_t numCases,
+                  ...)
+   {
+   JBCase **cases = (JBCase **) _comp->trMemory()->allocateHeapMemory(numCases * sizeof(JBCase *));
+   TR_ASSERT(NULL != cases, "out of memory");
+
+   va_list args;
+   va_start(args, numCases);
+   for (uint32_t c = 0; c < numCases; ++c)
+      {
+      cases[c] = va_arg(args, JBCase *);
+      }
+   va_end(args);
+
+   TableSwitch(selectionVar, defaultBuilder, numCases, cases);
+}
+
+void
+OMR::IlBuilder::ComputedGoto(const char *selectionVar,
+                  TR::IlBuilder **defaultBuilder,
+                  uint32_t numCases,
+                  JBCase **cases)
+   {
+   TR::IlValue *selectorValue = Load(selectionVar);
+   //TR_ASSERT(selectorValue->getDataType() == TR::Int32, "ComputedGoto only supports selector having type Int32");
+   int32_t low = cases[0]->_value;
+   int32_t high = cases[numCases - 1]->_value;
+   auto selectorType = selectorValue->getDataType();
+   if (low != 0)
+      {
+      if (selectorType == TR::Int16)
+         {
+         selectorValue = Sub(selectorValue, ConstInt16(low));
+        }
+      else if (selectorType == TR::Int32)
+         {
+         selectorValue = Sub(selectorValue, ConstInt32(low));
+         }
+      }
+
+   TR::Node *defaultNode = TR::Node::createCase(0, (*defaultBuilder)->getEntry()->getEntry());
+   TR::Node *tableNode = TR::Node::create(TR::table, numCases + 2, loadValue(selectorValue), defaultNode);
+   tableNode->setIsSafeToSkipTableBoundCheck(true);
+
+   // get the lookup tree into this builder, even though we haven't completely filled it in yet
+   genTreeTop(tableNode);
+   TR::Block *tableBlock = _currentBlock;
+
+   // make sure no fall through edge created from the lookup
+   appendNoFallThroughBlock();
+
+   TR_Array<TR::Node *> caseTargets(_comp->trMemory(), numCases * sizeof(TR::Node *), true, stackAlloc);
+
+   // each case handler is a sequence of two builder objects: first the one passed in via `cases`,
+   //   and second a builder that branches to the breakBuilder (unless this case falls through)
+   for (int32_t c=0;c < numCases;c++)
+      {
+      TR::IlBuilder *builder = cases[c]->_builder;
+
+      TR::Block *caseBlock = builder->getEntry();
+      cfg()->addEdge(tableBlock, caseBlock);
+
+      caseTargets[c] = TR::Node::createCase(0, caseBlock->getEntry());//, cases[c]->_value);
+      tableNode->setAndIncChild(c+2, caseTargets[c]);
+      }
+
+   cfg()->addEdge(tableBlock, (*defaultBuilder)->getEntry());
+   }
+
+void
+OMR::IlBuilder::ComputedGoto(const char *selectionVar,
+                  TR::IlBuilder **defaultBuilder,
+                  uint32_t numCases,
+                  ...)
+   {
+   JBCase **cases = (JBCase **) _comp->trMemory()->allocateHeapMemory(numCases * sizeof(JBCase *));
+   TR_ASSERT(NULL != cases, "out of memory");
+
+   va_list args;
+   va_start(args, numCases);
+   for (uint32_t c = 0; c < numCases; ++c)
+      {
+      cases[c] = va_arg(args, JBCase *);
+      }
+   va_end(args);
+
+   ComputedGoto(selectionVar, defaultBuilder, numCases, cases);
    }
 
 void

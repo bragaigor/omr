@@ -433,6 +433,12 @@
                 , "return": "IlValue"
                 , "parms": [{"name":"value","type":"IlValue"}]
                 },
+                { "name": "ToIlConst"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlConst"
+                , "parms": [{"name":"value","type":"IlValue"}]
+                },
                 { "name": "typeDictionary"
                 , "overloadsuffix": ""
                 , "flags": []
@@ -1031,7 +1037,7 @@
                 , "flags": []
                 , "return": "IlValue"
                 , "parms": [
-                    {"name":"name","type":"string"},
+                    {"name":"name","type":"constString"},
                     {"name":"numArgs","type":"int32"},
                     {"name":"arguments","type":"IlValue","attributes":["array","can_be_vararg"],"array-len":"numArgs"}
                     ]
@@ -1481,7 +1487,17 @@
                 , "parms": [
                     {"name":"selectorValue","type":"IlValue"},
                     {"name":"defaultBuilder","type":"IlBuilder","attributes":["in_out"]},
-                    {"name": "generateBoundsCheck", "type": "boolean"},
+                    {"name":"numCases","type":"int32"},
+                    {"name":"cases","type":"JBCase","attributes":["array","can_be_vararg"],"array-len":"numCases"}
+                    ]
+                },
+                { "name": "ComputedGoto"
+                , "overloadsuffix": "WithArgArray"
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"selectionVar","type":"constString"},
+                    {"name":"defaultBuilder","type":"IlBuilder","attributes":["in_out"]},
                     {"name":"numCases","type":"int32"},
                     {"name":"cases","type":"JBCase","attributes":["array","can_be_vararg"],"array-len":"numCases"}
                     ]
@@ -1712,6 +1728,27 @@
                 ]
         },
         {
+            "name":"IlConst",
+            "short-name": "IC",
+            "extends": "IlValue",
+            "types": [
+                ],
+            "fields": [
+                ],
+            "constructors": [
+                ],
+            "callbacks": [
+                ],
+            "services": [
+                { "name": "getID"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "int32"
+                , "parms": []
+                }
+                ]
+        },
+        {
             "name":"IlType",
             "short-name": "IT",
             "types": [
@@ -1801,6 +1838,165 @@
                 ],
             "services": [
                 ]
+        },
+        {
+            "name":"RuntimeBuilder",
+            "short-name": "RB",
+            "extends": "MethodBuilder",
+            "types": [
+                ],
+            "fields": [
+                ],
+            "constructors": [],
+            "callbacks": [
+                { "name": "Setup"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": []
+                }
+                ],
+            "services": [
+                { "name": "RegisterHandler"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"bytecodeIndex","type":"int32"},
+                    {"name":"bytecodeName","type":"string"},
+                    {"name":"handler","type":"pointer"}
+                    ]
+                },
+                { "name": "DefaultFallthrough"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"sizeOfCurrentBytecode","type":"IlValue"}
+                    ]
+                },
+                { "name": "Jump"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"target","type":"IlValue"},
+                    {"name":"absolute","type":"boolean"}
+                    ]
+                },
+                { "name": "JumpIfOrFallthrough"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"condition","type":"IlValue"},
+                    {"name":"target","type":"IlValue"},
+                    {"name":"sizeOfCurrentBytecode","type":"IlValue"},
+                    {"name":"absolute","type":"boolean"}
+                    ]
+                },
+                { "name": "GetInt64Immediate"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlValue"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"offset","type":"IlValue"}
+                    ]
+                },
+                { "name": "GetInt32Immediate"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlValue"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"offset","type":"IlValue"}
+                    ]
+                },
+                { "name": "GetInt16Immediate"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlValue"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"offset","type":"IlValue"}
+                    ]
+                },
+                { "name": "GetInt8Immediate"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlValue"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"offset","type":"IlValue"}
+                    ]
+                },
+                { "name": "GetVMState"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "VirtualMachineState"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"}
+                    ]
+                }
+                ]
+        },
+        {
+            "name":"InterpreterBuilder",
+            "short-name": "IB",
+            "extends": "RuntimeBuilder",
+            "types": [
+                ],
+            "fields": [
+                ],
+            "constructors": [
+                { "name": ""
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "InterpreterBuilder"
+                , "parms": [
+                    {"name":"dict","type":"TypeDictionary"}
+                    ]
+                }
+                ],
+            "callbacks": [
+                ],
+            "services": [
+                { "name": "SetPC"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"pc","type":"VirtualMachineRegister"}
+                    ]
+                }
+                ]
+        },
+       {
+            "name":"CompiledMethodBuilder",
+            "short-name": "CMB",
+            "extends": "RuntimeBuilder",
+            "types": [
+                ],
+            "fields": [
+                ],
+            "constructors": [
+                { "name": ""
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "CompiledMethodBuilder"
+                , "parms": [
+                    {"name":"dict","type":"TypeDictionary"},
+                    {"name":"bytecodeStream","type":"pointer"},
+                    {"name":"bytecodeElementSizeInBytes","type":"int32"}
+                    ]
+                }
+                ],
+            "callbacks": [],
+            "services": []
         },
         {
             "name": "TypeDictionary",
@@ -1961,9 +2157,117 @@
                 ]
         },
         {
+            "name": "VirtualMachineArray",
+            "short-name": "VMAY",
+            "extends":"VirtualMachineState",
+            "types": [
+                ],
+            "fields": [
+                ],
+            "constructors": [],
+            "callbacks": [
+                { "name": "Commit"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [ {"name":"b","type":"IlBuilder"} ]
+                },
+                { "name": "Reload"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [ {"name":"b","type":"IlBuilder"} ]
+                },
+                { "name": "MakeCopy"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "VirtualMachineState"
+                , "parms": []
+                },
+                { "name": "MergeInto"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"vmState","type":"VirtualMachineState"},
+                    {"name":"b","type":"IlBuilder"}
+                    ]
+                }
+                ],
+            "services": [
+                { "name": "Get"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlValue"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"index","type":"int32"}
+                    ]
+                },
+                { "name": "Get"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlValue"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"index","type":"IlValue"}
+                    ]
+                },
+                { "name": "Move"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"dstIndex","type":"int32"},
+                    {"name":"srcIndex","type":"int32"}
+                    ]
+                },
+                { "name": "Move"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"dstIndex","type":"IlValue"},
+                    {"name":"srcIndex","type":"IlValue"}
+                    ]
+                },
+                { "name": "Set"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"index","type":"int32"},
+                    {"name":"value","type":"IlValue"}
+                    ]
+                },
+                { "name": "Set"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"index","type":"IlValue"},
+                    {"name":"value","type":"IlValue"}
+                    ]
+                },
+                { "name": "UpdateArray"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"array","type":"IlValue"}
+                    ]
+                }
+                ]
+        },
+        {
             "name": "VirtualMachineOperandArray",
             "short-name": "VMOA",
-            "extends":"VirtualMachineState",
+            "extends":"VirtualMachineArray",
             "types": [
                 ],
             "fields": [
@@ -2021,7 +2325,19 @@
                 , "overloadsuffix": ""
                 , "flags": []
                 , "return": "IlValue"
-                , "parms": [ {"name":"index","type":"int32"} ]
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"index","type":"int32"}
+                    ]
+                },
+                { "name": "Get"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlValue"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"index","type":"IlValue"}
+                    ]
                 },
                 { "name": "Move"
                 , "overloadsuffix": ""
@@ -2033,12 +2349,33 @@
                     {"name":"srcIndex","type":"int32"}
                     ]
                 },
+                { "name": "Move"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"dstIndex","type":"IlValue"},
+                    {"name":"srcIndex","type":"IlValue"}
+                    ]
+                },
                 { "name": "Set"
                 , "overloadsuffix": ""
                 , "flags": []
                 , "return": "none"
                 , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
                     {"name":"index","type":"int32"},
+                    {"name":"value","type":"IlValue"}
+                    ]
+                },
+                { "name": "Set"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"index","type":"IlValue"},
                     {"name":"value","type":"IlValue"}
                     ]
                 },
@@ -2054,9 +2391,225 @@
                 ]
         },
         {
+            "name": "VirtualMachineRealArray",
+            "short-name": "VMRA",
+            "extends":"VirtualMachineArray",
+            "types": [
+                ],
+            "fields": [
+                ],
+            "constructors": [
+                { "name": ""
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "VirtualMachineRealArray"
+                , "parms": [
+                    {"name":"mb","type":"MethodBuilder"},
+                    {"name":"arrayBase","type":"VirtualMachineRegister"},
+                    {"name":"elementType","type":"IlType"}
+                    ]
+                }
+                ],
+            "callbacks": [
+                { "name": "Commit"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [ {"name":"b","type":"IlBuilder"} ]
+                },
+                { "name": "Reload"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [ {"name":"b","type":"IlBuilder"} ]
+                },
+                { "name": "MakeCopy"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "VirtualMachineState"
+                , "parms": []
+                },
+                { "name": "MergeInto"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"vmState","type":"VirtualMachineState"},
+                    {"name":"b","type":"IlBuilder"}
+                    ]
+                }
+                ],
+            "services": [
+                { "name": "Get"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlValue"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"index","type":"int32"}
+                    ]
+                },
+                { "name": "Get"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlValue"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"index","type":"IlValue"}
+                    ]
+                },
+                { "name": "Move"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"dstIndex","type":"int32"},
+                    {"name":"srcIndex","type":"int32"}
+                    ]
+                },
+                { "name": "Move"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"dstIndex","type":"IlValue"},
+                    {"name":"srcIndex","type":"IlValue"}
+                    ]
+                },
+                { "name": "Set"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"index","type":"int32"},
+                    {"name":"value","type":"IlValue"}
+                    ]
+                },
+                { "name": "Set"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"builder","type":"IlBuilder"},
+                    {"name":"index","type":"IlValue"},
+                    {"name":"value","type":"IlValue"}
+                    ]
+                },
+                { "name": "UpdateArray"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"array","type":"IlValue"}
+                    ]
+                }
+                ]
+        },
+        {
+            "name": "VirtualMachineStack",
+            "short-name": "VMST",
+            "extends": "VirtualMachineState",
+            "types": [
+                ],
+            "fields": [
+                ],
+            "constructors": [],
+            "callbacks": [
+                { "name": "Commit"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [ {"name":"b","type":"IlBuilder"} ]
+                },
+                { "name": "Reload"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [ {"name":"b","type":"IlBuilder"} ]
+                },
+                { "name": "MakeCopy"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "VirtualMachineState"
+                , "parms": []
+                },
+                { "name": "MergeInto"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"vmState","type":"VirtualMachineState"},
+                    {"name":"b","type":"IlBuilder"}
+                    ]
+                }
+                ],
+            "services": [
+                { "name": "Drop"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"depth","type":"int32"}
+                    ]
+                },
+                { "name": "Drop"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"d","type":"IlValue"}
+                    ]
+                },
+                { "name": "Dup"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [ {"name":"b","type":"IlBuilder"} ]
+                },
+                { "name": "Pop"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlValue"
+                , "parms": [ {"name":"b","type":"IlBuilder"} ]
+                },
+                { "name": "Push"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"value","type":"IlValue"}
+                    ]
+                },
+                { "name": "Top"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlValue"
+                , "parms": [
+                {"name":"b","type":"IlBuilder"}
+                ]
+                },
+                { "name": "UpdateStack"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"array","type":"IlValue"}
+                    ]
+                }
+                ]
+        },
+        {
             "name": "VirtualMachineOperandStack",
             "short-name": "VMOS",
-            "extends": "VirtualMachineState",
+            "extends": "VirtualMachineStack",
             "types": [
                 ],
             "fields": [
@@ -2138,6 +2691,15 @@
                     {"name":"depth","type":"int32"}
                     ]
                 },
+                { "name": "Drop"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"d","type":"IlValue"}
+                    ]
+                },
                 { "name": "Dup"
                 , "overloadsuffix": ""
                 , "flags": []
@@ -2169,7 +2731,140 @@
                 , "overloadsuffix": ""
                 , "flags": []
                 , "return": "IlValue"
+                , "parms": [
+                {"name":"b","type":"IlBuilder"}
+                ]
+                },
+                { "name": "UpdateStack"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"array","type":"IlValue"}
+                    ]
+                }
+                ]
+        },
+        {
+            "name": "VirtualMachineRealStack",
+            "short-name": "VMRS",
+            "extends": "VirtualMachineStack",
+            "types": [
+                ],
+            "fields": [
+                ],
+            "constructors": [
+                { "name": ""
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"mb","type":"MethodBuilder"},
+                    {"name":"stackTopRegister","type":"VirtualMachineRegister"},
+                    {"name":"elementType","type":"IlType"}
+                    ]
+                },
+                { "name": ""
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"mb","type":"MethodBuilder"},
+                    {"name":"stackTopRegister","type":"VirtualMachineRegister"},
+                    {"name":"elementType","type":"IlType"},
+                    {"name":"growsUp","type":"boolean"}
+                    ]
+                },
+                { "name": ""
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"mb","type":"MethodBuilder"},
+                    {"name":"stackTopRegister","type":"VirtualMachineRegister"},
+                    {"name":"elementType","type":"IlType"},
+                    {"name":"growsUp","type":"boolean"},
+                    {"name":"preAdjust","type":"boolean"}
+                    ]
+                }
+                ],
+            "callbacks": [
+                { "name": "Commit"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [ {"name":"b","type":"IlBuilder"} ]
+                },
+                { "name": "Reload"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [ {"name":"b","type":"IlBuilder"} ]
+                },
+                { "name": "MakeCopy"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "VirtualMachineState"
                 , "parms": []
+                },
+                { "name": "MergeInto"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"vmState","type":"VirtualMachineState"},
+                    {"name":"b","type":"IlBuilder"}
+                    ]
+                }
+                ],
+            "services": [
+                { "name": "Drop"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"depth","type":"int32"}
+                    ]
+                },
+                { "name": "Drop"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"d","type":"IlValue"}
+                    ]
+                },
+                { "name": "Dup"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [ {"name":"b","type":"IlBuilder"} ]
+                },
+                { "name": "Pop"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlValue"
+                , "parms": [ {"name":"b","type":"IlBuilder"} ]
+                },
+                { "name": "Push"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "none"
+                , "parms": [
+                    {"name":"b","type":"IlBuilder"},
+                    {"name":"value","type":"IlValue"}
+                    ]
+                },
+                { "name": "Top"
+                , "overloadsuffix": ""
+                , "flags": []
+                , "return": "IlValue"
+                , "parms": [
+                {"name":"b","type":"IlBuilder"}
+                ]
                 },
                 { "name": "UpdateStack"
                 , "overloadsuffix": ""

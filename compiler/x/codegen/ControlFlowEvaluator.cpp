@@ -430,8 +430,15 @@ TR::Register *OMR::X86::TreeEvaluator::tableEvaluator(TR::Node *node, TR::CodeGe
    {
    int32_t i;
    uint32_t numBranchTableEntries = node->getNumChildren() - 2;
-   intptr_t *branchTable =
-      (intptr_t*)cg->allocateCodeMemory(numBranchTableEntries * sizeof(branchTable[0]), cg->getCurrentEvaluationBlock()->isCold());
+   bool allocated = false;
+   intptr_t *branchTable = NULL;
+   if (NULL == cg->_branchTable) {
+       //cg->_branchTable =
+       branchTable =
+             (intptr_t*)cg->allocateCodeMemory(numBranchTableEntries * sizeof(branchTable[0]), cg->getCurrentEvaluationBlock()->isCold());
+       allocated = true;
+   }
+   //branchTable = cg->_branchTable;
 
    TR::Register *selectorReg = cg->evaluate(node->getFirstChild());
    TR_X86OpCodes opCode;
@@ -510,13 +517,14 @@ TR::Register *OMR::X86::TreeEvaluator::tableEvaluator(TR::Node *node, TR::CodeGe
       {
       generateMemInstruction(JMPMem, node, jumpMR, deps, cg);
       }
-
+   if(allocated) {
    for (i = 2; i < node->getNumChildren(); ++i)
       {
       TR::Node * caseNode = node->getChild(i);
       uint8_t * target = (uint8_t *)&branchTable[i-2];
       cg->addMetaDataForBranchTableAddress(target, caseNode, jmpTableInstruction);
       }
+   }
 
    for (i = 0; i < node->getNumChildren(); ++i)
       {
