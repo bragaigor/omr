@@ -1263,7 +1263,9 @@ TR::Block *TR::SwitchAnalyzer::addTableBlock(SwitchInfo *dense)
 
    TR::Node *node = TR::Node::create(_switch, TR::table, 3 + upperBound + branchTable);
    if(_switch && _switch->chkCannotOverflow())
-     node->setCannotOverflow(true); // Pass on info to code gen that table will have all cases covered and not use default case
+      node->setCannotOverflow(true); // Pass on info to code gen that table will have all cases covered and not use default case
+   if(_switch && _switch->chkSafeToSkipTableBoundCheck())
+      node->setIsSafeToSkipTableBoundCheck(true);
 
    if (_signed)
       node->setAndIncChild(0, TR::Node::create(TR::isub, 2,

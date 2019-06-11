@@ -27,12 +27,13 @@
 #include "il/SymbolReference.hpp"
 #include "il/symbol/AutomaticSymbol.hpp"
 #include "ilgen/IlBuilder.hpp"
+#include "ilgen/IlConst.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 
 OMR::VirtualMachineOperandStack::VirtualMachineOperandStack(TR::MethodBuilder *mb, int32_t sizeHint, TR::IlType *elementType,
    TR::VirtualMachineRegister *stackTopRegister, bool growsUp, int32_t stackInitialOffset)
-   : TR::VirtualMachineState(),
+   : TR::VirtualMachineStack(),
    _mb(mb),
    _stackTopRegister(stackTopRegister),
    _stackMax(sizeHint),
@@ -45,7 +46,7 @@ OMR::VirtualMachineOperandStack::VirtualMachineOperandStack(TR::MethodBuilder *m
    }
 
 OMR::VirtualMachineOperandStack::VirtualMachineOperandStack(TR::VirtualMachineOperandStack *other)
-   : TR::VirtualMachineState(),
+   : TR::VirtualMachineStack(),
    _mb(other->_mb),
    _stackTopRegister(other->_stackTopRegister),
    _stackMax(other->_stackMax),
@@ -156,7 +157,7 @@ OMR::VirtualMachineOperandStack::Push(TR::IlBuilder *b, TR::IlValue *value)
    }
 
 TR::IlValue *
-OMR::VirtualMachineOperandStack::Top()
+OMR::VirtualMachineOperandStack::Top(TR::IlBuilder *b)
    {
    TR_ASSERT(_stackTop >= 0, "no top: stack empty");
    return _stack[_stackTop];
@@ -184,11 +185,20 @@ OMR::VirtualMachineOperandStack::Drop(TR::IlBuilder *b, int32_t depth)
    }
 
 void
+OMR::VirtualMachineOperandStack::Drop(TR::IlBuilder *b, TR::IlValue *d)
+   {
+   int64_t depth = b->ToIlConst(d)->get64bitIntegralValue();
+   TR_ASSERT(_stackTop >= depth-1, "stack underflow");
+   _stackTop-=depth;
+   }
+
+void
 OMR::VirtualMachineOperandStack::Dup(TR::IlBuilder *b)
    {
    TR_ASSERT(_stackTop >= 0, "cannot dup: stack empty");
    TR::IlValue *top = _stack[_stackTop];
-   Push(b, top);
+   //Push(b, top);//b->Copy(top));
+   Push(b, b->Copy(top));
    }
 
 void

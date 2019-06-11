@@ -25,16 +25,17 @@
 #include "il/SymbolReference.hpp"
 #include "il/symbol/AutomaticSymbol.hpp"
 #include "ilgen/BytecodeBuilder.hpp"
+#include "ilgen/IlConst.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/VirtualMachineRegister.hpp"
-#include "ilgen/VirtualMachineState.hpp"
+#include "ilgen/VirtualMachineArray.hpp"
 
 #define TraceEnabled    (TR::comp()->getOption(TR_TraceILGen))
 #define TraceIL(m, ...) {if (TraceEnabled) {traceMsg(TR::comp(), m, ##__VA_ARGS__);}}
 
 OMR::VirtualMachineOperandArray::VirtualMachineOperandArray(TR::MethodBuilder *mb, int32_t numOfElements, TR::IlType *elementType, TR::VirtualMachineRegister *arrayBaseRegister)
-   : TR::VirtualMachineState(),
+   : TR::VirtualMachineArray(),
    _mb(mb),
    _numberOfElements(numOfElements),
    _elementType(elementType),
@@ -44,7 +45,7 @@ OMR::VirtualMachineOperandArray::VirtualMachineOperandArray(TR::MethodBuilder *m
    }
 
 OMR::VirtualMachineOperandArray::VirtualMachineOperandArray(TR::VirtualMachineOperandArray *other)
-   : TR::VirtualMachineState(),
+   : TR::VirtualMachineArray(),
    _mb(other->_mb),
    _numberOfElements(other->_numberOfElements),
    _elementType(other->_elementType),
@@ -139,15 +140,24 @@ OMR::VirtualMachineOperandArray::MakeCopy()
    }
 
 TR::IlValue *
-OMR::VirtualMachineOperandArray::Get(int32_t index)
+OMR::VirtualMachineOperandArray::Get(TR::IlBuilder *builder, int32_t index)
    {
    TR_ASSERT(index < _numberOfElements, "index has to be less than the number of elements");
    TR_ASSERT(index >= 0, "index can not be negative");
-   return _values[index];
+   return builder->Copy(_values[index]);
+   }
+
+TR::IlValue *
+OMR::VirtualMachineOperandArray::Get(TR::IlBuilder *builder, TR::IlValue *i)
+   {
+   int64_t index = builder->ToIlConst(i)->get64bitIntegralValue();
+   TR_ASSERT(index < _numberOfElements, "index has to be less than the number of elements");
+   TR_ASSERT(index >= 0, "index can not be negative");
+   return builder->Copy(_values[index]);
    }
 
 void
-OMR::VirtualMachineOperandArray::Set(int32_t index, TR::IlValue *value)
+OMR::VirtualMachineOperandArray::Set(TR::IlBuilder *builder, int32_t index, TR::IlValue *value)
    {
    TR_ASSERT(index < _numberOfElements, "index has to be less than the number of elements");
    TR_ASSERT(index >= 0, "index can not be negative");
@@ -160,14 +170,44 @@ OMR::VirtualMachineOperandArray::Set(int32_t index, TR::IlValue *value)
       {
       TraceIL("VirtualMachineOperandArray[ %p ]::Set index %d to %p(%d)\n", this, index, value, value->getID());
       }
-
    _values[index] = value;
    }
 
+void
+OMR::VirtualMachineOperandArray::Set(TR::IlBuilder *builder, TR::IlValue *i, TR::IlValue *value)
+   {
+   int64_t index = builder->ToIlConst(i)->get64bitIntegralValue();
+   TR_ASSERT(index < _numberOfElements, "index has to be less than the number of elements");
+   TR_ASSERT(index >= 0, "index can not be negative");
+
+   if (NULL != _values[index])
+      {
+      TraceIL("VirtualMachineOperandArray[ %p ]::Set index %d to %p(%d) old value was %p(%d)\n", this, index, value, value->getID(), _values[index], _values[index]->getID());
+      }
+   else
+      {
+      TraceIL("VirtualMachineOperandArray[ %p ]::Set index %d to %p(%d)\n", this, index, value, value->getID());
+      }
+   _values[index] = value;
+   }
 
 void
 OMR::VirtualMachineOperandArray::Move(TR::IlBuilder *b, int32_t dstIndex, int32_t srcIndex)
    {
+   TR_ASSERT(dstIndex < _numberOfElements, "dstIndex has to be less than the number of elements");
+   TR_ASSERT(dstIndex >= 0, "dstIndex can not be negative");
+   TR_ASSERT(srcIndex < _numberOfElements, "srcIndex has to be less than the number of elements");
+   TR_ASSERT(srcIndex >= 0, "srcIndex can not be negative");
+
+   _values[dstIndex] = b->Copy(_values[srcIndex]);
+   TraceIL("VirtualMachineOperandArray[ %p ]::Move builder %p move srcIndex %d %p(%d) to dstIndex %d %p(%d)\n", this, b, srcIndex, _values[srcIndex], _values[srcIndex]->getID(), dstIndex, _values[dstIndex], _values[dstIndex]->getID());
+   }
+
+void
+OMR::VirtualMachineOperandArray::Move(TR::IlBuilder *b, TR::IlValue *dst, TR::IlValue *src)
+   {
+   int64_t dstIndex = b->ToIlConst(dst)->get64bitIntegralValue();
+   int64_t srcIndex = b->ToIlConst(src)->get64bitIntegralValue();
    TR_ASSERT(dstIndex < _numberOfElements, "dstIndex has to be less than the number of elements");
    TR_ASSERT(dstIndex >= 0, "dstIndex can not be negative");
    TR_ASSERT(srcIndex < _numberOfElements, "srcIndex has to be less than the number of elements");

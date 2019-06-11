@@ -99,36 +99,66 @@ class TR_ExpressionsSimplification : public TR::Optimization
       public:
       TR_ALLOC(TR_Memory::ExpressionsSimplification)
       LoopInfo(TR::Node* boundry, int32_t lowerBound, int32_t upperBound, int32_t increment, bool equals)
-         : _boundry(boundry), _lowerBound(lowerBound), _upperBound(upperBound), _increment(increment), _equals(equals)
+         : _boundry(boundry), _lowerBound32(lowerBound), _upperBound32(upperBound), _increment32(increment), _equals(equals), _is64Bit(false)
+            { }
+      LoopInfo(TR::Node* boundry, int64_t lowerBound, int64_t upperBound, int64_t increment, bool equals)
+         : _boundry(boundry), _lowerBound64(lowerBound), _upperBound64(upperBound), _increment64(increment), _equals(equals), _is64Bit(true)
             { }
 
-      int32_t getLowerBound() { return _lowerBound; }
-      int32_t getUpperBound() { return _upperBound; }
-      int32_t getIncrement() { return _increment; }
+      int32_t getIncrement32() { return _increment32; }
       TR::Node* getBoundaryNode() { return _boundry; }
       bool isEquals() {return _equals;}
+      bool is64Bit() {return _is64Bit;}
 
-      int32_t getNumIterations()
+      int32_t getNumIterations32()
          {
-         if (_increment == 0)
+         if (_increment32 == 0)
             return 0;
 
-         if ((_increment > 0 && _lowerBound > _upperBound) || (_increment < 0 && _lowerBound < _upperBound))
+         if ((_increment32 > 0 && _lowerBound32 > _upperBound32) || (_increment32 < 0 && _lowerBound32 < _upperBound32))
             return 0;
 
          if (isEquals())
-            return (_upperBound - _lowerBound + _increment)/_increment;
-         else if (_increment > 0)
-            return (_upperBound - _lowerBound + _increment - 1)/_increment;
+            return (_upperBound32 - _lowerBound32 + _increment32)/_increment32;
+         else if (_increment32 > 0)
+            return (_upperBound32 - _lowerBound32 + _increment32 - 1)/_increment32;
          else
-            return (_upperBound - _lowerBound + _increment + 1)/_increment;
+            return (_upperBound32 - _lowerBound32 + _increment32 + 1)/_increment32;
+         }
+
+      int64_t getNumIterations64()
+         {
+         if (_increment64 == 0)
+            return 0;
+
+         if ((_increment64 > 0 && _lowerBound64 > _upperBound64) || (_increment64 < 0 && _lowerBound64 < _upperBound64))
+            return 0;
+
+         if (isEquals())
+            return (_upperBound64 - _lowerBound64 + _increment64)/_increment64;
+         else if (_increment32 > 0)
+            return (_upperBound64 - _lowerBound64 + _increment64 - 1)/_increment64;
+         else
+            return (_upperBound64 - _lowerBound64 + _increment64 + 1)/_increment64;
+         }
+
+      int64_t getNumIterations()
+         {
+         if (_is64Bit)
+            return getNumIterations64();
+         else
+            return getNumIterations32();
          }
 
       private:
       TR::Node* _boundry;
-      int32_t  _lowerBound;
-      int32_t  _upperBound;
-      int32_t  _increment;
+      int32_t  _lowerBound32;
+      int64_t  _lowerBound64;
+      int32_t  _upperBound32;
+      int64_t  _upperBound64;
+      int32_t  _increment32;
+      int64_t  _increment64;
+      bool     _is64Bit;
       bool     _equals;
       };
 
@@ -158,7 +188,9 @@ class TR_ExpressionsSimplification : public TR::Optimization
    void tranformStoreMotionCandidate(TR::TreeTop *treeTop, bool *isPreheaderBlockInvalid);
 
    TR::Node* iaddisubSimplifier(TR::Node *, LoopInfo*);
+   TR::Node* laddlsubSimplifier(TR::Node *, LoopInfo*);
    TR::Node* ixorinegSimplifier(TR::Node *, LoopInfo*, bool *);
+   TR::Node* lxorlnegSimplifier(TR::Node *, LoopInfo*, bool *);
    bool checkForLoad(TR::Node *node, TR::Node *load);
    void removeUnsupportedCandidates();
    bool isSupportedNodeForExpressionSimplification(TR::Node *node);

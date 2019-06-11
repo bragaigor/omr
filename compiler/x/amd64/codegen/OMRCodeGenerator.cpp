@@ -97,6 +97,8 @@ OMR::X86::AMD64::CodeGenerator::CodeGenerator() :
    _globalGPRsPreservedAcrossCalls.init(self()->getNumberOfGlobalRegisters(), self()->trMemory());
    _globalFPRsPreservedAcrossCalls.init(self()->getNumberOfGlobalRegisters(), self()->trMemory());
 
+   _branchTable = NULL;
+
    int16_t i;
    TR_GlobalRegisterNumber grn;
    for (i=0; i < self()->getNumberOfGlobalGPRs(); i++)

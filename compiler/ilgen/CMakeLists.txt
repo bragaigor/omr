@@ -24,18 +24,26 @@ compiler_library(ilgen
 	${CMAKE_CURRENT_LIST_DIR}/IlInjector.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRBytecodeBuilder.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRIlBuilder.cpp
+	${CMAKE_CURRENT_LIST_DIR}/OMRIlConst.cpp
+	${CMAKE_CURRENT_LIST_DIR}/OMRCompiledMethodBuilder.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRIlType.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRIlValue.cpp
+	${CMAKE_CURRENT_LIST_DIR}/OMRInterpreterBuilder.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRJitBuilderRecorder.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRJitBuilderRecorderBinaryBuffer.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRJitBuilderRecorderBinaryFile.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRJitBuilderRecorderTextFile.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRMethodBuilder.cpp
+	${CMAKE_CURRENT_LIST_DIR}/OMRRuntimeBuilder.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRThunkBuilder.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRTypeDictionary.cpp
+	${CMAKE_CURRENT_LIST_DIR}/OMRVirtualMachineArray.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRVirtualMachineOperandArray.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRVirtualMachineOperandStack.cpp
+	${CMAKE_CURRENT_LIST_DIR}/OMRVirtualMachineRealArray.cpp
+	${CMAKE_CURRENT_LIST_DIR}/OMRVirtualMachineRealStack.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRVirtualMachineRegister.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRVirtualMachineRegisterInStruct.cpp
+	${CMAKE_CURRENT_LIST_DIR}/OMRVirtualMachineStack.cpp
 	${CMAKE_CURRENT_LIST_DIR}/OMRVirtualMachineState.cpp
 )

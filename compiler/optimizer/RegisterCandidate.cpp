@@ -1603,7 +1603,6 @@ TR_RegisterCandidate::processLiveOnEntryBlocks(TR::Block * * blocks, int32_t *bl
             _weight = 0;
             }
          }
-
       if (trace)
          dumpOptDetails(comp, "For candidate #%d weight = %d loadsAndStores = %d numberOfBlocks = %d\n", getSymbolReference()->getReferenceNumber(), _weight, loadsAndStores, numberOfBlocks);
       }

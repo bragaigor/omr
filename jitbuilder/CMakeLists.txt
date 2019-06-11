@@ -63,32 +63,48 @@ set(JITBUILDER_API_DESCRIPTION ${CMAKE_CURRENT_SOURCE_DIR}/apigen/jitbuilder.api
 
 set(JITBUILDER_API_SOURCES
 	${JITBUILDER_CPP_API_SOURCE_DIR}/BytecodeBuilder.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/CompiledMethodBuilder.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/IlBuilder.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/IlConst.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/IlType.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/IlValue.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/InterpreterBuilder.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/MethodBuilder.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/RuntimeBuilder.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/ThunkBuilder.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/TypeDictionary.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineArray.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineOperandArray.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineOperandStack.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineRealArray.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineRealStack.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineRegister.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineRegisterInStruct.cpp
+	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineStack.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/VirtualMachineState.cpp
 	${JITBUILDER_CPP_API_SOURCE_DIR}/JitBuilder.cpp
 )
 
 set(JITBUILDER_API_HEADERS
 	${JITBUILDER_CPP_API_HEADER_DIR}/BytecodeBuilder.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/CompiledMethodBuilder.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/IlBuilder.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/IlConst.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/IlType.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/IlValue.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/InterpreterBuilder.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/MethodBuilder.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/RuntimeBuilder.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/ThunkBuilder.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/TypeDictionary.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineArray.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineOperandArray.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineOperandStack.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineRealArray.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineRealStack.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineRegister.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineRegisterInStruct.hpp
+	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineStack.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/VirtualMachineState.hpp
 	${JITBUILDER_CPP_API_HEADER_DIR}/JitBuilder.hpp
 )

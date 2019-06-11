@@ -32,6 +32,7 @@ namespace TR { class Symbol; }
 namespace TR { class SymbolReference; }
 namespace TR { class MethodBuilder; }
 namespace TR { class IlValue; }
+namespace TR { class IlConst; }
 
 extern "C" {
 typedef void * (*ClientAllocator)(void * impl);
@@ -62,7 +63,7 @@ public:
     * @param value the new value that should be returned whenever the current value is loaded
     * @param block TR::Block for the replacement point, so that either the node pointer is changed or what's stored in the symbol reference
     */
-   void storeOver(TR::IlValue *value, TR::Block *block);
+   virtual void storeOver(TR::IlValue *value, TR::Block *block);
 
    /**
     * @brief return the data type of this value
@@ -99,7 +100,7 @@ public:
    /**
     * @brief returns the client object associated with this object
     */
-   void *client();
+   virtual void *client();
 
    /**
     * @brief Set the Client Allocator function

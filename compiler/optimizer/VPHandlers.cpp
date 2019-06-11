@@ -10943,6 +10943,28 @@ TR::Node *constrainSwitch(OMR::ValuePropagation *vp, TR::Node *node)
            node->setCannotOverflow(true);  // Let evaluator know value range of selector is covered by min and max case
          } // ... else if LongConstraint
       }
+   else
+      {
+      // For table switch do not remove paths just use the constraint. Do not handle 64 bit
+      TR::Node *selector = node->getFirstChild();
+      bool isGlobal;
+      TR::VPConstraint *constraint = vp->getConstraint(selector, isGlobal);
+      bool isInt64 = selector->getType().isInt64();
+      int64_t maxCase=LONG_MIN;
+      int64_t minCase=LONG_MAX;
+      if (!isInt64 && constraint && constraint->asIntConstraint())
+         {
+         uint16_t numCases = node->getCaseIndexUpperBound() - 2;
+         int32_t low = constraint->asIntConstraint()->getLow();
+         int32_t high = constraint->asIntConstraint()->getHigh();
+         // Table entries are contiguous. If numCases == constraint total range the selector is completely covered
+         if (numCases == ((high - low) + 1))
+            {
+            node->setCannotOverflow(true);  // Let evaluator know value range of selector is covered by min and max case
+            node->setIsSafeToSkipTableBoundCheck(true);
+            }
+         }
+      }
 
    // Fall-through is now unreachable
    //
