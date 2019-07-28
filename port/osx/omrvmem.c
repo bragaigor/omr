@@ -60,6 +60,7 @@
 #endif
 
 #define INVALID_KEY -1
+#define FILE_NAME_SIZE 30
 
 #if 0
 #define OMRVMEM_DEBUG
@@ -86,7 +87,7 @@ static BOOLEAN isStrictAndOutOfRange(void *memoryPointer, void *startAddress, vo
 static BOOLEAN rangeIsValid(struct J9PortVmemIdentifier *identifier, void *address, uintptr_t byteAmount);
 
 void *reserveMemory(struct OMRPortLibrary *portLibrary, void *address, uintptr_t byteAmount, struct J9PortVmemIdentifier *identifier, uintptr_t mode, uintptr_t pageSize, uintptr_t pageFlags, OMRMemCategory *category);
-void update_vmemIdentifier(J9PortVmemIdentifier *identifier, void *address, void *handle, uintptr_t byteAmount, uintptr_t mode, uintptr_t pageSize, uintptr_t pageFlags, uintptr_t allocator, OMRMemCategory *category);
+void update_vmemIdentifier(J9PortVmemIdentifier *identifier, void *address, void *handle, uintptr_t byteAmount, uintptr_t mode, uintptr_t pageSize, uintptr_t pageFlags, uintptr_t allocator, OMRMemCategory *category, int fd);
 int get_protectionBits(uintptr_t mode);
 
 /*
@@ -284,16 +285,22 @@ omrvmem_free_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr_t
 {
 	int32_t ret = -1;
 	OMRMemCategory *category = identifier->category;
+	int fd = identifier->fd;
+	uintptr_t mode = identifier->mode;
 
 	Trc_PRT_vmem_omrvmem_free_memory_Entry(address, byteAmount);
 
 	/* CMVC 180372 - Some users store the identifier in the allocated memory.
 	 * So, identifier must be cleared before memory is freed.
 	 */
-	update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL);
+	update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
 
 	ret = (int32_t)munmap(address, (size_t)byteAmount);
 	omrmem_categories_decrement_counters(category, byteAmount);
+
+	if((mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN) && fd != -1) {
+		close(fd);
+	}
 
 	Trc_PRT_vmem_omrvmem_free_memory_Exit(ret);
 	return ret;
@@ -348,7 +355,7 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 		memoryPointer = getMemoryInRange(portLibrary, identifier, category, params->byteAmount, params->startAddress, params->endAddress, 0, params->options, params->pageSize, params->pageFlags, params->mode);
 	} else if (0 == params->pageSize) {
 		/* Invalid input */
-		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL);
+		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
 		Trc_PRT_vmem_omrvmem_reserve_memory_invalid_input();
 	} else if (PPG_vmem_pageSize[0] == params->pageSize) {
 		uintptr_t alignmentInBytes = OMR_MAX(params->pageSize, params->alignmentInBytes);
@@ -382,12 +389,12 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 					memoryPointer = getMemoryInRange(portLibrary, identifier, category, params->byteAmount, params->startAddress, params->endAddress, alignmentInBytes, params->options, PPG_vmem_pageSize[0], OMRPORT_VMEM_PAGE_FLAG_NOT_USED, params->mode);
 				}
 			} else {
-				update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL);
+				update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
 			}
 		}
 	} else {
 		/* If the pageSize is not one of the supported page sizes, error */
-		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL);
+		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
 		Trc_PRT_vmem_omrvmem_reserve_memory_unsupported_page_size(params->pageSize);
 	}
 
@@ -429,37 +436,62 @@ void *
 reserveMemory(struct OMRPortLibrary *portLibrary, void *address, uintptr_t byteAmount, struct J9PortVmemIdentifier *identifier, uintptr_t mode, uintptr_t pageSize, uintptr_t pageFlags, OMRMemCategory *category)
 {
 	int fd = -1;
-	int flags = MAP_PRIVATE;
+	int ft = -1;
+	int flags = 0;
 	void *result = NULL;
 	int protectionFlags = PROT_NONE;
+	BOOLEAN useBackingSharedFile = FALSE;
 
 	if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN) {
-		portLibrary->error_set_last_error(portLibrary,  errno, OMRPORT_ERROR_VMEM_NOT_SUPPORTED);
-		return result;
+		flags |= MAP_SHARED;
+		useBackingSharedFile = TRUE;
+	} else {
+		flags |= MAP_PRIVATE;
 	}
 
-	flags |= MAP_ANON;
+	if (useBackingSharedFile) {
+		/* Mac OSX has a short limit on the name (30 characters) */
+		char filename[FILE_NAME_SIZE + 1];
+		sprintf(filename, "temp_%zu_%09d",  (size_t)omrtime_current_time_millis(portLibrary), 
+								getpid());
+								// (size_t)pthread_self()); 
+		fd = shm_open(filename, O_RDWR | O_CREAT, 0600);
+		shm_unlink(filename);
+		ft = ftruncate(fd, byteAmount);
+
+		if (fd == -1 || ft == -1) {
+			Trc_PRT_vmem_default_reserve_failed(address, byteAmount);
+			update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
+			Trc_PRT_vmem_default_reserve_exit(result, address, byteAmount);
+			return result;
+		}
+	} else {
+#if defined(VM_FLAGS_SUPERPAGE_SIZE_2MB)
+		if (PPG_vmem_pageSize[2] == pageSize) {
+			fd = VM_FLAGS_SUPERPAGE_SIZE_2MB;
+		}
+#endif /* defined(VM_FLAGS_SUPERPAGE_SIZE_2MB) */
+		if (0 != (OMRPORT_VMEM_PAGE_FLAG_SUPERPAGE_ANY & pageFlags)) {
+			fd = VM_FLAGS_SUPERPAGE_SIZE_ANY;
+		}
+		flags |= MAP_ANON;
+	}
+
 	if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
 		protectionFlags = get_protectionBits(mode);
 	} else {
 		flags |= MAP_NORESERVE;
 	}
 
-#if defined(VM_FLAGS_SUPERPAGE_SIZE_2MB)
-	if (PPG_vmem_pageSize[2] == pageSize) {
-		fd = VM_FLAGS_SUPERPAGE_SIZE_2MB;
-	}
-#endif /* defined(VM_FLAGS_SUPERPAGE_SIZE_2MB) */
-	if (0 != (OMRPORT_VMEM_PAGE_FLAG_SUPERPAGE_ANY & pageFlags)) {
-		fd = VM_FLAGS_SUPERPAGE_SIZE_ANY;
-	}
-
 	result = mmap(address, (size_t)byteAmount, protectionFlags, flags, fd, 0);
 	if (MAP_FAILED == result) {
+		if(useBackingSharedFile && fd != -1) {
+			close(fd);
+		}
 		result = NULL;
 	} else {
 		/* Update identifier and commit memory if required, else return reserved memory */
-		update_vmemIdentifier(identifier, result, result, byteAmount, mode, pageSize, OMRPORT_VMEM_PAGE_FLAG_NOT_USED, OMRPORT_VMEM_RESERVE_USED_MMAP, category);
+		update_vmemIdentifier(identifier, result, result, byteAmount, mode, pageSize, OMRPORT_VMEM_PAGE_FLAG_NOT_USED, OMRPORT_VMEM_RESERVE_USED_MMAP, category, fd);
 		omrmem_categories_increment_counters(category, byteAmount);
 		if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
 			if (NULL == omrvmem_commit_memory(portLibrary, result, byteAmount, identifier)) {
@@ -472,7 +504,7 @@ reserveMemory(struct OMRPortLibrary *portLibrary, void *address, uintptr_t byteA
 
 	if (NULL == result) {
 		Trc_PRT_vmem_omrvmem_reserve_memory_failure();
-		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL);
+		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
 	}
 
 	return result;
@@ -493,7 +525,7 @@ reserveMemory(struct OMRPortLibrary *portLibrary, void *address, uintptr_t byteA
  * @param[in] category Memory allocation category
  */
 void
-update_vmemIdentifier(J9PortVmemIdentifier *identifier, void *address, void *handle, uintptr_t byteAmount, uintptr_t mode, uintptr_t pageSize, uintptr_t pageFlags, uintptr_t allocator, OMRMemCategory *category)
+update_vmemIdentifier(J9PortVmemIdentifier *identifier, void *address, void *handle, uintptr_t byteAmount, uintptr_t mode, uintptr_t pageSize, uintptr_t pageFlags, uintptr_t allocator, OMRMemCategory *category, int fd)
 {
 	identifier->address = address;
 	identifier->handle = handle;
@@ -503,6 +535,7 @@ update_vmemIdentifier(J9PortVmemIdentifier *identifier, void *address, void *han
 	identifier->mode = mode;
 	identifier->allocator = allocator;
 	identifier->category = category;
+	identifier->fd = fd;
 }
 
 int
