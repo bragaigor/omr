@@ -97,6 +97,8 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 
 #if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
 	if(extensions->isVLHGC() && extensions->indexableObjectModel.isDoubleMappingEnabled()) {
+		printf("Sleeping for 5 min... ZzZzZzZZzzZzZ...\n");
+		omrthread_sleep(300000); // 300 seconds
 		mode |= OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN;
 	}
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
