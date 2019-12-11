@@ -1138,6 +1138,10 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 	if (NULL == result) {
 		Trc_PRT_vmem_default_reserve_failed(address, byteAmount);
 		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
+	} else {
+		if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN) {
+			printf("##### Heap using OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN mode create successfully at: %p, with fd: %d\n", (void *)result, fd);
+		}
 	}
 
 	Trc_PRT_vmem_default_reserve_exit(result, address, byteAmount);
@@ -1160,6 +1164,7 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 void *
 omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* addresses[], uintptr_t addressesCount, uintptr_t addressSize, uintptr_t byteAmount, struct J9PortVmemIdentifier *oldIdentifier, struct J9PortVmemIdentifier *newIdentifier, uintptr_t mode, uintptr_t pageSize, OMRMemCategory *category)
 {
+	printf("Calling omrvmem_get_contiguous_region_memory()\n");
 	int protectionFlags = PROT_READ | PROT_WRITE;
 	int flags = MAP_PRIVATE | MAP_ANON;
 	int fd = -1;
@@ -1192,10 +1197,10 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* a
 		if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
 			if (NULL == omrvmem_commit_memory(portLibrary, contiguousMap, byteAmount, newIdentifier)) {
 				/* If the commit fails free the memory  */
-#if defined(OMRVMEM_DEBUG)
+//#if defined(OMRVMEM_DEBUG)
 				printf("omrvmem_commit_memory failed at contiguous_region_reserve_memory.\n");
 				fflush(stdout);
-#endif
+//#endif
 				successfulContiguousMap = FALSE;
 			}
 		}
@@ -1205,7 +1210,7 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* a
 	if(contiguousMap != NULL) {
 		flags = MAP_SHARED | MAP_FIXED; // Must be shared, SIGSEGV otherwise
 		fd = oldIdentifier->fd;
-#if defined(OMRVMEM_DEBUG)
+//#if defined(OMRVMEM_DEBUG)
 		printf("Found %zu arraylet leaves.\n", addressesCount);
 		int j = 0;
 		for(j = 0; j < addressesCount; j++) {
@@ -1214,7 +1219,7 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* a
 		printf("Contiguous address is: %p\n", contiguousMap);
 		printf("About to double map arraylets. File handle got from old identifier: %d\n", fd);
 		fflush(stdout);
-#endif
+//#endif
 		size_t i;
 		for (i = 0; i < addressesCount; i++) {
 			void *nextAddress = (void *)(contiguousMap + i * addressSize);
@@ -1230,19 +1235,19 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* a
 			if (address == MAP_FAILED) {
 				successfulContiguousMap = FALSE;
                                 portLibrary->error_set_last_error_with_message(portLibrary, OMRPORT_ERROR_VMEM_OPFAILED, "Failed to double map.");
-#if defined(OMRVMEM_DEBUG)
+//#if defined(OMRVMEM_DEBUG)
 				printf("***************************** errno: %d\n", errno);
 				printf("Failed to mmap address[%zu] at mmapContiguous()\n", i);
 				fflush(stdout);
-#endif
+//#endif
 				break;
 			} else if (nextAddress != address) {
 				successfulContiguousMap = FALSE;
                                 portLibrary->error_set_last_error_with_message(portLibrary, OMRPORT_ERROR_VMEM_OPFAILED, "Double Map failed to provide the correct address");
-#if defined(OMRVMEM_DEBUG)
+//#if defined(OMRVMEM_DEBUG)
 				printf("Map failed to provide the correct address. nextAddress %p != %p\n", nextAddress, address);
 				fflush(stdout);
-#endif
+//#endif
 				break;
 			}
 		}
@@ -1253,6 +1258,9 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* a
 			munmap(contiguousMap, byteAmount);
 		}
 		contiguousMap = NULL;
+		printf("Double map inside omrvmem_get_contiguous_region_memory() was a FAILURE!!!!!!!\n");
+	} else {
+		printf("Double map inside was omrvmem_get_contiguous_region_memory() indeed SUCCESSFUL\n");
 	}
 
 	return contiguousMap;
