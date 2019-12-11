@@ -1081,15 +1081,20 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 	}
 
 	if (useBackingSharedFile) {
+		printf("About to create a shared heap!! creating filename: ");
 		char filename[FILE_NAME_SIZE + 1];
-		sprintf(filename, "omrvmem_temp_%zu_%09d_%zu",  (size_t)omrtime_current_time_millis(portLibrary), 
-								getpid(), 
-								(size_t)pthread_self()); 
+		sprintf(filename, "omrvmem_temp_%zu_%09d_%zu",  (size_t)omrtime_current_time_millis(portLibrary),
+								getpid(),
+								(size_t)pthread_self());
+		printf("%.*s" , FILE_NAME_SIZE+1, filename);
 		fd = shm_open(filename, O_RDWR | O_CREAT, 0600);
+		printf("\nFile descriptor got from shm_open() was: %d, errno: %d\n", fd, errno);
 		shm_unlink(filename);
 		ft = ftruncate(fd, byteAmount);
+		printf("ftruncate returned: %d, errno: %d\n", ft, errno);
 
 		if (fd == -1 || ft == -1) {
+			printf("Heap creation with file descriptor failed!!!!!!!!!! errno: %d\n", errno);
 			Trc_PRT_vmem_default_reserve_failed(address, byteAmount);
 			update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
 			Trc_PRT_vmem_default_reserve_exit(result, address, byteAmount);
@@ -1111,6 +1116,8 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 		/* do NOT use the MAP_FIXED flag on Linux. With this flag, Linux may return
 		 * an address that has already been reserved.
 		 */
+		if (useBackingSharedFile)
+			printf("About to call mmap to create heap with fd: %d, byteAmount: %zu, address: %p\n", fd, (size_t)byteAmount, (void *)address);
 		result = mmap(address, (size_t)byteAmount, protectionFlags, flags, fd, 0);
 
 		if(useBackingFile) {
@@ -1118,10 +1125,14 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 		}
 	
 		if (MAP_FAILED == result) {
+			if (useBackingSharedFile)
+				printf("mmap returned MAP_FAILED therefore heap creation failed. errno: %d\n", errno);
 			if(useBackingSharedFile && fd != -1)
 				close(fd);
 			result = NULL;
 		} else {
+			if (useBackingSharedFile)
+				printf("mmap to create HEAP was indeed successful!! Updating identifier associated with heap. fd: %d, result: %p, byteAmount: %zu\n", fd, (void *)result, (size_t)byteAmount);
 			/* Update identifier and commit memory if required, else return reserved memory */
 			update_vmemIdentifier(identifier, result, result, byteAmount, mode, pageSize, OMRPORT_VMEM_PAGE_FLAG_NOT_USED, OMRPORT_VMEM_RESERVE_USED_MMAP, category, fd);
 			omrmem_categories_increment_counters(category, byteAmount);
@@ -1138,6 +1149,9 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 	if (NULL == result) {
 		Trc_PRT_vmem_default_reserve_failed(address, byteAmount);
 		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
+		if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN) {
+			printf("##### Heap using OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN mode FAILED!! What to do????\n");
+		}
 	} else {
 		if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN) {
 			printf("##### Heap using OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN mode create successfully at: %p, with fd: %d\n", (void *)result, fd);
