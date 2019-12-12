@@ -48,6 +48,8 @@ MM_VirtualMemory::newInstance(MM_EnvironmentBase* env, uintptr_t heapAlignment, 
 
 	if (vmem) {
 		new (vmem) MM_VirtualMemory(env, heapAlignment, pageSize, pageFlags, tailPadding, mode);
+		if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN)
+			printf("\tAbout to call vmem->initialize()\n");
 		if (!vmem->initialize(env, size, preferredAddress, ceiling, options, memoryCategory)) {
 			vmem->kill(env);
 			vmem = NULL;
@@ -106,6 +108,7 @@ MM_VirtualMemory::initialize(MM_EnvironmentBase* env, uintptr_t size, void* pref
 	}
 
 	if (params.startAddress <= params.endAddress) {
+		printf("\tAbout to call reserveMemory()\n");
 		_heapBase = reserveMemory(&params);
 	}
 
@@ -150,6 +153,7 @@ MM_VirtualMemory::reserveMemory(J9PortVmemParams* params)
 	params->byteAmount = _reserveSize;
 
 	memset(&_identifier, 0, sizeof(J9PortVmemIdentifier));
+	printf("\tAbout to call omrvmem_reserve_memory_ex()\n");
 	_baseAddress = omrvmem_reserve_memory_ex(&_identifier, params);
 
 	if (NULL != _baseAddress) {

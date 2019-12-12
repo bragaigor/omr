@@ -781,6 +781,9 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 
 		/* Make sure that the alignment is a multiple of both requested alignment and page size (enforces that arguments are powers of two and, thus, their max is their lowest common multiple) */
 		if ((0 == minimumGranule) || (0 == (alignmentInBytes % minimumGranule))) {
+			if(params->mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN) {
+				printf("\t\tAbout to call getMemoryInRangeForDefaultPages()\n");
+			}
 			memoryPointer = getMemoryInRangeForDefaultPages(portLibrary, identifier, category, params->byteAmount, params->startAddress, params->endAddress, alignmentInBytes, params->options, params->mode);
 		}
 	} else if (PPG_vmem_pageSize[1] == params->pageSize) {
@@ -789,21 +792,27 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 
 		/* Make sure that the alignment is a multiple of both requested alignment and page size (enforces that arguments are powers of two and, thus, their max is their lowest common multiple) */
 		if ((0 == largePageMinimumGranule) || (0 == (largePageAlignmentInBytes % largePageMinimumGranule))) {
+			if(params->mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN)
+				printf("\t\tAbout to call reserveLargePages()\n");
 			memoryPointer = reserveLargePages(portLibrary, identifier, category, params->byteAmount, params->startAddress, params->endAddress, params->pageSize, largePageAlignmentInBytes, params->options, params->mode);
 		}
 		if (NULL == memoryPointer) {
 			/* If strict page size flag is not set try again with default page size */
 			if (OMR_ARE_NO_BITS_SET(params->options, OMRPORT_VMEM_STRICT_PAGE_SIZE)) {
-#if defined(OMRVMEM_DEBUG)
-				printf("\t\t\tNULL == memoryPointer, reverting to default pages\n");
-				fflush(stdout);
-#endif
+//#if defined(OMRVMEM_DEBUG)
+				if(params->mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN) {
+					printf("\t\t\tNULL == memoryPointer, reverting to default pages\n");
+					fflush(stdout);
+				}
+//#endif
 				uintptr_t defaultPageSize = PPG_vmem_pageSize[0];
 				uintptr_t alignmentInBytes = OMR_MAX(defaultPageSize, params->alignmentInBytes);
 				uintptr_t minimumGranule = OMR_MIN(defaultPageSize, params->alignmentInBytes);
 
 				/* Make sure that the alignment is a multiple of both requested alignment and page size (enforces that arguments are powers of two and, thus, their max is their lowest common multiple) */
 				if ((0 == minimumGranule) || (0 == (alignmentInBytes % minimumGranule))) {
+					if(params->mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN)
+						printf("\t\tSecond call to about to call getMemoryInRangeForDefaultPages()\n");
 					memoryPointer = getMemoryInRangeForDefaultPages(portLibrary, identifier, category, params->byteAmount, params->startAddress, params->endAddress, alignmentInBytes, params->options, params->mode);
 				}
 			} else {
@@ -821,11 +830,13 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 	}
 #endif
 
-#if defined(OMRVMEM_DEBUG)
-	printf("\tomrvmem_reserve_memory_ex(start=%p,end=%p,size=0x%zx,page=0x%zx,options=0x%zx) returning %p\n",
+//#if defined(OMRVMEM_DEBUG)
+	if(params->mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN) {
+		printf("\tomrvmem_reserve_memory_ex(start=%p,end=%p,size=0x%zx,page=0x%zx,options=0x%zx) returning %p\n",
 			params->startAddress, params->endAddress, params->byteAmount, params->pageSize, (size_t)params->options, memoryPointer);
-	fflush(stdout);
-#endif
+		fflush(stdout);
+	}
+//#endif
 
 	Trc_PRT_vmem_omrvmem_reserve_memory_Exit_replacement(memoryPointer, params->startAddress);
 	return memoryPointer;
@@ -840,6 +851,8 @@ reserveLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifie
 	 * Requesting HUGETLB pages via shmget has the effect of "reserving" them. They have to be attached to become allocated for use
 	 * The execute flags are ignored by shmget
 	 */
+	if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN)
+		printf("\t\t\tInside reserveLargePages() byteAmount: %zu, startAddress: %p, endAddress: %p, pageSize: %zu\n", byteAmount, startAddress, endAddress, pageSize);
 	key_t addressKey;
 	int shmgetFlags = SHM_HUGETLB | IPC_CREAT;
 	void *memoryPointer = NULL;
@@ -855,6 +868,8 @@ reserveLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifie
 	if (-1 == addressKey) {
 		Trc_PRT_vmem_omrvmem_reserve_memory_shmget_failed(byteAmount, shmgetFlags);
 	} else {
+		if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN)
+			printf("\t\t\tAbout to call getMemoryInRangeForLargePages()\n");
 		memoryPointer = getMemoryInRangeForLargePages(portLibrary, identifier, addressKey, category, byteAmount, startAddress, endAddress, alignmentInBytes, vmemOptions, pageSize, mode);
 
 		/* release when complete, protect from ^C or crash */
@@ -1524,6 +1539,8 @@ getMemoryInRangeForDefaultPages(struct OMRPortLibrary *portLibrary, struct J9Por
 
 		if (NULL != smartAddress) {
 			/* smartAddress is not NULL: try to get memory there */
+			if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN)
+				printf("\t\t\tAbout to call default_pageSize_reserve_memory()!!!!!!!!!\n");
 			memoryPointer = default_pageSize_reserve_memory(portLibrary, smartAddress, byteAmount, identifier, mode, PPG_vmem_pageSize[0], category);
 			if (NULL != memoryPointer) {
 				if (OMR_ARE_NO_BITS_SET(vmemOptions, OMRPORT_VMEM_STRICT_ADDRESS)) {
@@ -1552,6 +1569,7 @@ getMemoryInRangeForDefaultPages(struct OMRPortLibrary *portLibrary, struct J9Por
 		void *currentAddress = NULL;
 		/* return after first attempt when OMRPORT_VMEM_ADDRESS_HINT is set */
 		if (OMR_ARE_ANY_BITS_SET(vmemOptions, OMRPORT_VMEM_ADDRESS_HINT)) {
+			printf("\t\t\tSECOND time about to call default_pageSize_reserve_memory()\n");
 			return default_pageSize_reserve_memory(portLibrary, startAddress, byteAmount, identifier, mode, PPG_vmem_pageSize[0], category);
 		}
 		/* try all addresses within range */
@@ -1575,6 +1593,8 @@ getMemoryInRangeForDefaultPages(struct OMRPortLibrary *portLibrary, struct J9Por
 	/* if strict flag is not set and we did not get any memory, attempt to get memory at any address */
 	if (OMR_ARE_NO_BITS_SET(vmemOptions, OMRPORT_VMEM_STRICT_ADDRESS) && (NULL == memoryPointer)) {
 allocAnywhere:
+		if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN)
+			printf("\t\t\tAbout to call THIRD time anywhere default_pageSize_reserve_memory()...\n");
 		memoryPointer = default_pageSize_reserve_memory(portLibrary, NULL, byteAmount, identifier, mode, PPG_vmem_pageSize[0], category);
 	}
 
@@ -1606,6 +1626,8 @@ getMemoryInRangeForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortV
 	intptr_t direction = 1;
 	void *currentAddress = NULL;
 	void *memoryPointer = NULL;
+	if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN)
+		printf("\t\t\tInside getMemoryInRangeForLargePages()!!!!!!!!!\n");
 
 	/* check allocation direction */
 	if (OMR_ARE_ANY_BITS_SET(vmemOptions, OMRPORT_VMEM_ALLOC_DIR_TOP_DOWN)) {
@@ -1632,6 +1654,8 @@ getMemoryInRangeForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortV
 			}
 		}
 
+		if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN)
+			printf("\t\t\tAttempting to call allocateMemoryForLargePages()...\n");
 		memoryPointer = allocateMemoryForLargePages(portLibrary, identifier, currentAddress, addressKey, category, byteAmount, pageSize, mode);
 
 		/* stop if returned pointer is within range */
@@ -1643,6 +1667,8 @@ getMemoryInRangeForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortV
 	/* if strict flag is not set and we did not get any memory, attempt to get memory at any address */
 	if (OMR_ARE_NO_BITS_SET(vmemOptions, OMRPORT_VMEM_STRICT_ADDRESS) && (MAP_FAILED == memoryPointer)) {
 allocAnywhere:
+		if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN)
+                        printf("\t\t\tAttempting to call allocateMemoryForLargePages()!!! Allocating anywhere meeeeh\n");
 		memoryPointer = allocateMemoryForLargePages(portLibrary, identifier, NULL, addressKey, category, byteAmount, pageSize, mode);
 	}
 
@@ -1670,6 +1696,8 @@ allocAnywhere:
 static void *
 allocateMemoryForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, void *currentAddress, key_t addressKey, OMRMemCategory *category, uintptr_t byteAmount, uintptr_t pageSize, uintptr_t mode)
 {
+	if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN)
+		printf("\t\t\t\tAbout to call shmat() THIS DOES NOT HAVE AN FD!!!!!!!\n");
 	void *memoryPointer = shmat(addressKey, currentAddress, 0);
 
 	if (MAP_FAILED != memoryPointer) {

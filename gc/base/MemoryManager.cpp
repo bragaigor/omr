@@ -129,6 +129,7 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 #endif /* defined(OMR_GC_MODRON_SCAVENGER) */
 
 	if (NULL == ceiling) {
+		printf("About to call MM_VirtualMemory::newInstance()\n");
 		instance = MM_VirtualMemory::newInstance(env, heapAlignment, allocateSize, pageSize, pageFlags, tailPadding, preferredAddress,
 												 ceiling, mode, options, memoryCategory);
 
@@ -213,6 +214,7 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 				options |= OMRPORT_VMEM_ALLOC_DIR_BOTTOM_UP;
 
 				/* An attempt to allocate memory chunk for heap for Concurrent Scavenger */
+				printf("Second call MM_VirtualMemory::newInstance()\n");
 				instance = MM_VirtualMemory::newInstance(env, heapAlignment, allocateSize, pageSize, pageFlags, tailPadding, preferredAddress, ceilingToRequest, mode, options, memoryCategory);
 			} else {
 				if (requestedTopAddress <= ceiling) {
@@ -230,6 +232,7 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 						/* force to allocate heap top-down from correspondent to shift address */
 						void* maxAddress = (void *)(((uintptr_t)1 << 32) << extensions->forcedShiftingCompressionAmount);
 
+						printf("Third call MM_VirtualMemory::newInstance()\n");
 						instance = MM_VirtualMemory::newInstance(env, heapAlignment, allocateSize, pageSize, pageFlags, tailPadding, preferredAddress,
 								maxAddress, mode, options, memoryCategory);
 					} else {
@@ -237,6 +240,7 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 							/*
 							 * Attempt to allocate heap below 4G
 							 */
+							printf("Fourth call to  MM_VirtualMemory::newInstance(), attempting to allocate heap below 4G\n");
 							instance = MM_VirtualMemory::newInstance(env, heapAlignment, allocateSize, pageSize, pageFlags, tailPadding, preferredAddress,
 																	 (void*)OMR_MIN(NON_SCALING_LOW_MEMORY_HEAP_CEILING, (uintptr_t)ceiling), mode, options, memoryCategory);
 						}
@@ -261,6 +265,7 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 									/*
 									 * Attempt to allocate heap below 32G
 									 */
+									printf("Fifth call to MM_VirtualMemory::newInstance(), attempting to allocate heap below 32G\n");
 									instance = MM_VirtualMemory::newInstance(env, heapAlignment, allocateSize, pageSize, pageFlags, tailPadding, preferredAddress,
 																			 (void*)OMR_MIN((uintptr_t)THIRTY_TWO_GB_ADDRESS, (uintptr_t)ceiling), mode, options, memoryCategory);
 								}
@@ -270,6 +275,7 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 							 * Attempt to allocate above 32G
 							 */
 							if ((NULL == instance) && (ceiling > (void *)THIRTY_TWO_GB_ADDRESS)) {
+								printf("Sixth call to MM_VirtualMemory::newInstance(), attempting to allocate heap ABOVE 32G\n");
 								instance = MM_VirtualMemory::newInstance(env, heapAlignment, allocateSize, pageSize, pageFlags, tailPadding, preferredAddress,
 																		 ceiling, mode, options, memoryCategory);
 							}
