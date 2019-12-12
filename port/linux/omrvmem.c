@@ -786,7 +786,7 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 			}
 			memoryPointer = getMemoryInRangeForDefaultPages(portLibrary, identifier, category, params->byteAmount, params->startAddress, params->endAddress, alignmentInBytes, params->options, params->mode);
 		}
-	} else if (PPG_vmem_pageSize[1] == params->pageSize) {
+	} else if (PPG_vmem_pageSize[1] == params->pageSize) { // TODO: How is large pages defined? How do I know this system supports large pages?
 		uintptr_t largePageAlignmentInBytes = OMR_MAX(params->pageSize, params->alignmentInBytes);
 		uintptr_t largePageMinimumGranule = OMR_MIN(params->pageSize, params->alignmentInBytes);
 
@@ -1080,6 +1080,8 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 	Trc_PRT_vmem_default_reserve_entry(address, byteAmount);
 
 	if(mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN) {
+		/* TODO: how to pass MAP_HUGE_2MB | MAP_HUGETLB to flags to mmap with large pages in systems that support it?
+		 * Note that some systems doesn't even define these macros. */
 		flags |= MAP_SHARED;
 		useBackingSharedFile = TRUE;
 	} else {

@@ -126,6 +126,7 @@ MM_GCExtensionsBase::initialize(MM_EnvironmentBase* env)
 	/* Get preferred page parameters for Heap and GC Metadata, then validate them */
 	requestedPageSize = pageSizes[0];
 	requestedPageFlags = OMRPORT_VMEM_PAGE_FLAG_NOT_USED;
+	printf("First set requestedPageSize to pageSizes[0] = %zu\n", (size_t)pageSizes[0]);
 
 	gcmetadataPageSize = pageSizes[0];
 	gcmetadataPageFlags = OMRPORT_VMEM_PAGE_FLAG_NOT_USED;
@@ -137,6 +138,7 @@ MM_GCExtensionsBase::initialize(MM_EnvironmentBase* env)
 #if defined(AIXPPC)
 	requestedPageSize = SIXTY_FOUR_KB; /* Use 64K pages for AIX-32 and AIX-64 */
 #elif ((defined(LINUX) || defined(OSX)) && (defined(J9X86) || defined(J9HAMMER)))
+	printf("Setting requestedPageSize to TWO_MB!!!!!!\n");
 	requestedPageSize = TWO_MB; /* Use 2M pages for Linux/OSX x86-64 */
 #elif (defined(LINUX) && defined(S390))
 	requestedPageSize = ONE_MB; /* Use 1M pages for zLinux-31 and zLinux-64 */
