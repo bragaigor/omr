@@ -574,11 +574,13 @@ omrvmem_startup(struct OMRPortLibrary *portLibrary)
 	memset(PPG_vmem_pageFlags, 0, OMRPORT_VMEM_PAGESIZE_COUNT * sizeof(uintptr_t));
 
 	/* First the default page size */
+	printf("Setting page sizes!!!!! PPG_vmem_pageSize[0] = %zu\n", (size_t)PPG_vmem_pageSize[0]);
 	PPG_vmem_pageSize[0] = (uintptr_t)sysconf(_SC_PAGESIZE);
 	PPG_vmem_pageFlags[0] = OMRPORT_VMEM_PAGE_FLAG_NOT_USED;
 
 	/* Now the large pages */
 	if (vmem_page_info.enabled) {
+		printf("Setting LARGE page sizes!!!!! PPG_vmem_pageSize[1] = %zu\n", (size_t)PPG_vmem_pageSize[1]);
 		PPG_vmem_pageSize[1] = vmem_page_info.page_size;
 		PPG_vmem_pageFlags[1] = OMRPORT_VMEM_PAGE_FLAG_NOT_USED;
 	}
