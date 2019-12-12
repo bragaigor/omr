@@ -775,7 +775,7 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 	if (0 == params->pageSize) {
 		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
 		Trc_PRT_vmem_omrvmem_reserve_memory_invalid_input();
-	} else if (PPG_vmem_pageSize[0] == params->pageSize) {
+	} else if ((PPG_vmem_pageSize[0] == params->pageSize) || ((PPG_vmem_pageSize[1] == params->pageSize) && (params->mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN))) {
 		uintptr_t alignmentInBytes = OMR_MAX(params->pageSize, params->alignmentInBytes);
 		uintptr_t minimumGranule = OMR_MIN(params->pageSize, params->alignmentInBytes);
 
