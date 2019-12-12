@@ -72,6 +72,7 @@ MM_HeapVirtualMemory::initialize(MM_EnvironmentBase* env, uintptr_t size)
 	if (!MM_Heap::initialize(env)) {
 		return false;
 	}
+	printf("Calling MM_HeapVirtualMemory::initialize() initializing heap!!\n");
 
 	MM_GCExtensionsBase* extensions = env->getExtensions();
 	uintptr_t padding = 0;

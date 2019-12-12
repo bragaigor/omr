@@ -63,6 +63,7 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 {
 	Assert_MM_true(NULL != handle);
 	MM_GCExtensionsBase* extensions = env->getExtensions();
+	printf("Inside MM_MemoryManager::createVirtualMemoryForHeap() MemManager...\n");
 
 	MM_VirtualMemory* instance = NULL;
 	uintptr_t mode = (OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE);
@@ -94,11 +95,13 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 			allocateSize += (heapAlignment - pageSize);
 		}
 	}
-
+	
+	printf("Just before setting up mode to be OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN!!!!!!\n");
 #if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
 	if(extensions->isVLHGC() && extensions->indexableObjectModel.isDoubleMappingEnabled()) {
 		//printf("Sleeping for 5 min... ZzZzZzZZzzZzZ...\n");
 		//omrthread_sleep(300000); // 300 seconds
+		printf("Setting mode to OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN to create shared heap\n");
 		mode |= OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN;
 	}
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
