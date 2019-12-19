@@ -226,6 +226,7 @@ typedef uintptr_t (*condYieldFromGCFunctionPtr) (OMR_VMThread *omrVMThread, uint
 		<data type="uintptr_t" name="numaNodes" description="number of NUMA nodes to be used by the GC (currently only supported in VLHGC)" />
 		<data type="uintptr_t" name="regionSize" description="heap region size" />
 		<data type="uintptr_t" name="regionCount" description="total heap region count" />
+		<data type="uint8_t" name="isDoubleMappingEnabled" description="set to true if double mapping is enabled, false otherwise" />
 		<data type="uintptr_t" name="arrayletLeafSize" description="arraylet leaf size" />
 	</event>
 

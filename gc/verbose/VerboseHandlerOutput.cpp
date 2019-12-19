@@ -230,11 +230,13 @@ MM_VerboseHandlerOutput::handleInitializedRegion(J9HookInterface** hook, uintptr
 	MM_InitializedEvent* event = (MM_InitializedEvent*)eventData;
 	MM_VerboseWriterChain* writer = _manager->getWriterChain();
 	MM_EnvironmentBase* env = MM_EnvironmentBase::getEnvironment(event->currentThread);
+	const char *successString = event->isDoubleMappingEnabled ? "true" : "false";
 
 	writer->formatAndOutput(env, 1, "<region>");
 	writer->formatAndOutput(env, 2, "<attribute name=\"regionSize\" value=\"%zu\" />", event->regionSize);
 	writer->formatAndOutput(env, 2, "<attribute name=\"regionCount\" value=\"%zu\" />", event->regionCount);
 	writer->formatAndOutput(env, 2, "<attribute name=\"arrayletLeafSize\" value=\"%zu\" />", event->arrayletLeafSize);
+	writer->formatAndOutput(env, 2, "<attribute name=\"isDoubleMappingEnabled\" value=\"%s\" />", successString);
 	writer->formatAndOutput(env, 1, "</region>");
 }
 
