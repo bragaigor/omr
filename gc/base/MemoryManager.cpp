@@ -98,6 +98,9 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 #if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
 	if(extensions->isVLHGC() && extensions->indexableObjectModel.isDoubleMappingEnabled()) {
 		mode |= OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN;
+		if(extensions->indexableObjectModel.isHugePagesEnabled()) {
+			mode |= OMRPORT_VMEM_MEMORY_MODE_HUGE_PAGES;
+		}
 	}
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 

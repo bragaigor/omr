@@ -169,6 +169,10 @@ MM_VirtualMemory::doubleMapArraylet(MM_EnvironmentBase *env, void* arrayletLeave
 	struct J9PortVmemIdentifier *oldIdentifier = &_identifier;
 	uintptr_t mode = OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_COMMIT;
 
+	if (_extensions->indexableObjectModel.isHugePagesEnabled()) {
+		mode |= OMRPORT_VMEM_MEMORY_MODE_HUGE_PAGES;
+	}
+
 	return omrvmem_get_contiguous_region_memory(arrayletLeaves, arrayletLeafCount, arrayletLeafSize, byteAmount, oldIdentifier, newIdentifier, mode, pageSize, omrmem_get_category(OMRMEM_CATEGORY_MM));
 }
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
