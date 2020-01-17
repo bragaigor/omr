@@ -955,6 +955,9 @@ omrvmem_bench_write_and_decommit_memory(struct OMRPortLibrary *portLibrary, uint
 	params.pageSize = pageSize;
 	params.category = OMRMEM_CATEGORY_PORT_LIBRARY;
 	params.options |= OMRPORT_VMEM_STRICT_PAGE_SIZE;
+#if __GLIBC_PREREQ(2,27)
+	params.mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 	memPtr = (char *)omrvmem_reserve_memory_ex(&vmemID, &params);
 
 	/* check if we got memory */
@@ -1057,6 +1060,9 @@ omrvmem_bench_force_overcommit_then_decommit(struct OMRPortLibrary *portLibrary,
 	params.pageSize = pageSize;
 	params.category = OMRMEM_CATEGORY_PORT_LIBRARY;
 	params.options |= OMRPORT_VMEM_STRICT_PAGE_SIZE;
+#if __GLIBC_PREREQ(2,27)
+        params.mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 	memPtr = (char *)omrvmem_reserve_memory_ex(&vmemID, &params);
 
 	/* check we get memory */
@@ -1151,6 +1157,9 @@ omrvmem_bench_reserve_write_decommit_and_free_memory(struct OMRPortLibrary *port
 	params.pageSize = pageSize;
 	params.category = OMRMEM_CATEGORY_PORT_LIBRARY;
 	params.options |= OMRPORT_VMEM_STRICT_PAGE_SIZE;
+#if __GLIBC_PREREQ(2,27)
+        params.mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 
 	startTimeNanos = omrtime_nano_time();
 
@@ -1248,6 +1257,9 @@ omrvmem_exhaust_virtual_memory(struct OMRPortLibrary *portLibrary, uintptr_t pag
 		params[i].pageSize = pageSize;
 		params[i].category = OMRMEM_CATEGORY_PORT_LIBRARY;
 		params[i].options |= OMRPORT_VMEM_STRICT_PAGE_SIZE;
+#if __GLIBC_PREREQ(2,27)
+		params[i].mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 
 		memPtr = memPointers[i] = (char *)omrvmem_reserve_memory_ex(&vmemID[i], &params[i]);
 
@@ -1600,6 +1612,9 @@ omrvmem_testReserveMemoryEx_impl(struct OMRPortLibrary *portLibrary, const char 
 			params[j].pageSize = pageSizes[i];
 			params[j].pageFlags = pageFlags[i];
 			params[j].category = OMRMEM_CATEGORY_PORT_LIBRARY;
+#if __GLIBC_PREREQ(2,27)
+			params[j].mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 
 			if (topDown) {
 				params[j].options |= OMRPORT_VMEM_ALLOC_DIR_TOP_DOWN;
@@ -1791,6 +1806,9 @@ memoryIsAvailable(struct OMRPortLibrary *portLibrary, BOOLEAN strictAddress)
 			params[j].mode |= OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE | OMRPORT_VMEM_MEMORY_MODE_COMMIT;
 			params[j].pageSize = pageSizes[i];
 			params[j].pageFlags = pageFlags[i];
+#if __GLIBC_PREREQ(2,27)
+			params[j].mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 
 			if (strictAddress) {
 				params[j].options |= OMRPORT_VMEM_STRICT_ADDRESS;
@@ -1864,6 +1882,9 @@ TEST(PortVmemTest, vmem_testReserveMemoryEx_zOSLargePageBelowBar)
 		params.pageSize = pageSizes[i];
 		params.pageFlags = pageFlags[i];
 		params.options = 0;
+#if __GLIBC_PREREQ(2,27)
+		params.mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 
 		portTestEnv->log("Page Size: 0x%zx Range: [0x%zx,0x%zx] "\
 					  "topDown: %s strictAddress: %s strictPageSize: %s use2To32G: %s\n", \
@@ -1947,6 +1968,9 @@ TEST(PortVmemTest, vmem_testReserveMemoryExStrictAddress_zOSLargePageBelowBar)
 		params.pageSize = pageSizes[i];
 		params.pageFlags = pageFlags[i];
 		params.options = OMRPORT_VMEM_STRICT_ADDRESS;
+#if __GLIBC_PREREQ(2,27)
+		params.mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 
 		portTestEnv->log("Page Size: 0x%zx Range: [0x%zx,0x%zx] "\
 					  "topDown: %s strictAddress: %s strictPageSize: %s use2To32G: %s\n", \
@@ -2045,6 +2069,9 @@ TEST(PortVmemTest, vmem_testReserveMemoryEx_use2To32_zOSLargePageBelowBar)
 		params.pageSize = pageSizes[i];
 		params.pageFlags = pageFlags[i];
 		params.options = OMRPORT_VMEM_ZOS_USE2TO32G_AREA;
+#if __GLIBC_PREREQ(2,27)
+		params.mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 
 		portTestEnv->log("Page Size: 0x%zx Range: [0x%zx,0x%zx] "\
 					  "topDown: %s strictAddress: %s strictPageSize: %s use2To32G: %s\n", \
@@ -2126,6 +2153,9 @@ TEST(PortVmemTest, vmem_testReserveMemoryExStrictAddress_use2To32_zOSLargePageBe
 		params.pageSize = pageSizes[i];
 		params.pageFlags = pageFlags[i];
 		params.options = OMRPORT_VMEM_STRICT_ADDRESS | OMRPORT_VMEM_ZOS_USE2TO32G_AREA;
+#if __GLIBC_PREREQ(2,27)
+		params.mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 
 		portTestEnv->log("Page Size: 0x%zx Range: [0x%zx,0x%zx] "\
 					  "topDown: %s strictAddress: %s strictPageSize: %s use2To32G: %s\n", \
@@ -2194,6 +2224,9 @@ TEST(PortVmemTest, vmem_testReserveLargePagesAboveBar)
 			params.byteAmount = pageSizes[i];
 			params.mode |= OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE |OMRPORT_VMEM_MEMORY_MODE_EXECUTE;
 			params.pageSize = pageSizes[i];
+#if __GLIBC_PREREQ(2,27)
+			params.mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 			if (pageable) {
 				if  (TWO_GB == params.pageSize) {
 					expectError = true;
@@ -2276,6 +2309,9 @@ TEST(PortVmemTest, vmem_test_commitOutsideOfReservedRange)
 		params.mode |= OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE;
 		params.options |= OMRPORT_VMEM_STRICT_PAGE_SIZE;
 		params.pageSize = pageSizes[i];
+#if __GLIBC_PREREQ(2,27)
+		params.mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 
 		/* reserve */
 		memPtr = (char *)omrvmem_reserve_memory_ex(&vmemID, &params);
@@ -2360,6 +2396,9 @@ TEST(PortVmemTest, vmem_test_reserveExecutableMemory)
 		params.options |= OMRPORT_VMEM_STRICT_PAGE_SIZE;
 		params.pageSize = pageSizes[i];
 		params.pageFlags = pageFlags[i];
+#if __GLIBC_PREREQ(2,27)
+		params.mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 
 		/* reserve */
 		memPtr = omrvmem_reserve_memory_ex(&vmemID, &params);
@@ -4086,6 +4125,9 @@ TEST(PortVmemTest, vmem_testOverlappingSegments)
 	for (i = 0; i < CYCLES; i++) {
 		char *memPtr = NULL;
 		getParams(OMRPORTLIB, &vmemParams[i]);
+#if __GLIBC_PREREQ(2,27)
+		vmemParams[i].mode |= OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
+#endif
 		memPtr = (char *)omrvmem_reserve_memory_ex(&vmemID[i], &vmemParams[i]);
 
 		if (NULL == memPtr) {

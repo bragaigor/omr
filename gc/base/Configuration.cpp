@@ -397,6 +397,16 @@ MM_Configuration::initializeRegionSize(MM_EnvironmentBase* env)
 	} else {
 		/* set the log and the power of two size */
 		uintptr_t powerOfTwoRegionSize = ((uintptr_t)1 << shift);
+#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
+		OMR_VM* omrVM = env->getOmrVM();
+		uintptr_t pagesize = extensions->requestedPageSize;
+		if ((omrVM->gcPolicy == J9_GC_POLICY_BALANCED) && extensions->memoryManager->isLargePage(env, pagesize) && extensions->isArrayletDoubleMapRequested) {
+			if (pagesize > regionSize) {
+				shift = calculatePowerOfTwoShift(env, pagesize);
+				powerOfTwoRegionSize = ((uintptr_t)1 << shift);
+			}
+		}
+#endif /* OMR_GC_DOUBLE_MAP_ARRAYLETS */
 		extensions->regionSize = powerOfTwoRegionSize;
 		result = verifyRegionSize(env, powerOfTwoRegionSize);
 	}

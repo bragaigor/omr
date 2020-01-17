@@ -103,7 +103,7 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 	 * the mode flag OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN will be ignored.
 	 */
 	if(extensions->isVLHGC() && extensions->isArrayletDoubleMapRequested) {
-		mode |= OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN;
+		mode |= OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN | OMRPORT_VMEM_MEMORY_MODE_USE_MMAP;
 	}
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 

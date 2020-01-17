@@ -811,7 +811,13 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 
 		/* Make sure that the alignment is a multiple of both requested alignment and page size (enforces that arguments are powers of two and, thus, their max is their lowest common multiple) */
 		if ((0 == largePageMinimumGranule) || (0 == (largePageAlignmentInBytes % largePageMinimumGranule))) {
-			memoryPointer = reserveLargePages(portLibrary, identifier, category, params->byteAmount, params->startAddress, params->endAddress, params->pageSize, largePageAlignmentInBytes, params->options, params->mode);
+			if (0 != (OMRPORT_VMEM_MEMORY_MODE_USE_MMAP & params->mode)) {
+				uintptr_t mode = params->mode | OMRPORT_VMEM_MEMORY_MODE_HUGE_PAGES;
+				memoryPointer = getMemoryInRangeForDefaultPages(portLibrary, identifier, category, params->byteAmount, params->startAddress, params->endAddress, largePageAlignmentInBytes, params->options, mode);
+			} else {
+				memoryPointer = reserveLargePages(portLibrary, identifier, category, params->byteAmount, params->startAddress, params->endAddress, params->pageSize, largePageAlignmentInBytes, params->options, params->mode);
+				printf("###### THIS SHOULD NEVER BE CALLED!!!!!!!\n");
+			}
 		}
 		if (NULL == memoryPointer) {
 			/* If strict page size flag is not set try again with default page size */
@@ -1083,6 +1089,7 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 	int protectionFlags = PROT_NONE;
 	BOOLEAN useBackingSharedFile = FALSE;
 	BOOLEAN useBackingFile = FALSE;
+	BOOLEAN isHugePagesEnabled = FALSE;
 
 	Trc_PRT_vmem_default_reserve_entry(address, byteAmount);
 
@@ -1102,12 +1109,26 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 #endif
 	}
 
+#if __GLIBC_PREREQ(2,27)
+	if(0 != (mode & OMRPORT_VMEM_MEMORY_MODE_HUGE_PAGES)) {
+		flags |= MAP_HUGETLB;
+		isHugePagesEnabled = TRUE;
+#endif
+	}
+
 	if (useBackingSharedFile) {
 		char filename[FILE_NAME_SIZE + 1];
 		sprintf(filename, "omrvmem_temp_%zu_%09d_%zu",  (size_t)omrtime_current_time_millis(portLibrary),
 								getpid(),
 								(size_t)pthread_self());
-		fd = shm_open(filename, O_RDWR | O_CREAT, 0600);
+#if __GLIBC_PREREQ(2,27)
+		if (isHugePagesEnabled) {
+			fd = memfd_create(filename, MFD_HUGETLB);
+		} else
+#endif
+		{
+			fd = shm_open(filename, O_RDWR | O_CREAT, 0600);
+		}
 		shm_unlink(filename);
 		ft = ftruncate(fd, byteAmount);
 
@@ -1124,7 +1145,7 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 	if((fd == -1 && (!useBackingSharedFile && !useBackingFile)) ||
 	   (fd != -1 && (useBackingSharedFile || useBackingFile))) {
 
-		if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
+		if ((0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) || isHugePagesEnabled) {
 			protectionFlags = get_protectionBits(mode);
 		} else {
 			flags |= MAP_NORESERVE;
@@ -1194,6 +1215,12 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* a
 		protectionFlags = get_protectionBits(mode);
 	}
 
+#if __GLIBC_PREREQ(2,27)
+	if (0 != (OMRPORT_VMEM_MEMORY_MODE_HUGE_PAGES & mode)) {
+		flags |= MAP_HUGETLB;
+	}
+#endif
+
 	contiguousMap = mmap(
 			NULL,
 			byteAmount,
@@ -1211,21 +1238,17 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* a
 		/* Update identifier and commit memory if required, else return reserved memory */
 		update_vmemIdentifier(newIdentifier, contiguousMap, contiguousMap, byteAmount, mode, pageSize, OMRPORT_VMEM_PAGE_FLAG_NOT_USED, OMRPORT_VMEM_RESERVE_USED_MMAP, category, -1);
 		omrmem_categories_increment_counters(category, byteAmount);
-		if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
-			if (NULL == omrvmem_commit_memory(portLibrary, contiguousMap, byteAmount, newIdentifier)) {
-				/* If the commit fails free the memory  */
-#if defined(OMRVMEM_DEBUG)
-				printf("omrvmem_commit_memory failed at contiguous_region_reserve_memory.\n");
-				fflush(stdout);
-#endif
-				successfulContiguousMap = FALSE;
-			}
-		}
+		// No need to call omrvmem_commit_memory() here since we already call get_protectionBits(mode) before creating the contiguous memory for the double mapping address
 	}
 
 	/* Perform double mapping  */
 	if(contiguousMap != NULL) {
 		flags = MAP_SHARED | MAP_FIXED; // Must be shared, SIGSEGV otherwise
+#if __GLIBC_PREREQ(2,27)
+		if (0 != (OMRPORT_VMEM_MEMORY_MODE_HUGE_PAGES & mode)) {
+			flags |= MAP_HUGETLB;
+		}
+#endif
 		fd = oldIdentifier->fd;
 #if defined(OMRVMEM_DEBUG)
 		printf("Found %zu arraylet leaves.\n", addressesCount);
