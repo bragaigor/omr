@@ -1110,6 +1110,7 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 		fd = shm_open(filename, O_RDWR | O_CREAT, 0600);
 		shm_unlink(filename);
 		ft = ftruncate(fd, byteAmount);
+		printf("Yes heap is being created as a shared heap for double mapping to work!!!!\n");
 
 		if (fd == -1 || ft == -1) {
 			Trc_PRT_vmem_default_reserve_failed(address, byteAmount);
@@ -1211,22 +1212,14 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* a
 		/* Update identifier and commit memory if required, else return reserved memory */
 		update_vmemIdentifier(newIdentifier, contiguousMap, contiguousMap, byteAmount, mode, pageSize, OMRPORT_VMEM_PAGE_FLAG_NOT_USED, OMRPORT_VMEM_RESERVE_USED_MMAP, category, -1);
 		omrmem_categories_increment_counters(category, byteAmount);
-		if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
-			if (NULL == omrvmem_commit_memory(portLibrary, contiguousMap, byteAmount, newIdentifier)) {
-				/* If the commit fails free the memory  */
-#if defined(OMRVMEM_DEBUG)
-				printf("omrvmem_commit_memory failed at contiguous_region_reserve_memory.\n");
-				fflush(stdout);
-#endif
-				successfulContiguousMap = FALSE;
-			}
-		}
 	}
 
 	/* Perform double mapping  */
 	if(contiguousMap != NULL) {
 		flags = MAP_SHARED | MAP_FIXED; // Must be shared, SIGSEGV otherwise
 		fd = oldIdentifier->fd;
+		printf("Found %zu arraylet leaves. byteAmount: %zu\n", addressesCount, byteAmount);
+		printf("Contiguous address is: %p\n", contiguousMap);
 #if defined(OMRVMEM_DEBUG)
 		printf("Found %zu arraylet leaves.\n", addressesCount);
 		int j = 0;
