@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1991, 2019 IBM Corp. and others
+ * Copyright (c) 1991, 2020 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -667,6 +667,7 @@ intptr_t
 omrvmem_decommit_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr_t byteAmount, struct J9PortVmemIdentifier *identifier)
 {
 	intptr_t result = -1;
+	int advice = 0;
 
 	Trc_PRT_vmem_omrvmem_decommit_memory_Entry(address, byteAmount);
 
@@ -677,7 +678,14 @@ omrvmem_decommit_memory(struct OMRPortLibrary *portLibrary, void *address, uintp
 
 			if (byteAmount > 0) {
 				if (identifier->allocator == OMRPORT_VMEM_RESERVE_USED_MMAP) {
-					result  = (intptr_t)madvise((void *)address, (size_t) byteAmount, MADV_DONTNEED);
+					advice = MADV_DONTNEED;
+					/* If heap is created using shared memory with mmap, we must set advice to MADV_REMOVE, because
+					 * pages might not be immediately freed in a successful madvise used with MADV_DONTNEED in
+					 * shared memory case. But using MADV_REMOVE does. */
+					if (-1 != identifier->fd) {
+						advice = MADV_REMOVE;
+					}
+					result = (intptr_t)madvise((void *)address, (size_t) byteAmount, advice);
 				} else {
 					/* need to determine what to use in the case of shmat/shmget, till then return success */
 					result = 0;
