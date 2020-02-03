@@ -667,6 +667,7 @@ intptr_t
 omrvmem_decommit_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr_t byteAmount, struct J9PortVmemIdentifier *identifier)
 {
 	intptr_t result = -1;
+	int madvMode = 0;
 
 	Trc_PRT_vmem_omrvmem_decommit_memory_Entry(address, byteAmount);
 
@@ -676,8 +677,13 @@ omrvmem_decommit_memory(struct OMRPortLibrary *portLibrary, void *address, uintp
 			ASSERT_VALUE_IS_PAGE_SIZE_ALIGNED(byteAmount, identifier->pageSize);
 
 			if (byteAmount > 0) {
-				if (identifier->allocator == OMRPORT_VMEM_RESERVE_USED_MMAP) {
-					result  = (intptr_t)madvise((void *)address, (size_t) byteAmount, MADV_DONTNEED);
+				if (identifier->allocator == OMRPORT_VMEM_RESERVE_USED_MMAP) { //TODO: check if it is double map enabled and change to MADV_REMOVE
+					madvMode = MADV_DONTNEED;
+					if (-1 != identifier->fd) {
+						printf("UHUUULL setting madvMode to MADV_REMOVE!!!!\n");
+						madvMode = MADV_REMOVE;
+					}
+					result  = (intptr_t)madvise((void *)address, (size_t) byteAmount, madvMode);
 				} else {
 					/* need to determine what to use in the case of shmat/shmget, till then return success */
 					result = 0;
