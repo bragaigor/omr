@@ -797,6 +797,7 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 	if (0 == params->pageSize) {
 		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
 		Trc_PRT_vmem_omrvmem_reserve_memory_invalid_input();
+	/* Normal page size being used */
 	} else if (PPG_vmem_pageSize[0] == params->pageSize) {
 		uintptr_t alignmentInBytes = OMR_MAX(params->pageSize, params->alignmentInBytes);
 		uintptr_t minimumGranule = OMR_MIN(params->pageSize, params->alignmentInBytes);
@@ -805,6 +806,7 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 		if ((0 == minimumGranule) || (0 == (alignmentInBytes % minimumGranule))) {
 			memoryPointer = getMemoryInRangeForDefaultPages(portLibrary, identifier, category, params->byteAmount, params->startAddress, params->endAddress, alignmentInBytes, params->options, params->mode);
 		}
+	/* Huge pages are being used */
 	} else if (PPG_vmem_pageSize[1] == params->pageSize) {
 		uintptr_t largePageAlignmentInBytes = OMR_MAX(params->pageSize, params->alignmentInBytes);
 		uintptr_t largePageMinimumGranule = OMR_MIN(params->pageSize, params->alignmentInBytes);
@@ -1109,11 +1111,13 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 #endif
 	}
 
+#if defined(LINUX)
 #if __GLIBC_PREREQ(2,27)
 	if(0 != (mode & OMRPORT_VMEM_MEMORY_MODE_HUGE_PAGES)) {
 		flags |= MAP_HUGETLB;
 		isHugePagesEnabled = TRUE;
-#endif
+#endif /* __GLIBC_PREREQ(2,27) */
+#endif /* defined(LINUX) */
 	}
 
 	if (useBackingSharedFile) {
@@ -1121,11 +1125,13 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
 		sprintf(filename, "omrvmem_temp_%zu_%09d_%zu",  (size_t)omrtime_current_time_millis(portLibrary),
 								getpid(),
 								(size_t)pthread_self());
+#if defined(LINUX)
 #if __GLIBC_PREREQ(2,27)
 		if (isHugePagesEnabled) {
 			fd = memfd_create(filename, MFD_HUGETLB);
 		} else
-#endif
+#endif /* __GLIBC_PREREQ(2,27) */
+#endif /* defined(LINUX) */
 		{
 			fd = shm_open(filename, O_RDWR | O_CREAT, 0600);
 		}
@@ -1196,7 +1202,7 @@ default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *addres
  *  @param struct J9PortVmemIdentifier *oldIdentifier   [in]  old Identifier containing file descriptor
  *  @param struct J9PortVmemIdentifier *newIdentifier   [out] new Identifier for new block of memory. The structure to be updated
  *  @param uintptr_t            mode,           [in] Access Mode
- *  @paramuintptr_t             pageSize,       [in] onstant describing pageSize
+ *  @param uintptr_t            pageSize,       [in] onstant describing pageSize
  *  @param OMRMemCategory       *category       [in] Memory allocation category
  */
 
@@ -1215,11 +1221,13 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* a
 		protectionFlags = get_protectionBits(mode);
 	}
 
+#if defined(LINUX)
 #if __GLIBC_PREREQ(2,27)
 	if (0 != (OMRPORT_VMEM_MEMORY_MODE_HUGE_PAGES & mode)) {
 		flags |= MAP_HUGETLB;
 	}
-#endif
+#endif /* __GLIBC_PREREQ(2,27) */
+#endif /* defined(LINUX) */
 
 	contiguousMap = mmap(
 			NULL,
@@ -1244,11 +1252,13 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* a
 	/* Perform double mapping  */
 	if(contiguousMap != NULL) {
 		flags = MAP_SHARED | MAP_FIXED; // Must be shared, SIGSEGV otherwise
+#if defined(LINUX)
 #if __GLIBC_PREREQ(2,27)
 		if (0 != (OMRPORT_VMEM_MEMORY_MODE_HUGE_PAGES & mode)) {
 			flags |= MAP_HUGETLB;
 		}
-#endif
+#endif /* __GLIBC_PREREQ(2,27) */
+#endif /* defined(LINUX) */
 		fd = oldIdentifier->fd;
 #if defined(OMRVMEM_DEBUG)
 		printf("Found %zu arraylet leaves.\n", addressesCount);

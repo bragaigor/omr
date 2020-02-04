@@ -569,7 +569,13 @@ MM_MemoryManager::doubleMapArraylet(MM_MemoryHandle* handle, MM_EnvironmentBase 
 	Assert_MM_true(NULL != handle);
 	MM_VirtualMemory* memory = handle->getVirtualMemory();
 	Assert_MM_true(NULL != memory);
-	return memory->doubleMapArraylet(env, arrayletLeaves, arrayletLeafCount, arrayletLeafSize, byteAmount, newIdentifier, pageSize);
+	bool isLargePages = false;
+
+	if (isLargePage(env, pageSize)) {
+		isLargePages = true;
+	}
+
+	return memory->doubleMapArraylet(env, arrayletLeaves, arrayletLeafCount, arrayletLeafSize, byteAmount, newIdentifier, pageSize, isLargePages);
 }
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
