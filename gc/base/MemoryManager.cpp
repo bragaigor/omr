@@ -322,6 +322,11 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 		instance->incrementConsumerCount();
 		handle->setMemoryBase(instance->getHeapBase());
 		handle->setMemoryTop(instance->getHeapTop());
+#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
+		if (instance->isDoubleMapAPIAvailable()) {
+			extensions->isDoubleMapAPIAvailable = true;
+		}
+#endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
 		/*
 		 * Aligning Nursery location to Concurrent Scavenger Page and calculate Concurrent Scavenger Page start address

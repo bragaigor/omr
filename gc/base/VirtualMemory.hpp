@@ -177,6 +177,14 @@ protected:
 		_consumerCount -= 1;
 	}
 
+	/**
+	 * Returns true if double map API is available in the system and false otherwise
+	 */
+	MMINLINE bool isDoubleMapAPIAvailable()
+	{
+		return 0 != (OMRPORT_VMEM_MEMORY_MODE_DOUBLE_MAP_AVAILABLE & _identifier.mode);
+	}
+
 public:
 /*
  * friends

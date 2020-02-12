@@ -284,6 +284,14 @@ omrport_control(struct OMRPortLibrary *portLibrary, const char *key, uintptr_t v
 		return 0;
 	}
 
+	if (0 == strcmp(OMRPORT_CTLDATA_VMEM_HUGE_PAGES_MMAP_ENABLED, key)) {
+#if defined(LINUX)
+		Assert_PRT_true((0 == value) || (1 == value));
+		PPG_huge_pages_mmap_enabled = value;
+#endif /* defined(LINUX) */
+		return 0;
+	}
+
 	if (0 == strcmp(OMRPORT_CTLDATA_VECTOR_REGS_SUPPORT_ON, key)) {
 		portLibrary->portGlobals->vectorRegsSupportOn = value;
 		return 0;

@@ -96,6 +96,8 @@ typedef struct OMRPortPlatformGlobals {
 	int32_t introspect_threadSuspendSignal;
 #endif /* defined(OMR_CONFIGURABLE_SUSPEND_SIGNAL) */
 #if defined(LINUX)
+	uintptr_t huge_pages_mmap_enabled;
+	uintptr_t memfd_call;
 	uint64_t cgroupSubsystemsAvailable; /**< cgroup subsystems available for port library to use; it is valid only when cgroupEntryList is non-null */
 	uint64_t cgroupSubsystemsEnabled; /**< cgroup subsystems enabled in port library; it is valid only when cgroupEntryList is non-null */
 	OMRCgroupEntry *cgroupEntryList; /**< head of the circular linked list, each element contains information about cgroup of the process for a subsystem */
@@ -150,6 +152,8 @@ typedef struct OMRPortPlatformGlobals {
 #define PPG_cgroupEntryList (portLibrary->portGlobals->platformGlobals.cgroupEntryList)
 #define PPG_numaSyscallNotAllowed (portLibrary->portGlobals->platformGlobals.syscallNotAllowed)
 #define PPG_performFullMemorySearch (portLibrary->portGlobals->platformGlobals.performFullMemorySearch)
+#define PPG_huge_pages_mmap_enabled (portLibrary->portGlobals->platformGlobals.huge_pages_mmap_enabled)
+#define PPG_memfd_call (portLibrary->portGlobals->platformGlobals.memfd_call)
 #endif /* defined(LINUX) */
 
 #define PPG_stfleCache (portLibrary->portGlobals->platformGlobals.stfleCache)
