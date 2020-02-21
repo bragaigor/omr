@@ -102,8 +102,11 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 	 * huge pages). Nonetheless, this is a safe operation because in case page size equals system's huge page
 	 * the mode flag OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN will be ignored.
 	 */
-	if(extensions->isVLHGC() && extensions->isArrayletDoubleMapRequested) {
+	if(extensions->isArrayletDoubleMapRequested) {
+		printf("Heap will eventually be created as shared!!\n");
 		mode |= OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN;
+	} else {
+		printf("Heap will be create normally!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 	}
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
