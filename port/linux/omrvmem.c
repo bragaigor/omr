@@ -646,14 +646,14 @@ omrvmem_commit_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr
 //#endif
 				rc = address;
 				/* Touch every 8 bytes of address */
-                                uintptr_t sumup = 0;
-                                void *nextAddress = address;
-                                uintptr_t loopLimit = (byteAmount/32 - 1 < 0) ? 0 : byteAmount/32 - 1;
-                                for(uintptr_t i = 0; i < loopLimit; i += 32) {
-                                        sumup += *((uintptr_t *)nextAddress) + *((uintptr_t *)((void *)(nextAddress + 8))) + *((uintptr_t *)((void *)(nextAddress + 16))) + *((uintptr_t *)((void *)(nextAddress + 24)));
-                                        nextAddress = (void *)(nextAddress + 32);
-                                }
-                                printf("\n\n!!!!!!!!!! Magic sum is: %zu!!!!!!!!!\n\n", sumup);
+				uintptr_t sumup = 0;
+				void *nextAddress = address;
+				uintptr_t loopLimit = (byteAmount/32 - 1 < 0) ? 0 : byteAmount/32 - 1;
+				for(uintptr_t i = 0; i < loopLimit; i += 32) {
+					sumup += *((uintptr_t *)nextAddress) + *((uintptr_t *)((void *)(nextAddress + 8))) + *((uintptr_t *)((void *)(nextAddress + 16))) + *((uintptr_t *)((void *)(nextAddress + 24)));
+					nextAddress = (void *)(nextAddress + 32);
+				}
+				printf("\n\n!!!!!!!!!! Magic sum is: %zu!!!!!!!!!\n\n", sumup);
 				fflush(stdout);
 			} else {
 				printf("omrvmem_commit_memory FAILED!!!!!!!!!!\n");
