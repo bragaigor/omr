@@ -628,6 +628,8 @@ omrvmem_commit_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr
 {
 	void *rc = NULL;
 	Trc_PRT_vmem_omrvmem_commit_memory_Entry(address, byteAmount);
+	printf("\tInside omrvmem_commit_memory identifier->fd:%d, address: %p, byteAmount: %zu\n", identifier->fd, address, byteAmount);
+	fflush(stdout);
 
 	if (rangeIsValid(identifier, address, byteAmount)) {
 		ASSERT_VALUE_IS_PAGE_SIZE_ALIGNED(address, identifier->pageSize);
@@ -638,12 +640,20 @@ omrvmem_commit_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr
 			0 != (identifier->mode & OMRPORT_VMEM_MEMORY_MODE_EXECUTE)
 		) {
 			if (0 == mprotect(address, byteAmount, get_protectionBits(identifier->mode))) {
-#if defined(OMRVMEM_DEBUG)
+//#if defined(OMRVMEM_DEBUG)
 				printf("\t\tomrvmem_commit_memory called mprotect, returning %p\n", address);
 				fflush(stdout);
-#endif
+//#endif
 				rc = address;
+				/* Touch every 8 bytes of address */
+				for(uintptr_t i = 0; i < byteAmount/8; i+=8) {
+					void *newAddress = (void *)(address + i);
+					printf("%p::", newAddress);
+				}
+				printf("\n\n");
+				fflush(stdout);
 			} else {
+				printf("omrvmem_commit_memory FAILED!!!!!!!!!!\n");
 				Trc_PRT_vmem_omrvmem_commit_memory_mprotect_failure(errno);
 				portLibrary->error_set_last_error(portLibrary,  errno, OMRPORT_ERROR_VMEM_OPFAILED);
 			}
@@ -655,10 +665,10 @@ omrvmem_commit_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr
 		portLibrary->error_set_last_error(portLibrary,  -1, OMRPORT_ERROR_VMEM_INVALID_PARAMS);
 	}
 
-#if defined(OMRVMEM_DEBUG)
+//#if defined(OMRVMEM_DEBUG)
 	printf("\t\tomrvmem_commit_memory returning %p\n", rc);
 	fflush(stdout);
-#endif
+//#endif
 	Trc_PRT_vmem_omrvmem_commit_memory_Exit(rc);
 	return rc;
 }
