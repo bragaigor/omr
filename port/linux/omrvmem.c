@@ -646,11 +646,14 @@ omrvmem_commit_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr
 //#endif
 				rc = address;
 				/* Touch every 8 bytes of address */
-				for(uintptr_t i = 0; i < byteAmount/8; i+=8) {
-					void *newAddress = (void *)(address + i);
-					printf("%p::", newAddress);
-				}
-				printf("\n\n");
+                                uintptr_t sumup = 0;
+                                void *nextAddress = address;
+                                uintptr_t loopLimit = (byteAmount/32 - 1 < 0) ? 0 : byteAmount/32 - 1;
+                                for(uintptr_t i = 0; i < loopLimit; i += 32) {
+                                        sumup += *((uintptr_t *)nextAddress) + *((uintptr_t *)((void *)(nextAddress + 8))) + *((uintptr_t *)((void *)(nextAddress + 16))) + *((uintptr_t *)((void *)(nextAddress + 24)));
+                                        nextAddress = (void *)(nextAddress + 32);
+                                }
+                                printf("\n\n!!!!!!!!!! Magic sum is: %zu!!!!!!!!!\n\n", sumup);
 				fflush(stdout);
 			} else {
 				printf("omrvmem_commit_memory FAILED!!!!!!!!!!\n");
