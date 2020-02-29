@@ -142,6 +142,7 @@ static void update_vmemIdentifier(J9PortVmemIdentifier *identifier, void *addres
 static uintptr_t get_hugepages_info(struct OMRPortLibrary *portLibrary, vmem_hugepage_info_t *page_info);
 static uintptr_t get_transparent_hugepage_info(struct OMRPortLibrary *portLibrary);
 static int get_protectionBits(uintptr_t mode);
+//static int searchZeroIndex(unsigned char *vec, size_t size);
 
 #if defined(OMR_PORT_NUMA_SUPPORT)
 /*
@@ -628,21 +629,46 @@ omrvmem_commit_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr
 {
 	void *rc = NULL;
 	Trc_PRT_vmem_omrvmem_commit_memory_Entry(address, byteAmount);
+	uintptr_t pageSize = identifier->pageSize;
 
 	if (rangeIsValid(identifier, address, byteAmount)) {
-		ASSERT_VALUE_IS_PAGE_SIZE_ALIGNED(address, identifier->pageSize);
-		ASSERT_VALUE_IS_PAGE_SIZE_ALIGNED(byteAmount, identifier->pageSize);
+		ASSERT_VALUE_IS_PAGE_SIZE_ALIGNED(address, pageSize);
+		ASSERT_VALUE_IS_PAGE_SIZE_ALIGNED(byteAmount, pageSize);
 
 		/* Default page size */
 		if (PPG_vmem_pageSize[0] == identifier->pageSize ||
 			0 != (identifier->mode & OMRPORT_VMEM_MEMORY_MODE_EXECUTE)
 		) {
-			if (0 == mprotect(address, byteAmount, get_protectionBits(identifier->mode))) {
+			int protectionFlags = get_protectionBits(identifier->mode);
+			if (0 == mprotect(address, byteAmount, protectionFlags)) {
 #if defined(OMRVMEM_DEBUG)
 				printf("\t\tomrvmem_commit_memory called mprotect, returning %p\n", address);
 				fflush(stdout);
 #endif
 				rc = address;
+#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
+				printf("Inside omrvmem_commit_memory() just returned from omrvmem_commit_memory() and it was successful!\n");
+				int fd = identifier->fd;
+				if((0 != (identifier->mode & OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN)) && (-1 != fd)) {
+					printf("\tDouble mapping is indeed enabled. We must now POPULATE the address range\n");
+					printf("\tFrom address: %p, byteAmount: %zu, heap fd: %d\n", address, byteAmount, fd);
+					/* Might need to call mremap(commitBase, commitSize, commitSize, MAP_POPULATE | MAP_SHARED) */
+					void *populateAddrs = mmap(address, byteAmount, protectionFlags, MAP_POPULATE | MAP_FIXED | MAP_SHARED, fd, 0);
+					//void *populateAddrs = mremap(commitBase, commitSize, commitSize, MAP_POPULATE | MAP_SHARED);
+					if (MAP_FAILED == populateAddrs) {
+						printf("\t\tAttempt to populate address range FAILED!!\n");
+					} else {
+						printf("\t\tPOPULATE succeeded at address: %p, address: %p!!!! Now we need to check memory with mincore()!!!\n", populateAddrs, address);
+						/*uintptr_t vecSize = (byteAmount + (pageSize * 2)) / pageSize;
+						unsigned char *vec = (unsigned char *)malloc(vecSize);
+						mincore(address, byteAmount, vec);
+						int index = searchZeroIndex(vec, vecSize);
+						free((void *)vec);
+						uintptr_t populatedSize = index * pageSize;
+						printf("\t\tRequested populated size: %zu, acctual populated size: %zu\n", byteAmount, populatedSize);*/
+					}
+				}
+#endif /* OMR_GC_DOUBLE_MAP_ARRAYLETS */
 			} else {
 				Trc_PRT_vmem_omrvmem_commit_memory_mprotect_failure(errno);
 				portLibrary->error_set_last_error(portLibrary,  errno, OMRPORT_ERROR_VMEM_OPFAILED);
@@ -1338,6 +1364,39 @@ get_protectionBits(uintptr_t mode)
 
 	return protectionFlags;
 }
+
+/*static int
+searchZeroIndex(unsigned char *vec, size_t size)
+{       
+	int index = -1;
+	if (0 == vec[0]) {
+		return 0;
+	}
+	Assert_PRT_true((1 < size) && (1 != vec[size - 1]) && (1 != vec[size - 2]));
+       
+	int currIdx = size / 2;
+	int lo = 0;
+	int hi = size - 1;
+	while(TRUE) { 
+		if (1 == vec[currIdx - 1] && 0 == vec[currIdx]) {
+			index = currIdx;
+			break;
+		* Search on the left *
+		} else if (vec[currIdx] == 0) {
+			hi = currIdx; 
+			currIdx = (lo + currIdx) / 2;
+		* Search on the right *
+		} else {
+			lo = currIdx; 
+			currIdx = (hi + currIdx) / 2;
+		}
+		if (hi <= lo) { 
+			index = currIdx;
+			break;
+		}
+	}
+	return index;
+}*/
 
 #if defined(OMR_PORT_NUMA_SUPPORT)
 void
