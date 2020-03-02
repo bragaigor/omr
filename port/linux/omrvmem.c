@@ -1285,6 +1285,7 @@ omrvmem_get_contiguous_region_memory(struct OMRPortLibrary *portLibrary, void* a
 			munmap(contiguousMap, byteAmount);
 		}
 		contiguousMap = NULL;
+		update_vmemIdentifier(newIdentifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
 	}
 
 	return contiguousMap;
