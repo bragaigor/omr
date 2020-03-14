@@ -126,9 +126,9 @@ typedef struct AddressIterator {
 static void addressIterator_init(AddressIterator *iterator, ADDRESS minimum, ADDRESS maximum, uintptr_t alignment, intptr_t direction);
 static BOOLEAN addressIterator_next(AddressIterator *iterator, ADDRESS *address);
 
-static void *getMemoryInRangeForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, key_t addressKey, OMRMemCategory *category, uintptr_t byteAmount, void *startAddress, void *endAddress, uintptr_t alignmentInBytes, uintptr_t vmemOptions, uintptr_t pageSize, uintptr_t mode);
+static void *getMemoryInRangeForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, OMRMemCategory *category, uintptr_t byteAmount, void *startAddress, void *endAddress, uintptr_t alignmentInBytes, uintptr_t vmemOptions, uintptr_t pageSize, uintptr_t mode);
 static void *getMemoryInRangeForDefaultPages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, OMRMemCategory *category, uintptr_t byteAmount, void *startAddress, void *endAddress, uintptr_t alignmentInBytes, uintptr_t vmemOptions, uintptr_t mode);
-static void *allocateMemoryForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, void *currentAddress, key_t addressKey, OMRMemCategory *category, uintptr_t byteAmount, uintptr_t pageSize, uintptr_t mode);
+static void *allocateMemoryForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, void *currentAddress, OMRMemCategory *category, uintptr_t byteAmount, uintptr_t pageSize, uintptr_t mode);
 static BOOLEAN isStrictAndOutOfRange(void *memoryPointer, void *startAddress, void *endAddress, uintptr_t vmemOptions);
 static BOOLEAN rangeIsValid(struct J9PortVmemIdentifier *identifier, void *address, uintptr_t byteAmount);
 static uintptr_t adviseHugepage(struct OMRPortLibrary *portLibrary, void* address, uintptr_t byteAmount);
@@ -1552,7 +1552,7 @@ allocAnywhere:
  * to the newly allocated memory. Returns NULL on failure.
  */
 static void *
-getMemoryInRangeForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, key_t addressKey, OMRMemCategory *category, uintptr_t byteAmount, void *startAddress, void *endAddress, uintptr_t alignmentInBytes, uintptr_t vmemOptions, uintptr_t pageSize, uintptr_t mode)
+getMemoryInRangeForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, OMRMemCategory *category, uintptr_t byteAmount, void *startAddress, void *endAddress, uintptr_t alignmentInBytes, uintptr_t vmemOptions, uintptr_t pageSize, uintptr_t mode)
 {
 	AddressIterator iterator;
 	intptr_t direction = 1;
@@ -1575,7 +1575,7 @@ getMemoryInRangeForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortV
 	addressIterator_init(&iterator, startAddress, endAddress, alignmentInBytes, direction);
 	while (addressIterator_next(&iterator, &currentAddress)) {
 
-		memoryPointer = allocateMemoryForLargePages(portLibrary, identifier, currentAddress, addressKey, category, byteAmount, pageSize, mode);
+		memoryPointer = allocateMemoryForLargePages(portLibrary, identifier, currentAddress, category, byteAmount, pageSize, mode);
 
 		if ((memoryPointer != MAP_FAILED) && (NULL != memoryPointer)) {
 
@@ -1584,7 +1584,9 @@ getMemoryInRangeForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortV
 				break;
 			}
 
+			printf("Address not in range <><><> startAddress: %p, endAddress: %p, memoryPointer: %p, identifier: %p\n", startAddress, endAddress, memoryPointer, (void *)identifier);
 			if (0 != omrvmem_free_memory(portLibrary, memoryPointer, byteAmount, identifier)) {
+				printf("Failed to free memory for identifier: %p, memoryPointer: %p, byteAmount: %zu\n", (void *)identifier, memoryPointer, byteAmount);
 				return NULL;
 			}
 		}
@@ -1593,7 +1595,7 @@ getMemoryInRangeForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortV
 	/* if strict flag is not set and we did not get any memory, attempt to get memory at any address */
 	if (OMR_ARE_NO_BITS_SET(vmemOptions, OMRPORT_VMEM_STRICT_ADDRESS) && (MAP_FAILED == memoryPointer)) {
 allocAnywhere:
-		memoryPointer = allocateMemoryForLargePages(portLibrary, identifier, NULL, addressKey, category, byteAmount, pageSize, mode);
+		memoryPointer = allocateMemoryForLargePages(portLibrary, identifier, NULL, category, byteAmount, pageSize, mode);
 	}
 
 	if (MAP_FAILED == memoryPointer) {
@@ -1618,7 +1620,7 @@ allocAnywhere:
  * is being used NULL upon failure else -1 upon failure.
  */
 static void *
-allocateMemoryForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, void *currentAddress, key_t addressKey, OMRMemCategory *category, uintptr_t byteAmount, uintptr_t pageSize, uintptr_t mode)
+allocateMemoryForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, void *currentAddress, OMRMemCategory *category, uintptr_t byteAmount, uintptr_t pageSize, uintptr_t mode)
 {
 	/* The address should usually be passed in as NULL in order to let the kernel find and assign a
 	 * large enough window of virtual memory
@@ -1642,7 +1644,7 @@ allocateMemoryForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVme
 		Trc_PRT_vmem_omrvmem_reserve_memory_shmget_failed(byteAmount, shmgetFlags);
 	}
 
-	void *memoryPointer = shmat(addressKey, currentAddress, 0);
+	memoryPointer = shmat(addressKey, currentAddress, 0);
 	printf("After shmat. addressKey: %d, memoryPointer: %p, currentAddress: %p, byteAmount: %zu, identifier: %p\n", addressKey, memoryPointer, currentAddress, byteAmount, (void *)identifier);
 
 	if (MAP_FAILED != memoryPointer) {
@@ -1664,7 +1666,7 @@ allocateMemoryForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVme
 		memoryPointer = NULL;
 	}
 
-	if (NULL != memoryPointer) {
+	if ((MAP_FAILED != memoryPointer) && (NULL != memoryPointer)) {
 		/* Commit memory if required, else return reserved memory */
 		if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
 			printf("About to call omrvmem_commit_memory. memoryPointer: %p, byteAmount: %zu, identifier: %p\n", memoryPointer, byteAmount, (void *)identifier);
