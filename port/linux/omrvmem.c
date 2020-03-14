@@ -131,7 +131,6 @@ static void *getMemoryInRangeForDefaultPages(struct OMRPortLibrary *portLibrary,
 static void *allocateMemoryForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, void *currentAddress, key_t addressKey, OMRMemCategory *category, uintptr_t byteAmount, uintptr_t pageSize, uintptr_t mode);
 static BOOLEAN isStrictAndOutOfRange(void *memoryPointer, void *startAddress, void *endAddress, uintptr_t vmemOptions);
 static BOOLEAN rangeIsValid(struct J9PortVmemIdentifier *identifier, void *address, uintptr_t byteAmount);
-static void *reserveLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, OMRMemCategory *category, uintptr_t byteAmount, void *startAddress, void *endAddress, uintptr_t pageSize, uintptr_t alignmentInBytes, uintptr_t vmemOptions, uintptr_t mode);
 static uintptr_t adviseHugepage(struct OMRPortLibrary *portLibrary, void* address, uintptr_t byteAmount);
 
 static void *default_pageSize_reserve_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr_t byteAmount, struct J9PortVmemIdentifier *identifier, uintptr_t mode, uintptr_t pageSize, OMRMemCategory *category);
@@ -817,7 +816,7 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 
 		/* Make sure that the alignment is a multiple of both requested alignment and page size (enforces that arguments are powers of two and, thus, their max is their lowest common multiple) */
 		if ((0 == largePageMinimumGranule) || (0 == (largePageAlignmentInBytes % largePageMinimumGranule))) {
-			memoryPointer = reserveLargePages(portLibrary, identifier, category, params->byteAmount, params->startAddress, params->endAddress, params->pageSize, largePageAlignmentInBytes, params->options, params->mode);
+			memoryPointer = getMemoryInRangeForLargePages(portLibrary, identifier, category, params->byteAmount, params->startAddress, params->endAddress, largePageAlignmentInBytes, params->options, params->pageSize, params->mode);
 		}
 		if (NULL == memoryPointer) {
 			/* If strict page size flag is not set try again with default page size */
@@ -856,67 +855,6 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 #endif
 
 	Trc_PRT_vmem_omrvmem_reserve_memory_Exit_replacement(memoryPointer, params->startAddress);
-	return memoryPointer;
-}
-
-static void *
-reserveLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, OMRMemCategory *category, uintptr_t byteAmount, void *startAddress, void *endAddress, uintptr_t pageSize, uintptr_t alignmentInBytes, uintptr_t vmemOptions, uintptr_t mode)
-{
-	/* The address should usually be passed in as NULL in order to let the kernel find and assign a
-	 * large enough window of virtual memory
-	 *
-	 * Requesting HUGETLB pages via shmget has the effect of "reserving" them. They have to be attached to become allocated for use
-	 * The execute flags are ignored by shmget
-	 */
-	key_t addressKey;
-	int shmgetFlags = SHM_HUGETLB | IPC_CREAT;
-	void *memoryPointer = NULL;
-
-	if (0 != (OMRPORT_VMEM_MEMORY_MODE_READ & mode)) {
-		shmgetFlags |= SHM_R;
-	}
-	if (0 != (OMRPORT_VMEM_MEMORY_MODE_WRITE & mode)) {
-		shmgetFlags |= SHM_W;
-	}
-
-	addressKey = shmget(IPC_PRIVATE, (size_t) byteAmount, shmgetFlags);
-	if (-1 == addressKey) {
-		Trc_PRT_vmem_omrvmem_reserve_memory_shmget_failed(byteAmount, shmgetFlags);
-	} else {
-		memoryPointer = getMemoryInRangeForLargePages(portLibrary, identifier, addressKey, category, byteAmount, startAddress, endAddress, alignmentInBytes, vmemOptions, pageSize, mode);
-
-		/* release when complete, protect from ^C or crash */
-		if (0 != shmctl(addressKey, IPC_RMID, NULL)) {
-			/* if releasing addressKey fails detach memory to avoid leaks and fail */
-			if (NULL != memoryPointer) {
-				if (0 != shmdt(memoryPointer)) {
-					Trc_PRT_vmem_omrvmem_reserve_memory_shmdt_failed(memoryPointer);
-				}
-			}
-			Trc_PRT_vmem_omrvmem_reserve_memory_failure();
-			memoryPointer = NULL;
-		}
-
-		if (NULL != memoryPointer) {
-			/* Commit memory if required, else return reserved memory */
-			if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
-				if (NULL == omrvmem_commit_memory(portLibrary, memoryPointer, byteAmount, identifier)) {
-					/* If the commit fails free the memory */
-					omrvmem_free_memory(portLibrary, memoryPointer, byteAmount, identifier);
-					memoryPointer = NULL;
-				}
-			}
-		}
-	}
-
-	if (NULL == memoryPointer) {
-		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
-	}
-
-#if defined(OMRVMEM_DEBUG)
-	printf("\treserveLargePages returning %p\n", memoryPointer);
-	fflush(stdout);
-#endif
 	return memoryPointer;
 }
 
@@ -1633,24 +1571,22 @@ getMemoryInRangeForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortV
 		goto allocAnywhere;
 	}
 
-	/* prevent while loop from attempting to free memory on first entry */
-	memoryPointer = MAP_FAILED;
-
 	/* try all addresses within range */
 	addressIterator_init(&iterator, startAddress, endAddress, alignmentInBytes, direction);
 	while (addressIterator_next(&iterator, &currentAddress)) {
-		/* free previously attached memory and attempt to get new memory */
-		if (memoryPointer != MAP_FAILED) {
-			if (0 != omrvmem_free_memory(portLibrary, memoryPointer, byteAmount, identifier)) {
-				return NULL;
-			}
-		}
 
 		memoryPointer = allocateMemoryForLargePages(portLibrary, identifier, currentAddress, addressKey, category, byteAmount, pageSize, mode);
 
-		/* stop if returned pointer is within range */
-		if ((MAP_FAILED != memoryPointer) && (startAddress <= memoryPointer) && (memoryPointer <= endAddress)) {
-			break;
+		if ((memoryPointer != MAP_FAILED) && (NULL != memoryPointer)) {
+
+			/* stop if returned pointer is within range */
+			if ((startAddress <= memoryPointer) && (memoryPointer <= endAddress)) {
+				break;
+			}
+
+			if (0 != omrvmem_free_memory(portLibrary, memoryPointer, byteAmount, identifier)) {
+				return NULL;
+			}
 		}
 	}
 
@@ -1684,11 +1620,66 @@ allocAnywhere:
 static void *
 allocateMemoryForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier *identifier, void *currentAddress, key_t addressKey, OMRMemCategory *category, uintptr_t byteAmount, uintptr_t pageSize, uintptr_t mode)
 {
+	/* The address should usually be passed in as NULL in order to let the kernel find and assign a
+	 * large enough window of virtual memory
+	 *
+	 * Requesting HUGETLB pages via shmget has the effect of "reserving" them. They have to be attached to become allocated for use
+	 * The execute flags are ignored by shmget
+	 */
+	key_t addressKey;
+	int shmgetFlags = SHM_HUGETLB | IPC_CREAT;
+	void *memoryPointer = NULL;
+
+	if (0 != (OMRPORT_VMEM_MEMORY_MODE_READ & mode)) {
+		shmgetFlags |= SHM_R;
+	}
+	if (0 != (OMRPORT_VMEM_MEMORY_MODE_WRITE & mode)) {
+		shmgetFlags |= SHM_W;
+	}
+
+	addressKey = shmget(IPC_PRIVATE, (size_t) byteAmount, shmgetFlags);
+	if (-1 == addressKey) {
+		Trc_PRT_vmem_omrvmem_reserve_memory_shmget_failed(byteAmount, shmgetFlags);
+	}
+
 	void *memoryPointer = shmat(addressKey, currentAddress, 0);
+	printf("After shmat. addressKey: %d, memoryPointer: %p, currentAddress: %p, byteAmount: %zu, identifier: %p\n", addressKey, memoryPointer, currentAddress, byteAmount, (void *)identifier);
 
 	if (MAP_FAILED != memoryPointer) {
+		printf("\tshmat indeed successded!!!! addressKey: %d, memoryPointer: %p\n", addressKey, memoryPointer);
 		update_vmemIdentifier(identifier, memoryPointer, (void *)(uintptr_t)addressKey, byteAmount, mode, pageSize, OMRPORT_VMEM_PAGE_FLAG_NOT_USED, OMRPORT_VMEM_RESERVE_USED_SHM, category, -1);
 		omrmem_categories_increment_counters(category, byteAmount);
+	}
+
+	/* release when complete, protect from ^C or crash */
+	if (0 != shmctl(addressKey, IPC_RMID, NULL)) { // close(fd) equivalent
+		printf("shmctl failed!! addressKey: %d\n", addressKey);
+		/* if releasing addressKey fails detach memory to avoid leaks and fail */
+		if (NULL != memoryPointer) {
+			if (0 != shmdt(memoryPointer)) { // munmap() equivalent
+				Trc_PRT_vmem_omrvmem_reserve_memory_shmdt_failed(memoryPointer);
+			}
+		}
+		Trc_PRT_vmem_omrvmem_reserve_memory_failure();
+		memoryPointer = NULL;
+	}
+
+	if (NULL != memoryPointer) {
+		/* Commit memory if required, else return reserved memory */
+		if (0 != (OMRPORT_VMEM_MEMORY_MODE_COMMIT & mode)) {
+			printf("About to call omrvmem_commit_memory. memoryPointer: %p, byteAmount: %zu, identifier: %p\n", memoryPointer, byteAmount, (void *)identifier);
+			if (NULL == omrvmem_commit_memory(portLibrary, memoryPointer, byteAmount, identifier)) {
+				/* If the commit fails free the memory */
+				printf("Commit failed therefore calling omrvmem_free_memory. memoryPointer: %p, byteAmount: %zu, identifier: %p\n", memoryPointer, byteAmount, (void *)identifier);
+				omrvmem_free_memory(portLibrary, memoryPointer, byteAmount, identifier);
+				memoryPointer = NULL;
+			}
+		}
+	}
+
+	if (NULL == memoryPointer) {
+		printf("Memory pointer is NULL at the end of allocateMemoryForLargePages, should we call update_vmemIdentifier?\n");
+		update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
 	}
 
 	return memoryPointer;
