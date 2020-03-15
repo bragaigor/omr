@@ -1641,6 +1641,7 @@ allocateMemoryForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVme
 
 	addressKey = shmget(IPC_PRIVATE, (size_t) byteAmount, shmgetFlags);
 	if (-1 == addressKey) {
+		printf("shmget FAILED!!!!! errno: %d\n", errno);
 		Trc_PRT_vmem_omrvmem_reserve_memory_shmget_failed(byteAmount, shmgetFlags);
 	}
 
@@ -1673,6 +1674,9 @@ allocateMemoryForLargePages(struct OMRPortLibrary *portLibrary, struct J9PortVme
 			if (NULL == omrvmem_commit_memory(portLibrary, memoryPointer, byteAmount, identifier)) {
 				/* If the commit fails free the memory */
 				printf("Commit failed therefore calling omrvmem_free_memory. memoryPointer: %p, byteAmount: %zu, identifier: %p\n", memoryPointer, byteAmount, (void *)identifier);
+				if (0 != shmctl(addressKey, IPC_RMID, NULL)) {
+					printf("Failed to shmctl addressKey: %d, memoryPointer: %p\n", addressKey, memoryPointer);
+				}
 				omrvmem_free_memory(portLibrary, memoryPointer, byteAmount, identifier);
 				memoryPointer = NULL;
 			}
