@@ -822,9 +822,7 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 		uintptr_t largePageAlignmentInBytes = OMR_MAX(params->pageSize, params->alignmentInBytes);
 		uintptr_t largePageMinimumGranule = OMR_MIN(params->pageSize, params->alignmentInBytes);
 		uintptr_t mmapMode = params->mode;
-		if (0 != PPG_huge_pages_mmap_enabled) {
-			mmapMode |= OMRPORT_VMEM_MEMORY_MODE_MMAP_HUGE_PAGES;
-		}
+		mmapMode |= OMRPORT_VMEM_MEMORY_MODE_MMAP_HUGE_PAGES;
 
 		/* Make sure that the alignment is a multiple of both requested alignment and page size (enforces that arguments are powers of two and, thus, their max is their lowest common multiple) */
 		if ((0 == largePageMinimumGranule) || (0 == (largePageAlignmentInBytes % largePageMinimumGranule))) {
@@ -1143,34 +1141,23 @@ reserve_memory_with_mmap(struct OMRPortLibrary *portLibrary, void *address, uint
 	}
 
 	if (useBackingSharedFile) {
-		memfd_call memfd_createDL = (memfd_call)PPG_memfd_call;
-		if (NULL != memfd_createDL) {
-			Trc_PRT_vmem_reserve_doubleMapAPI_available(address, byteAmount);
-			mode |= OMRPORT_VMEM_MEMORY_MODE_DOUBLE_MAP_AVAILABLE;
-			int ft = -1;
-			uintptr_t fdFlags = 0;
-			char filename[FILE_NAME_SIZE + 1];
-			sprintf(filename, "omrvmem_temp_%zu_%09d_%zu",  (size_t)omrtime_current_time_millis(portLibrary),
-								getpid(),
-								(size_t)pthread_self());
+		Trc_PRT_vmem_reserve_doubleMapAPI_available(address, byteAmount);
+		mode |= OMRPORT_VMEM_MEMORY_MODE_DOUBLE_MAP_AVAILABLE;
+		int ft = -1;
+		char filename[FILE_NAME_SIZE + 1];
+		sprintf(filename, "omrvmem_temp_%zu_%09d_%zu",  (size_t)omrtime_current_time_millis(portLibrary),
+							getpid(),
+							(size_t)pthread_self());
 
-			if (areHugePagesEnabled) {
-				fdFlags = MFD_HUGETLB;
-			}
-			fd = memfd_createDL(filename, fdFlags);
-			ft = ftruncate(fd, byteAmount);
+		fd = shm_open(filename, O_RDWR | O_CREAT, 0600);
+		shm_unlink(filename);
+		ft = ftruncate(fd, byteAmount);
 
-			if ((-1 == fd) || (-1 == ft)) {
-				Trc_PRT_vmem_reserve_failed(address, byteAmount);
-				update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
-				Trc_PRT_vmem_reserve_exit(result, address, byteAmount);
-				return result;
-			}
-		} else {
-			flags = 0;
-			useBackingFile = set_flags_for_mmap(&flags);
-			useBackingSharedFile = FALSE;
-			Trc_PRT_vmem_reserve_doubleMapAPI_not_available(address, byteAmount);
+		if ((-1 == fd) || (-1 == ft)) {
+			Trc_PRT_vmem_reserve_failed(address, byteAmount);
+			update_vmemIdentifier(identifier, NULL, NULL, 0, 0, 0, 0, 0, NULL, -1);
+			Trc_PRT_vmem_reserve_exit(result, address, byteAmount);
+			return result;
 		}
 	} else if (useBackingFile) {
 		fd = portLibrary->file_open(portLibrary, "/dev/zero", EsOpenRead | EsOpenWrite, 0);
