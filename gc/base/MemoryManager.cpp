@@ -107,6 +107,12 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 	}
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
+	mode |= OMRPORT_VMEM_MEMORY_MODE_HEAP_CREATION;
+	if(extensions->isArrayletDoubleMapRequested) {
+		printf("Appending OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN to heap mode, allocateSize: %zu, pageSize: %zu\n", allocateSize, pageSize);
+		mode |= OMRPORT_VMEM_MEMORY_MODE_SHARE_FILE_OPEN;
+	}
+
 #if defined(OMR_GC_MODRON_SCAVENGER)
 	if (extensions->enableSplitHeap) {
 		/* currently (ceiling != NULL) is using to recognize CompressedRefs so must be NULL for 32 bit platforms */
