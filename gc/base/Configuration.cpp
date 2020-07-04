@@ -220,6 +220,8 @@ MM_Configuration::createHeap(MM_EnvironmentBase* env, uintptr_t heapBytesRequest
 {
 	MM_GCExtensionsBase* extensions = env->getExtensions();
 
+	printf("111111111 ||||||| Inside createHeap\n");
+
 	if (NULL == extensions->memoryManager) {
 		extensions->memoryManager = MM_MemoryManager::newInstance(env);
 		if (NULL == extensions->memoryManager) {
@@ -234,23 +236,33 @@ MM_Configuration::createHeap(MM_EnvironmentBase* env, uintptr_t heapBytesRequest
 		}
 	}
 
+	printf("222222222222 ||||||| Inside createHeap before creating heap...\n");
+
 	MM_Heap* heap = createHeapWithManager(env, heapBytesRequested, extensions->heapRegionManager);
+	printf("33333333333333 ||||||| Inside createHeap. Created heap at: %p\n", (void*)heap);
 	if (NULL != heap) {
+		printf("4444444444 ||||||| Inside createHeap\n");
 		if (!heap->initializeHeapRegionManager(env, extensions->heapRegionManager)) {
+			printf("!!!!!!!!!!!!!!!!!!!! Failed to initializeHeapRegionManager!!!!!!!!\n");
 			heap->kill(env);
 			heap = NULL;
 		}
+		printf("555555555555 ||||||| Inside createHeap. About to call initializeRunTimeObjectAlignmentAndCRShift!!!!\n");
 
 		if (!initializeRunTimeObjectAlignmentAndCRShift(env, heap)) {
 			heap->kill(env);
 			heap = NULL;
 		}
+		
+		printf("666666666666 ||||||| Inside createHeap. Just called initializeRunTimeObjectAlignmentAndCRShift so alllllll good!!!\n");
 
 		extensions->heap = heap;
 		if (!_delegate.heapInitialized(env)) {
 			heap->kill(env);
 			heap = NULL;
 		}
+
+		printf("77777777777777 ||||||| Inside createHeap\n");
 
 		/* VM Design 1869: kill the heap if it was allocated but not in the area requested by the fvtest options and then let it fall through to the normal error handling */
 		if ((heap->getHeapBase() < extensions->fvtest_verifyHeapAbove)
@@ -267,20 +279,24 @@ MM_Configuration::createHeap(MM_EnvironmentBase* env, uintptr_t heapBytesRequest
 bool
 MM_Configuration::initializeRunTimeObjectAlignmentAndCRShift(MM_EnvironmentBase* env, MM_Heap* heap)
 {
+	printf("\tInside initializeRunTimeObjectAlignmentAndCRShift at first line...\n");
 	MM_GCExtensionsBase* extensions = env->getExtensions();
 	OMR_VM *omrVM = env->getOmrVM();
+	printf("\tInside initializeRunTimeObjectAlignmentAndCRShift and just got extensions and OMR VM\n");
 
 #if defined(OMR_GC_COMPRESSED_POINTERS)
 	if (env->compressObjectReferences()) {
+		printf("\tAbout to get heap top. heap: %p\n", (void*)heap);
 		UDATA heapTop = (uintptr_t)heap->getHeapTop();
 		UDATA maxAddressValue = (uintptr_t)1 << 32;
 		UDATA shift = (extensions->shouldAllowShiftingCompression) ? LOW_MEMORY_HEAP_CEILING_SHIFT : 0;
 		bool canChangeShift = true;
-
+		printf("\tSo far so good??? heapTop: %zu, maxAddressValue: %zu, shift: %zu\n", heapTop, maxAddressValue, shift);
 		if (extensions->shouldForceSpecifiedShiftingCompression) {
 			shift = extensions->forcedShiftingCompressionAmount;
 			canChangeShift = false;
 		}
+		printf("\tWhat about now?????\n");
 		if (heapTop <= (maxAddressValue << shift)) {
 			/* now, try to clamp the shifting */
 			if (canChangeShift) {
@@ -291,6 +307,7 @@ MM_Configuration::initializeRunTimeObjectAlignmentAndCRShift(MM_EnvironmentBase*
 				shift = (uintptr_t)(underShift + 1);
 			}
 		} else {
+			printf("\tOr did we reach here for some reason? heapTop: %zu, maxAddressValue: %zu, (maxAddressValue << shift): %zu\n", heapTop, maxAddressValue, (maxAddressValue << shift));
 			/* impossible geometry:  use an assert for now but just return false once we are done testing the shifting */
 			Assert_MM_unreachable();
 			return false;
@@ -312,6 +329,7 @@ MM_Configuration::initializeRunTimeObjectAlignmentAndCRShift(MM_EnvironmentBase*
 
 	/* set object alignment factors in the object model and in the OMR VM */
 	extensions->objectModel.setObjectAlignment(omrVM);
+	printf("\tAbout to return from initializeRunTimeObjectAlignmentAndCRShift. Everything is good\n");
 
 	return true;
 }

@@ -310,14 +310,17 @@ bool
 MM_HeapSplit::initializeHeapRegionManager(MM_EnvironmentBase *env, MM_HeapRegionManager *manager)
 {
 	if (!manager->setContiguousHeapRange(env, _lowExtent->getHeapBase(), _highExtent->getHeapTop())) {
+		printf("\t\tInside initializeHeapRegionManager and setContiguousHeapRange failed!!!!!\n");
 		return false;
 	}
 
 	if (!manager->enableRegionsInTable(env, &_lowExtent->_vmemHandle)) {
+		printf("\t\tInside initializeHeapRegionManager and enableRegionsInTable failed!!!!\n");
 		return false;
 	}
 
 	if (!manager->enableRegionsInTable(env, &_highExtent->_vmemHandle)) {
+		printf("\t\tInside initializeHeapRegionManager and enableRegionsInTable failed!!!\n");
 		return false;
 	}
 

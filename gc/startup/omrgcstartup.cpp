@@ -114,12 +114,15 @@ heapCreationHelper(OMR_VM *omrVM, MM_StartupManager *startupManager, bool create
 		goto done;
 	}
 
+	printf("About to call createHeap inside OMR aaaaaaaaaaa...\n");
+
 	extensions->heap = extensions->configuration->createHeap(&envBase, extensions->memoryMax);
 	if (NULL == extensions->heap) {
 		omrtty_printf("Failed to create heap.\n");
 		rc = OMR_ERROR_INTERNAL;
 		goto done;
 	}
+	printf("_____ In OMR side and createHeap called succeswsfully!!! heap address: %p\n", extensions->heap);
 
 	/* It is necessary to have a dispatcher up before the collector can be initialized,
 	 * since the number of sweep chunks is determined by the number of threads. */
@@ -166,8 +169,10 @@ heapCreationHelper(OMR_VM *omrVM, MM_StartupManager *startupManager, bool create
 		rc = OMR_ERROR_INTERNAL;
 		goto done;
 	}
-
+	
+	printf("|||||| About to call createDefaultMemorySpace do we crash here??\n");
 	memorySpace = extensions->configuration->createDefaultMemorySpace(&envBase, extensions->heap, &parameters);
+	printf("||||||||||||||||| Just called... createDefaultMemorySpace do we crash here??\n");
 
 	if (NULL == memorySpace) {
 		omrtty_printf("Failed to create default memory space.\n");

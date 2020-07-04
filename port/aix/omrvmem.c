@@ -489,7 +489,7 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 		}
 	}
 
-	printf("\t\t omrvmem_reserve_memory_ex returning address: %p\n", memoryPointer);
+	printf("\t\t omrvmem_reserve_memory_ex returning address: %p, byteAmount: %zu\n", memoryPointer, params->byteAmount);
 	Trc_PRT_vmem_omrvmem_reserve_memory_Exit_replacement(memoryPointer, params->startAddress);
 	return memoryPointer;
 }

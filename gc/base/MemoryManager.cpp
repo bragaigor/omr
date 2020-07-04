@@ -139,6 +139,8 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 		instance = MM_VirtualMemory::newInstance(env, heapAlignment, allocateSize, pageSize, pageFlags, tailPadding, preferredAddress,
 												 ceiling, mode, options, memoryCategory);
 
+		printf("Inside createVirtualMemoryForHeap() and heap virtual memory is: %p\n", (void*)instance);
+
 #if defined(OMR_ENV_DATA64) && defined(OMR_GC_FULL_POINTERS)
 		if (!env->compressObjectReferences()) {
 			if (1 == extensions->fvtest_enableReadBarrierVerification) {
@@ -239,6 +241,7 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 
 						instance = MM_VirtualMemory::newInstance(env, heapAlignment, allocateSize, pageSize, pageFlags, tailPadding, preferredAddress,
 								maxAddress, mode, options, memoryCategory);
+						printf("77777777 Yet another call to MM_VirtualMemory::newInstance success?? instance: %p\n", (void*)instance);
 					} else {
 						if (requestedTopAddress < (void*)NON_SCALING_LOW_MEMORY_HEAP_CEILING) {
 							/*
@@ -270,6 +273,7 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 									 */
 									instance = MM_VirtualMemory::newInstance(env, heapAlignment, allocateSize, pageSize, pageFlags, tailPadding, preferredAddress,
 																			 (void*)OMR_MIN((uintptr_t)THIRTY_TWO_GB_ADDRESS, (uintptr_t)ceiling), mode, options, memoryCategory);
+									printf("345345 Calling another instance??? did it return NULL? instance: %p\n", (void*)instance);
 								}
 							}
 
@@ -324,6 +328,7 @@ MM_MemoryManager::createVirtualMemoryForHeap(MM_EnvironmentBase* env, MM_MemoryH
 	}
 
 	handle->setVirtualMemory(instance);
+	printf("_-|-_|_-|_-| Just called setVirtualMemory, on instance: %p\n", (void*)instance);
 	if (NULL != instance) {
 		instance->incrementConsumerCount();
 		handle->setMemoryBase(instance->getHeapBase());

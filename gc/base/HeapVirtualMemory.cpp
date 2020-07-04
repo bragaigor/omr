@@ -396,6 +396,7 @@ MM_HeapVirtualMemory::heapRemoveRange(MM_EnvironmentBase* env, MM_MemorySubSpace
 bool
 MM_HeapVirtualMemory::initializeHeapRegionManager(MM_EnvironmentBase* env, MM_HeapRegionManager* manager)
 {
+	printf("\t\tInside initializeHeapRegionManager is the issue here?\n");
 	bool result = false;
 
 	/* since this kind of heap is backed by contiguous memory, tell the heap region manager (which was just
@@ -406,8 +407,11 @@ MM_HeapVirtualMemory::initializeHeapRegionManager(MM_EnvironmentBase* env, MM_He
 	void* heapTop = memoryManager->getHeapTop(&_vmemHandle);
 
 	if (manager->setContiguousHeapRange(env, heapBase, heapTop)) {
+		printf("\t\t\tWe should be here!!!\n");
 		result = manager->enableRegionsInTable(env, &_vmemHandle);
 	}
+
+	printf("\t\tReturnign from initializeHeapRegionManager bool: %d\n", (int)result);
 
 	return result;
 }
