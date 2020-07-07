@@ -1376,6 +1376,7 @@ rangeIsValid(struct J9PortVmemIdentifier *identifier, void *address, uintptr_t b
 intptr_t
 omrvmem_numa_set_affinity(struct OMRPortLibrary *portLibrary, uintptr_t numaNode, void *address, uintptr_t byteAmount, struct J9PortVmemIdentifier *identifier)
 {
+	printf("Setting NUMA Affinity with mmap, why doesn't it work???? numaNode: %zu, address: %p, byteAmount: %zu\n", numaNode, address, byteAmount);
 	int result = -1;
 #if defined(OMR_ENV_DATA64)
 	/**
@@ -1409,10 +1410,17 @@ omrvmem_numa_set_affinity(struct OMRPortLibrary *portLibrary, uintptr_t numaNode
 		thisSubrangeResourceID.at_subrange = &subrange;
 		targetSRADResourceID.at_sradid = desiredSRADID;
 
-		/* attach the specified subrange to the SRAD (allow the memory to be asynchronously migrated to the specified SRAD) */
-		result = PTR_ra_attach(R_SUBRANGE, thisSubrangeResourceID, R_SRADID, targetSRADResourceID, R_MIGRATE_ASYNC);
+		printf("About to attach specified subrange to the SRAD!!!!!\n");
+		if (NULL != PTR_ra_attach) {
+			printf("\tAbout to call PTR_ra_attach!!!!!!!\n");
+			/* attach the specified subrange to the SRAD (allow the memory to be asynchronously migrated to the specified SRAD) */
+			result = PTR_ra_attach(R_SUBRANGE, thisSubrangeResourceID, R_SRADID, targetSRADResourceID, R_MIGRATE_ASYNC);
+		} else {
+			printf("\tdlsym indeed returned NULL!!!!!\n");
+		}
 	}
 #endif /* defined(OMR_ENV_DATA64) */
+	printf("What is the result of omrvmem_numa_set_affinity? result: %d\n", result);
 	return (0 == result) ? 0 : OMRPORT_ERROR_VMEM_OPFAILED;
 }
 
