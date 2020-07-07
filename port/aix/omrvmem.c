@@ -247,6 +247,7 @@ intptr_t
 omrvmem_decommit_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr_t byteAmount, struct J9PortVmemIdentifier *identifier)
 {
 	intptr_t result = -1;
+	printf("Inside omrvmem_decommit_memory of AIX DECOMMIT MEMORY. address: %p, byteAmount: %zu\n", address, byteAmount);
 
 	Trc_PRT_vmem_omrvmem_decommit_memory_Entry(address, byteAmount);
 
