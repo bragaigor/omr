@@ -203,11 +203,15 @@ omrvmem_commit_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr
 			0 != (identifier->mode & OMRPORT_VMEM_MEMORY_MODE_EXECUTE)
 		) {
 			if (0 == mprotect(address, byteAmount, get_protectionBits(identifier->mode))) {
-#if defined(OMRVMEM_DEBUG)
 				printf("\t\t omrvmem_commit_memory called mprotect, returning 0x%zx\n", address);
 				fflush(stdout);
-#endif /* defined(OMRVMEM_DEBUG) */
-				rc = address;
+				int result  = (intptr_t)madvise(address, (size_t) byteAmount, MADV_FREE_REUSABLE);
+				if (0 != result) {
+					printf("madvise returned -1 after memset. address: %p, byteAmount: %zu errno: %d, error message: %s\n", address, byteAmount, errno, strerror(errno));
+				} else {
+					printf("Inside omrvmem_commit_memory, and madvise with MADV_FREE_REUSABLE was success at address: %p, byteAmount: %zu\n", address, byteAmount);]
+					rc = address;
+				}
 			} else {
 				Trc_PRT_vmem_omrvmem_commit_memory_mprotect_failure(errno);
 				portLibrary->error_set_last_error(portLibrary,  errno, OMRPORT_ERROR_VMEM_OPFAILED);
@@ -243,6 +247,7 @@ omrvmem_decommit_memory(struct OMRPortLibrary *portLibrary, void *address, uintp
 			if (0 < byteAmount) {
 				if (OMRPORT_VMEM_RESERVE_USED_MMAP == identifier->allocator) {
 					result  = (intptr_t)madvise((void *)address, (size_t) byteAmount, MADV_DONTNEED);
+					printf("Just called madvise MADV_DONTNEED do decommit memory, result: %d, address: %p, byteAmount: %zu\n", address, byteAmount);
 				} else {
 					/* OSX cannot use shmat/shmget to allocate large parges. It uses mmap to allocate superpages. */
 					result = -1;
