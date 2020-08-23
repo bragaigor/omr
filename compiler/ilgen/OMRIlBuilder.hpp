@@ -547,28 +547,28 @@ public:
    /**
     * @brief Generates a switch-case control flow structure.
     *
-    * @param selectorValue the IlValue to switch on.
+    * @param selectionVar the variable to switch on.
     * @param defaultBuilder the builder for the default case.
     * @param numCases the number of cases.
     * @param cases array of pointers to JBCase instances corresponding to each case.
     */
-   void TableSwitch(TR::IlValue * selectorValue,
+   void TableSwitch(const char *selectionVar,
                TR::IlBuilder **defaultBuilder,
                uint32_t numCases,
                JBCase** cases);
 
    /**
-    * @brief Generates a table switch-case control flow structure (IlValue and vararg overload).
+    * @brief Generates a switch-case control flow structure (vararg overload).
     *
     * Instead of taking an array of pointers to JBCase instances, this overload
     * takes a pointer to each instance as a separate varargs argument.
     *
-    * @param selectorValue the IlValue to switch on.
+    * @param selectionVar the variable to switch on.
     * @param defaultBuilder the builder for the default case.
     * @param numCases the number of cases.
     * @param ... the list of pointers to JBCase instances corresponding to each case.
     */
-   void TableSwitch(TR::IlValue * selectorValue,
+   void TableSwitch(const char *selectionVar,
                TR::IlBuilder **defaultBuilder,
                uint32_t numCases,
                ...);

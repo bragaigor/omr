@@ -23,7 +23,7 @@
 
 #include "compile/Compilation.hpp"
 #include "il/SymbolReference.hpp"
-#include "il/symbol/AutomaticSymbol.hpp"
+#include "il/AutomaticSymbol.hpp"
 #include "ilgen/BytecodeBuilder.hpp"
 #include "ilgen/IlConst.hpp"
 #include "ilgen/MethodBuilder.hpp"

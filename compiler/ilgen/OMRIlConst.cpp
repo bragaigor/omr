@@ -24,7 +24,7 @@
 #include "il/Node.hpp"
 #include "il/Node_inlines.hpp"
 #include "il/Symbol.hpp"
-#include "il/symbol/AutomaticSymbol.hpp"
+#include "il/AutomaticSymbol.hpp"
 #include "il/SymbolReference.hpp"
 #include "ilgen/IlConst.hpp" // must follow include for compile/Compilation.hpp for TR_Memory
 #include "ilgen/MethodBuilder.hpp"

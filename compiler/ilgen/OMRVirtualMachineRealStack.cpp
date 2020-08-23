@@ -25,7 +25,7 @@
 #include "ilgen/VirtualMachineRegister.hpp"
 #include "compile/Compilation.hpp"
 #include "il/SymbolReference.hpp"
-#include "il/symbol/AutomaticSymbol.hpp"
+#include "il/AutomaticSymbol.hpp"
 #include "ilgen/IlBuilder.hpp"
 #include "ilgen/IlConst.hpp"
 #include "ilgen/MethodBuilder.hpp"

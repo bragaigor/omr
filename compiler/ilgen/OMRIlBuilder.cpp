@@ -2650,47 +2650,6 @@ OMR::IlBuilder::Switch(TR::IlValue *selectorValue,
    Switch(selectorValue, defaultBuilder, numCases, cases);
    }
 
-void
-OMR::IlBuilder::TableSwitch(TR::IlValue * selectorValue,
-               TR::IlBuilder **defaultBuilder,
-               bool generateBoundsCheck,
-               uint32_t numCases,
-               JBCase** cases)
-   {
-   TR_ASSERT_FATAL(selectorValue->getDataType() == TR::Int32, "TableSwitch only supports selector having type Int32");
-   TR_ASSERT_FATAL(numCases > 0, "TableSwitch requires at least 1 case");
-   int32_t low = cases[0]->_value;
-   int32_t high = cases[numCases -1]->_value;
-   int32_t casesCovered = (high - low) + 1;
-   TR_ASSERT_FATAL(numCases == casesCovered, "TableSwitch only supports dense case sets");
-   if (low != 0)
-      selectorValue = Sub(selectorValue, ConstInt32(low));
-
-   *defaultBuilder = createBuilderIfNeeded(*defaultBuilder);
-
-   TR::Node *defaultNode = TR::Node::createCase(0, (*defaultBuilder)->getEntry()->getEntry());
-   TR::Node *tableNode = TR::Node::create(TR::table, numCases + 2, loadValue(selectorValue), defaultNode);
-   if (!generateBoundsCheck)
-       tableNode->setIsSafeToSkipTableBoundCheck(true);
-
-   generateSwitchCases(tableNode, defaultNode, defaultBuilder, numCases, cases);
-   }
-
-void
-OMR::IlBuilder::TableSwitch(TR::IlValue * selectorValue,
-               TR::IlBuilder **defaultBuilder,
-               bool generateBoundsCheck,
-               uint32_t numCases,
-               ...)
-   {
-   va_list args;
-   va_start(args, numCases);
-   JBCase **cases = createCaseArray(numCases, args);
-   va_end(args);
-
-   TableSwitch(selectorValue, defaultBuilder, generateBoundsCheck, numCases, cases);
-   }
-
 TR::IlBuilder::JBCase *
 OMR::IlBuilder::MakeCase(int32_t caseValue, TR::IlBuilder **caseBuilder, int32_t caseFallsThrough)
    {
