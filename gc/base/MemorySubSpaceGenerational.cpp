@@ -136,6 +136,8 @@ MM_MemorySubSpaceGenerational::allocationRequestFailed(MM_EnvironmentBase *env, 
 	Assert_MM_mustHaveExclusiveVMAccess(env->getOmrVMThread());
 
 	allocateDescription->setAllocationType(allocationType);
+	printf("-_-_-_-_ #TID: %zu, Inside MM_MemorySubSpaceGenerational::allocationRequestFailed about to call garbageCollect 33333333333333\n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	addr = _collector->garbageCollect(env, this, allocateDescription, J9MMCONSTANT_IMPLICIT_GC_DEFAULT, objectAllocationInterface, baseSubSpace, NULL);
 	allocateDescription->restoreObjects(env);
 
@@ -147,6 +149,8 @@ MM_MemorySubSpaceGenerational::allocationRequestFailed(MM_EnvironmentBase *env, 
 
 	/* A more aggressive collect here on failure */
 	allocateDescription->saveObjects(env);
+	printf("-_-_-_-_ #TID: %zu, Inside MM_MemorySubSpaceGenerational::allocationRequestFailed about to call garbageCollect 444444444444\n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	addr = _collector->garbageCollect(env, this, allocateDescription, J9MMCONSTANT_IMPLICIT_GC_AGGRESSIVE, objectAllocationInterface, baseSubSpace, NULL);
 	allocateDescription->restoreObjects(env);
 	

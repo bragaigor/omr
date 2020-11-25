@@ -31,6 +31,8 @@
 void
 MM_ConcurrentCompleteTracingTask::run(MM_EnvironmentBase *envBase)
 {
+	printf("\tTD#: %zu, inisde MM_ConcurrentCompleteTracingTask::run... \n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
 	_collector->completeTracing(env);
 }

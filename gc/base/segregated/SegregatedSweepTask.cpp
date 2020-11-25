@@ -30,6 +30,8 @@
 void
 MM_SegregatedSweepTask::run(MM_EnvironmentBase *env)
 {
+	printf("\tTD#: %zu, inisde MM_SegregatedSweepTask::run... \n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	_sweepScheme->sweep(env, _memoryPool, false);
 }
 

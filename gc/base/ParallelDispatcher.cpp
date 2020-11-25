@@ -63,6 +63,9 @@ dispatcher_thread_proc2(OMRPortLibrary* portLib, void *info)
 	MM_EnvironmentBase *env = NULL;
 	uintptr_t oldVMState = 0;
 
+	printf("TD#: %zu, inside dispatcher_thread_proc2()!!\n", (uintptr_t)pthread_self());
+        fflush(stdout);
+
 	/* Cache values from the info before releasing it */
 	workerID = workerInfo->workerID;
 
@@ -85,10 +88,14 @@ dispatcher_thread_proc2(OMRPortLibrary* portLib, void *info)
 	/* Begin running the thread */
 	if (env->isMainThread()) {
 		env->setThreadType(GC_MAIN_THREAD);
+		printf("TD#: %zu, inside dispatcher_thread_proc2 about to call dispatcher->mainEntryPoint...\n", (uintptr_t)pthread_self());
+		fflush(stdout);
 		dispatcher->mainEntryPoint(env);
 		env->setThreadType(GC_WORKER_THREAD);
 	} else {
 		env->setThreadType(GC_WORKER_THREAD);
+		printf("TD#: %zu, inside dispatcher_thread_proc2 about to call dispatcher->workerEntryPoint...\n", (uintptr_t)pthread_self());
+		fflush(stdout);
 		dispatcher->workerEntryPoint(env);
 	}
 
@@ -153,6 +160,9 @@ MM_ParallelDispatcher::workerEntryPoint(MM_EnvironmentBase *env)
 	uintptr_t workerID = env->getWorkerID();
 	
 	setThreadInitializationComplete(env);
+
+	printf("TD#: %zu, inside workerEntryPoint()!!!!\n", (uintptr_t)pthread_self());
+	fflush(stdout);
 	
 	omrthread_monitor_enter(_workerThreadMutex);
 
@@ -164,7 +174,11 @@ MM_ParallelDispatcher::workerEntryPoint(MM_EnvironmentBase *env)
 				_statusTable[workerID] = worker_status_reserved;
 				_taskTable[workerID] = _task;
 			} else {
+				printf("TD#: %zu, inside workerEntryPoint, and worker thread going to take a nap zZzZzzZzZzZzZZZZzzZzzZzZ...\n", (uintptr_t)pthread_self());
+				fflush(stdout);
 				omrthread_monitor_wait(_workerThreadMutex);
+				printf("TD#: %zu, inside workerEntryPoint, wohoo worker thread woke up and heady to do some work!\n", (uintptr_t)pthread_self());
+				fflush(stdout);
 			}
 		}
 
@@ -179,6 +193,8 @@ MM_ParallelDispatcher::workerEntryPoint(MM_EnvironmentBase *env)
 		}
 
 		if(worker_status_reserved == _statusTable[workerID]) {
+			printf("TD#: %zu, inside workerEntryPoint, I got a new task to do, better get to it!!\n", (uintptr_t)pthread_self());
+			fflush(stdout);
 			/* Found a task to dispatch to - do prep work for dispatch */
 			acceptTask(env);
 			omrthread_monitor_exit(_workerThreadMutex);	
@@ -188,6 +204,8 @@ MM_ParallelDispatcher::workerEntryPoint(MM_EnvironmentBase *env)
 			omrthread_monitor_enter(_workerThreadMutex);
 			/* Returned from task - do clean up work from dispatch */
 			completeTask(env);
+			printf("TD#: %zu, inside workerEntryPoint, task completed, what's next??\n", (uintptr_t)pthread_self());
+			fflush(stdout);
 		}
 	}
 	omrthread_monitor_exit(_workerThreadMutex);	
@@ -299,6 +317,9 @@ MM_ParallelDispatcher::startUpThreads()
 	uintptr_t workerThreadCount;
 	workerThreadInfo workerInfo;
 
+	printf("TD#: %zu, inside MM_ParallelDispatcher::startUpThreads, about to startup some threads!!!!\n", (uintptr_t)pthread_self());
+        fflush(stdout);
+
 	/* Fork the worker threads */
 	workerInfo.omrVM = _extensions->getOmrVM();
 	workerInfo.dispatcher = this;
@@ -327,6 +348,8 @@ MM_ParallelDispatcher::startUpThreads()
 			/* Thread creation failed - for safety sake, set the shutdown flag to true */
 			goto error;
 		}
+		printf("TD#: %zu, inside MM_ParallelDispatcher::startUpThreads, thread# %zu\n", (uintptr_t)pthread_self(), workerThreadCount);
+		fflush(stdout);
 		do {
 			if(_inShutdown) {
 				goto error;
@@ -514,8 +537,12 @@ MM_ParallelDispatcher::prepareThreadsForTask(MM_EnvironmentBase *env, MM_Task *t
 	/* Main thread doesn't need to be woken up */
 	Assert_MM_true(_threadsToReserve == 0);
 	_threadsToReserve = threadCount - 1;
+	printf("TD#: %zu, inside Waking up %zu threads inside MM_ParallelDispatcher::prepareThreadsForTask since main thread will also do some work!! Calling wakeUpThreads()!\n", (uintptr_t)pthread_self(), _threadsToReserve);
+        fflush(stdout);
 	wakeUpThreads(_threadsToReserve);
 
+	printf("TD#: %zu, inside MM_ParallelDispatcher::prepareThreadsForTask DONE with wakeUpThreads()!\n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	omrthread_monitor_exit(_workerThreadMutex);
 }
 
@@ -564,8 +591,12 @@ void
 MM_ParallelDispatcher::run(MM_EnvironmentBase *env, MM_Task *task, uintptr_t newThreadCount)
 {
 	uintptr_t activeThreads = recomputeActiveThreadCountForTask(env, task, newThreadCount);
+	printf("TD#: %zu, inside MM_ParallelDispatcher::run, found: %zu active threads.......\n", (uintptr_t)pthread_self(), activeThreads);
+	fflush(stdout);
 	task->mainSetup(env);
 	prepareThreadsForTask(env, task, activeThreads);
+	printf("TD#: %zu, inside MM_ParallelDispatcher::run, about to call acceptTask from main worker Thread... I WOKE UP EVERYONE!!!!!!!!!!\n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	acceptTask(env);
 	task->run(env);
 	completeTask(env);

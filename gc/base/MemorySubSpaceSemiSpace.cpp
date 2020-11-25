@@ -134,6 +134,8 @@ MM_MemorySubSpaceSemiSpace::allocationRequestFailed(MM_EnvironmentBase *env, MM_
 	 * OMRTODO we might be short-cutting here. more formal approach is to pass allocationRequestFailed to parent and he decides what to do
 	 */
 	MM_MemorySubSpace *topLevelMemorySubSpaceNew = getTopLevelMemorySubSpace(MEMORY_TYPE_NEW);
+	printf("-_-_-_-_ #TID: %zu, Inside MM_MemorySubSpaceSemiSpace::allocationRequestFailed about to call garbageCollect 5555555555\n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	addr = _collector->garbageCollect(env, topLevelMemorySubSpaceNew, allocateDescription, J9MMCONSTANT_IMPLICIT_GC_DEFAULT, objectAllocationInterface, this, NULL);
 	allocateDescription->restoreObjects(env);
 

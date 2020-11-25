@@ -151,6 +151,8 @@ MM_MemorySubSpaceFlat::allocationRequestFailed(MM_EnvironmentBase* env, MM_Alloc
 
 		/* run the collector in the default mode (ie:  not explicitly aggressive) */
 		allocateDescription->setAllocationType(allocationType);
+		printf("-_-_-_-_ #TID: %zu, Inside MM_MemorySubSpaceFlat::allocationRequestFailed about to call garbageCollect 1111111111\n", (uintptr_t)pthread_self());
+		fflush(stdout);
 		addr = _collector->garbageCollect(env, this, allocateDescription, J9MMCONSTANT_IMPLICIT_GC_DEFAULT, objectAllocationInterface, baseSubSpace, NULL);
 		allocateDescription->restoreObjects(env);
 
@@ -164,6 +166,8 @@ MM_MemorySubSpaceFlat::allocationRequestFailed(MM_EnvironmentBase* env, MM_Alloc
 		if (!_collector->isDisabled(env)) {
 			allocateDescription->saveObjects(env);
 			/* The collect wasn't good enough to satisfy the allocate so attempt an aggressive collection */
+			printf("-_-_-_-_ #TID: %zu, Inside MM_MemorySubSpaceFlat::allocationRequestFailed about to call garbageCollect 222222222\n", (uintptr_t)pthread_self());
+                	fflush(stdout);
 			addr = _collector->garbageCollect(env, this, allocateDescription, J9MMCONSTANT_IMPLICIT_GC_AGGRESSIVE, objectAllocationInterface, baseSubSpace, NULL);
 			allocateDescription->restoreObjects(env);
 

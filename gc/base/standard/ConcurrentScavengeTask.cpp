@@ -36,19 +36,30 @@ MM_ConcurrentScavengeTask::run(MM_EnvironmentBase *envBase)
 {
 	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
 
+	printf("TD#: %zu, inisde MM_ConcurrentScavengeTask::run...\n", (uintptr_t)pthread_self());
+	fflush(stdout);
+
 	switch (_action) {
 	case SCAVENGE_ALL:
+		printf("\tSCAVENGE_ALL :: TD#: %zu, inisde MM_ConcurrentScavengeTask::run...\n", (uintptr_t)pthread_self());
+        	fflush(stdout);
 		_collector->workThreadProcessRoots(env);
 		_collector->workThreadScan(env);
 		_collector->workThreadComplete(env);
 		break;
 	case SCAVENGE_ROOTS:
+		printf("\tSCAVENGE_ROOTS :: TD#: %zu, inisde MM_ConcurrentScavengeTask::run...\n", (uintptr_t)pthread_self());
+                fflush(stdout);
 		_collector->workThreadProcessRoots(env);
 		break;
 	case SCAVENGE_SCAN:
+		printf("\tSCAVENGE_SCAN :: TD#: %zu, inisde MM_ConcurrentScavengeTask::run...\n", (uintptr_t)pthread_self());
+                fflush(stdout);
 		_collector->workThreadScan(env);
 		break;
 	case SCAVENGE_COMPLETE:
+		printf("\tSCAVENGE_COMPLETE :: TD#: %zu, inisde MM_ConcurrentScavengeTask::run...\n", (uintptr_t)pthread_self());
+                fflush(stdout);
 		_collector->workThreadComplete(env);
 		break;
 	default:

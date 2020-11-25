@@ -286,6 +286,8 @@ MM_Scavenger::initialize(MM_EnvironmentBase *env)
 
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	if (_extensions->concurrentScavenger) {
+		printf("-|_|-|_|- TD#: %zu, inisde MM_Scavenger::initialize about to call _mainGCThread.initialize ##################\n", (uintptr_t)pthread_self());
+        	fflush(stdout);
 		if (!_mainGCThread.initialize(this, true, true, true)) {
 			return false;
 		}
@@ -2421,11 +2423,16 @@ MM_Scavenger::workThreadGarbageCollect(MM_EnvironmentStandard *env)
 	 *
 	 * So scavenge Remembered Set right away
 	 */
+	printf("WWWWWWorker thread :: TD#: %zu, inisde MM_Scavenger::workThreadGarbageCollect about to call rootScanner.scanRoots SCAN_ROOTS phase!!!!!!!!!! \n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	MM_ScavengerRootScanner rootScanner(env, this);
 
 	rootScanner.scavengeRememberedSet(env);
 
 	rootScanner.scanRoots(env);
+
+	printf("WWWWWWorker thread :: TD#: %zu, inisde MM_Scavenger::workThreadGarbageCollect about to call completeScan SCAN_SCAN PHASE !!!!!!!!!! \n", (uintptr_t)pthread_self());
+        fflush(stdout);
 
 	if(completeScan(env)) {
 		if (_rescanThreadsForRememberedObjects) {
@@ -2434,6 +2441,8 @@ MM_Scavenger::workThreadGarbageCollect(MM_EnvironmentStandard *env)
 		}
 		rootScanner.scanClearable(env);
 	}
+	printf("WWWWWWorker thread :: TD#: %zu, inisde MM_Scavenger::workThreadGarbageCollect in COMPLETE PHASE !!!!!!!!!! \n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	rootScanner.flush(env);
 
 	finalReturnCopyCachesToFreeList(env);
@@ -2871,6 +2880,9 @@ void
 MM_Scavenger::scavengeRememberedSetListDirect(MM_EnvironmentStandard *env)
 {
 	Trc_MM_ParallelScavenger_scavengeRememberedSetList_Entry(env->getLanguageVMThread());
+
+	printf("\t\tTD#: %zu, inisde MM_Scavenger::scavengeRememberedSetListDirect\n", (uintptr_t)pthread_self());
+	fflush(stdout);
 
 	MM_SublistPuddle *puddle = NULL;
 	while (NULL != (puddle = _extensions->rememberedSet.popPreviousPuddle(puddle))) {
@@ -4028,6 +4040,9 @@ MM_Scavenger::mainThreadGarbageCollect(MM_EnvironmentBase *envBase, MM_AllocateD
 	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
 	Trc_MM_Scavenger_mainThreadGarbageCollect_Entry(env->getLanguageVMThread());
 
+	printf("TD#: %zu, inisde MM_Scavenger::mainThreadGarbageCollect()\n", (uintptr_t)pthread_self());
+        fflush(stdout);
+
 	/* We might be running in a context of either main or main thread, but either way we must have exclusive access */
 	Assert_MM_mustHaveExclusiveVMAccess(env->getOmrVMThread());
 
@@ -4049,8 +4064,12 @@ MM_Scavenger::mainThreadGarbageCollect(MM_EnvironmentBase *envBase, MM_AllocateD
 			processLargeAllocateStatsBeforeGC(env);
 		}
 
+		printf("TD#: %zu, inisde MM_Scavenger::mainThreadGarbageCollect() and this is firstIncrement, about to call reportGCCycleStart()\n", (uintptr_t)pthread_self());
+        	fflush(stdout);
 		reportGCCycleStart(env);
 		_extensions->scavengerStats._startTime = omrtime_hires_clock();
+		printf("TD#: %zu, inisde MM_Scavenger::mainThreadGarbageCollect() and this is firstIncrement, Clock started!!!!! about to call mainSetupForGC\n", (uintptr_t)pthread_self());
+                fflush(stdout);
 		mainSetupForGC(env);
 	}
 	clearIncrementGCStats(env, firstIncrement);
@@ -4061,10 +4080,14 @@ MM_Scavenger::mainThreadGarbageCollect(MM_EnvironmentBase *envBase, MM_AllocateD
 
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	if (_extensions->concurrentScavenger) {
+		printf("TD#: %zu, inisde MM_Scavenger::mainThreadGarbageCollect() concurrentScavenge ON and about to call scavengeIncremental\n", (uintptr_t)pthread_self());
+                fflush(stdout);
 		scavengeIncremental(env);
 	} else
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 	{
+		printf("TD#: %zu, inisde MM_Scavenger::mainThreadGarbageCollect() concurrentScavenge OFF and about to call scavenge()\n", (uintptr_t)pthread_self());
+                fflush(stdout);
 		scavenge(env);
 	}
 
@@ -4073,6 +4096,8 @@ MM_Scavenger::mainThreadGarbageCollect(MM_EnvironmentBase *envBase, MM_AllocateD
 #else
 	bool lastIncrement = true;
 #endif
+	printf("TD#: %zu, inisde MM_Scavenger::mainThreadGarbageCollect() returned from scavengeIncremental() or scavenge() and lastIncrement: %d\n", (uintptr_t)pthread_self(), (int)lastIncrement);
+        fflush(stdout);
 
 	_extensions->incrementScavengerStats._endTime = omrtime_hires_clock();
 
@@ -5029,8 +5054,14 @@ MM_Scavenger::scavengeRoots(MM_EnvironmentBase *env)
 {
 	Assert_MM_true(concurrent_phase_roots == _concurrentPhase);
 
+	printf("TD#: %zu, inisde scavengeRoots, launching scavenge task!!!!!!\n", (uintptr_t)pthread_self());
+	fflush(stdout);
+
 	MM_ConcurrentScavengeTask scavengeTask(env, _dispatcher, this, MM_ConcurrentScavengeTask::SCAVENGE_ROOTS, env->_cycleState);
 	_dispatcher->run(env, &scavengeTask);
+
+	printf("TD#: %zu, inisde scavengeRoots, done launching tasks!!!\n", (uintptr_t)pthread_self());
+        fflush(stdout);
 
 	return false;
 }
@@ -5338,11 +5369,15 @@ MM_Scavenger::scavengeIncremental(MM_EnvironmentBase *env)
 		switch (_concurrentPhase) {
 		case concurrent_phase_idle:
 		{
+			printf("TD#: %zu, inisde MM_Scavenger::scavengeIncremental. Current phase == concurrent_phase_idle. Swapping to concurrent_phase_init ----------\n", (uintptr_t)pthread_self());
+			fflush(stdout);
 			_concurrentPhase = concurrent_phase_init;
 			continue;
 		}
 		case concurrent_phase_init:
 		{
+			printf("TD#: %zu, inisde MM_Scavenger::scavengeIncremental. Current phase == concurrent_phase_init. Swapping to concurrent_phase_roots, first init mark map ----------\n", (uintptr_t)pthread_self());
+			fflush(stdout);
 			/* initialize the mark map */
 			scavengeInit(env);
 
@@ -5352,6 +5387,8 @@ MM_Scavenger::scavengeIncremental(MM_EnvironmentBase *env)
 
 		case concurrent_phase_roots:
 		{
+			printf("TD#: %zu, inisde MM_Scavenger::scavengeIncremental. Current phase == concurrent_phase_roots. Swapping to concurrent_phase_scan, first init roots ----------\n", (uintptr_t)pthread_self());
+			fflush(stdout);
 			/* initialize all the roots */
 			scavengeRoots(env);
 
@@ -5378,6 +5415,8 @@ MM_Scavenger::scavengeIncremental(MM_EnvironmentBase *env)
 			/* This is just for corner cases that must be run in STW mode.
 			 * Default main scan phase is done within mainThreadConcurrentCollect. */
 
+			printf("TD#: %zu, inisde MM_Scavenger::scavengeIncremental. Current phase == concurrent_phase_scan. Swapping to concurrent_phase_complete, did we timeout? ----------\n", (uintptr_t)pthread_self());
+			fflush(stdout);
 			timeout = scavengeScan(env);
 
 			_concurrentPhase = concurrent_phase_complete;
@@ -5389,6 +5428,8 @@ MM_Scavenger::scavengeIncremental(MM_EnvironmentBase *env)
 
 		case concurrent_phase_complete:
 		{
+			printf("TD#: %zu, inisde MM_Scavenger::scavengeIncremental. Current phase == concurrent_phase_complete. Swapping to concurrent_phase_idle, calling scavengeComplete first ----------\n", (uintptr_t)pthread_self());
+			fflush(stdout);
 			scavengeComplete(env);
 
 			result = true;
@@ -5412,6 +5453,8 @@ MM_Scavenger::workThreadProcessRoots(MM_EnvironmentStandard *env)
 
 	MM_ScavengerRootScanner rootScanner(env, this);
 
+	printf("\tTD#: %zu, inside MM_Scavenger::workThreadProcessRoots() ROOTS SCAN!!! \n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	/* Indirect refs, only. */
 	rootScanner.scavengeRememberedSet(env);
 
@@ -5432,6 +5475,8 @@ MM_Scavenger::workThreadScan(MM_EnvironmentStandard *env)
 	/* This is where the most of scan work should occur in CS. Typically as a concurrent task (background threads), but in some corner cases it could be scheduled as a STW task */
 	clearThreadGCStats(env, false);
 
+	printf("\tTD#: %zu, inside MM_Scavenger::workThreadScan() THREAD SCAN!!\n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	/* Direct refs, only. */
 	MM_ScavengerRootScanner rootScanner(env, this);
 	rootScanner.scavengeRememberedSet(env);
@@ -5451,6 +5496,9 @@ void
 MM_Scavenger::workThreadComplete(MM_EnvironmentStandard *env)
 {
 	Assert_MM_true(_extensions->concurrentScavenger);
+
+	printf("\tTD#: %zu, inside MM_Scavenger::workThreadScan() THREAD COMPLETE!!\n", (uintptr_t)pthread_self());
+        fflush(stdout);
 
 	/* record that this thread is participating in this cycle */
 	env->_scavengerStats._gcCount = _extensions->scavengerStats._gcCount;
@@ -5511,9 +5559,13 @@ MM_Scavenger::mainThreadConcurrentCollect(MM_EnvironmentBase *env)
 
 		_currentPhaseConcurrent = true;
 
+		printf("TD#: %zu, inisde mainThreadConcurrentCollect(), Creating concurrent task...\n", (uintptr_t)pthread_self());
+		fflush(stdout);
 		MM_ConcurrentScavengeTask scavengeTask(env, _dispatcher, this, MM_ConcurrentScavengeTask::SCAVENGE_SCAN, env->_cycleState);
 		/* Concurrent background task will run with different (typically lower) number of threads. */
 		_dispatcher->run(env, &scavengeTask, _extensions->concurrentScavengerBackgroundThreads);
+		printf("TD#: %zu, inisde mainThreadConcurrentCollect(), tasks completed, returned from run(...,concurrentScavengerBackgroundThreads\n", (uintptr_t)pthread_self());
+                fflush(stdout);
 
 		_currentPhaseConcurrent = false;
 

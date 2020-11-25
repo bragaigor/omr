@@ -1914,6 +1914,8 @@ threadCreate(omrthread_t *handle, const omrthread_attr_t *attr, uintptr_t suspen
 	}
 	if (handle) {
 		*handle = thread;
+		printf("TD#: %zu, inside threadCreate, created thread with id: %zu |||||||||||||||||||||||||||\n", (uintptr_t)pthread_self(), (uintptr_t)thread);
+                fflush(stdout);
 	}
 	ASSERT(thread->library == lib);
 

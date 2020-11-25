@@ -57,6 +57,8 @@ MM_MainGCThread::main_thread_proc2(OMRPortLibrary* portLib, void *info)
 {
 	MM_MainGCThread *mainGCThread = (MM_MainGCThread*)info;
 	/* jump into the main thread procedure and wait for work.  This method will NOT return */
+	printf("-|_|-|_|- TD#: %zu, inisde MM_MainGCThread::main_thread_proc2 about to call mainGCThread->mainThreadEntryPoint() ##################\n", (uintptr_t)pthread_self());
+	fflush(stdout);
 	mainGCThread->mainThreadEntryPoint();
 	Assert_MM_unreachable();
 	return 0;
@@ -70,6 +72,8 @@ MM_MainGCThread::main_thread_proc(void *info)
 	OMR_VM *omrVM = extensions->getOmrVM();
 	OMRPORT_ACCESS_FROM_OMRVM(omrVM);
 	uintptr_t rc = 0;
+	printf("-|_|-|_|- TD#: %zu, inisde MM_MainGCThread::main_thread_proc about to call mainGCThread-> main_thread_proc2 ##################\n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	omrsig_protect(main_thread_proc2, info,
 			extensions->dispatcher->getSignalHandler(), omrVM,
 		OMRPORT_SIG_FLAG_SIGALLSYNC | OMRPORT_SIG_FLAG_MAY_CONTINUE_EXECUTION,
@@ -86,6 +90,9 @@ MM_MainGCThread::initialize(MM_Collector *collector, bool runAsImplicit, bool ac
 	if(omrthread_monitor_init_with_name(&_collectorControlMutex, 0, "MM_MainGCThread::_collectorControlMutex")) {
 		success = false;
 	}
+
+	printf("-|_|-|_|- TD#: %zu, inisde MM_MainGCThread::initialize Init MainGCThread ##################\n", (uintptr_t)pthread_self());
+        fflush(stdout);
 
 	_collector = collector;
 	_runAsImplicit = runAsImplicit;
@@ -111,6 +118,9 @@ MM_MainGCThread::startup()
 {
 	/* set the success flag to false and we will set it true if everything succeeds */
 	bool success = false;
+
+	printf("-|_|-|_|- TD#: %zu, inisde MM_MainGCThread::startup() starting up mainGCThread ##################\n", (uintptr_t)pthread_self());
+        fflush(stdout);
 
 	if (_extensions->fvtest_disableExplictMainThread) {
 		/* GC should be able to act even if main thread is not created (or late) */
@@ -172,6 +182,9 @@ MM_MainGCThread::handleSTW(MM_EnvironmentBase *env)
 	Assert_MM_true(NULL != _incomingCycleState);
 	env->_cycleState = _incomingCycleState;
 
+	printf("-|_|-|_|- TD#: %zu, inisde MM_MainGCThread::handleSTW how did we get here????? ##################\n", (uintptr_t)pthread_self());
+        fflush(stdout);
+
 	/* this thread effectively inherits exclusive access from the mutator thread -- set its state to indicate this */
 	env->assumeExclusiveVMAccess(1);
 
@@ -206,7 +219,11 @@ MM_MainGCThread::handleConcurrent(MM_EnvironmentBase *env)
 			if (!_acquireVMAccessDuringConcurrent) {
 				omrthread_monitor_exit(_collectorControlMutex);
 			}
+			printf("TD#: %zu, inisde handleConcurrent, about to call _collector->mainThreadConcurrentCollect -------------------\n", (uintptr_t)pthread_self());
+                        fflush(stdout);
 			uintptr_t bytesConcurrentlyScanned = _collector->mainThreadConcurrentCollect(env);
+			printf("TD#: %zu, inisde handleConcurrent, RETURNED from _collector->mainThreadConcurrentCollect -------------------\n", (uintptr_t)pthread_self());
+                        fflush(stdout);
 
 			if (!_acquireVMAccessDuringConcurrent) {
 				omrthread_monitor_enter(_collectorControlMutex);
@@ -234,6 +251,8 @@ MM_MainGCThread::mainThreadEntryPoint()
 	OMR_VMThread *omrVMThread = NULL;
 	Assert_MM_true(NULL != _collectorControlMutex);
 	Assert_MM_true(NULL == _mainGCThread);
+	printf("TD#: %zu, inisde MM_MainGCThread::mainThreadEntryPoint()\n", (uintptr_t)pthread_self());
+        fflush(stdout);
 
 	/* Attach the thread as a system daemon thread */	
 	/* You need a VM thread so that the stack walker can work */
@@ -266,15 +285,26 @@ MM_MainGCThread::mainThreadEntryPoint()
 		do {
 			if (STATE_GC_REQUESTED == _mainThreadState) {
 				if (_runAsImplicit) {
+					printf("TD#: %zu, inisde mainThreadEntryPoint(), about to call handleConcurrent()\n", (uintptr_t)pthread_self());
+					fflush(stdout);
 					handleConcurrent(env);
 				} else {
+					printf("TD#: %zu, inisde mainThreadEntryPoint(), about to call handleSTW()\n", (uintptr_t)pthread_self());
+					fflush(stdout);
 					handleSTW(env);
 				}
 			}
 
 			if (STATE_WAITING == _mainThreadState) {
-				if (_runAsImplicit || !handleConcurrent(env)) {
+				printf("TD#: %zu, inisde mainThreadEntryPoint(), about to call handleConcurrent() 22222222222222222222222 \n", (uintptr_t)pthread_self());
+                                fflush(stdout);
+				bool didWork = handleConcurrent(env);
+				if (_runAsImplicit || !didWork) { // _runAsImplicit is always false in case of balanced
+					printf("TD#: %zu, inisde mainThreadEntryPoint, going to sleep and _runAsImplicit: %d, didWork: %d\n", (uintptr_t)pthread_self(), (int)_runAsImplicit, (int)didWork);
+					fflush(stdout);
 					omrthread_monitor_wait(_collectorControlMutex);
+					printf("TD#: %zu, inisde mainThreadEntryPoint, thread WOKE UP FROM SLEEP!!!!!\n", (uintptr_t)pthread_self());
+                                        fflush(stdout);
 				}
 			}
 		} while (STATE_TERMINATION_REQUESTED != _mainThreadState);
@@ -292,6 +322,8 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 {
 	Assert_MM_mustHaveExclusiveVMAccess(env->getOmrVMThread());
 	bool didAttemptCollect = false;
+	printf("TD#: %zu, inisde MM_MainGCThread::garbageCollect()\n", (uintptr_t)pthread_self());
+	fflush(stdout);
 	
 	if (NULL != _collector) {
 		/* the collector has started up so try to run */
@@ -304,6 +336,8 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 			 */
 			Assert_MM_true(0 == env->getWorkerID());
 			_collector->preMainGCThreadInitialize(env);
+			printf("TD#: %zu, inisde MM_MainGCThread::garbageCollect() and about to call _collector->mainThreadGarbageCollect()......\n", (uintptr_t)pthread_self());
+        		fflush(stdout);
 			_collector->mainThreadGarbageCollect(env, allocDescription);
 
 			if (_runAsImplicit && _collector->isConcurrentWorkAvailable(env)) {
@@ -311,6 +345,8 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 
 				if (STATE_WAITING == _mainThreadState) {
 					_mainThreadState = STATE_GC_REQUESTED;
+					printf("TD#: %zu, inisde MM_MainGCThread::garbageCollect, waking up other threads on _collectorControlMutex.........\n", (uintptr_t)pthread_self());
+                        		fflush(stdout);
 					omrthread_monitor_notify(_collectorControlMutex);
 				}
 
@@ -327,8 +363,12 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 			MainGCThreadState previousState = _mainThreadState;
 			_mainThreadState = STATE_GC_REQUESTED;
 			if (STATE_WAITING == previousState) {
+				printf("TD#: %zu, inisde garbageCollect() about to notify on _collectorControlMutex!!\n", (uintptr_t)pthread_self());
+				fflush(stdout);
 				omrthread_monitor_notify(_collectorControlMutex);
 			} else if (STATE_RUNNING_CONCURRENT == previousState) {
+				printf("TD#: %zu, inisde garbageCollect() forcing concurrent finish\n", (uintptr_t)pthread_self());
+				fflush(stdout);
 				_collector->forceConcurrentFinish();
 			} else {
 				Assert_MM_unreachable();
@@ -337,7 +377,11 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 			/* The main thread will claim exclusive VM access. Artificially give it up in this thread so that tools like -Xcheck:vm continue to work. */
 			uintptr_t savedExclusiveCount = env->relinquishExclusiveVMAccess();
 			while (STATE_GC_REQUESTED == _mainThreadState) {
+				printf("TD#: %zu, inisde garbageCollect(), main thread going to take a nap zZzZzZzZzZzZzZzZzZZzZzZZzZzZZzZ... on _collectorControlMutex\n", (uintptr_t)pthread_self());
+				fflush(stdout);
 				omrthread_monitor_wait(_collectorControlMutex);
+				printf("TD#: %zu, inisde garbageCollect(), main thread just woke up from the nap!!!!!!!! on _collectorControlMutex\n", (uintptr_t)pthread_self());
+				fflush(stdout);
 			}
 			env->assumeExclusiveVMAccess(savedExclusiveCount);
 
@@ -346,6 +390,9 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 		}
 		
 		didAttemptCollect = true;
+	} else {
+		printf("TD#: %zu, inisde MM_MainGCThread::garbageCollect() and _collector is NULL!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (uintptr_t)pthread_self());
+                fflush(stdout);
 	}
 	return didAttemptCollect;
 }

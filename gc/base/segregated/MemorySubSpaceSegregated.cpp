@@ -167,6 +167,8 @@ MM_MemorySubSpaceSegregated::allocateMixedObjectOrArraylet(MM_EnvironmentBase *e
 		Assert_MM_mustHaveExclusiveVMAccess(env->getOmrVMThread());
 
 		/* run the collector in the default mode (ie:  not explicitly aggressive) */
+		printf("-_-_-_-_ #TID: %zu, Inside MM_MemorySubSpaceSegregated::allocateMixedObjectOrArraylet about to call garbageCollect 66666666666666\n", (uintptr_t)pthread_self());
+        	fflush(stdout);
 		result = _collector->garbageCollect(env, this, allocDescription, J9MMCONSTANT_IMPLICIT_GC_DEFAULT, NULL, NULL, NULL);
 		allocDescription->restoreObjects(env);
 		result = allocate(env, allocDescription, allocType);
@@ -178,6 +180,8 @@ MM_MemorySubSpaceSegregated::allocateMixedObjectOrArraylet(MM_EnvironmentBase *e
 
 		allocDescription->saveObjects(env);
 		/* The collect wasn't good enough to satisfy the allocate so attempt an aggressive collection */
+		printf("-_-_-_-_ #TID: %zu, Inside MM_MemorySubSpaceSegregated::allocateMixedObjectOrArraylet about to call garbageCollect 777777777777\n", (uintptr_t)pthread_self());
+                fflush(stdout);
 		result = _collector->garbageCollect(env, this, allocDescription, J9MMCONSTANT_IMPLICIT_GC_AGGRESSIVE, NULL, NULL, NULL);
 		allocDescription->restoreObjects(env);
 		result = allocate(env, allocDescription, allocType);

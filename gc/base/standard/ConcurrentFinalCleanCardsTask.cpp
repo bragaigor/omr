@@ -31,6 +31,8 @@
 void
 MM_ConcurrentFinalCleanCardsTask::run(MM_EnvironmentBase *envBase)
 {
+	printf("\tTD#: %zu, inisde MM_ConcurrentFinalCleanCardsTask::run... \n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
 	_collector->finalCleanCards(env);
 }

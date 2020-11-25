@@ -43,6 +43,8 @@ MM_ParallelMarkTask::getVMStateID()
 void
 MM_ParallelMarkTask::run(MM_EnvironmentBase *env)
 {
+	printf("\tTD#: %zu, inisde MM_ParallelMarkTask::run... \n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	env->_workStack.prepareForWork(env, (MM_WorkPackets *)(_markingScheme->getWorkPackets()));
 
 	_markingScheme->markLiveObjectsInit(env, _initMarkMap);

@@ -33,6 +33,8 @@
 void
 MM_ConcurrentScanRememberedSetTask::run(MM_EnvironmentBase *envBase)
 {
+	printf("\tTD#: %zu, inisde MM_ConcurrentScanRememberedSetTask::run... \n", (uintptr_t)pthread_self());
+        fflush(stdout);
 	MM_EnvironmentStandard *env = MM_EnvironmentStandard::getEnvironment(envBase);
 	_collector->scanRememberedSet(env);
 }
