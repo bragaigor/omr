@@ -173,17 +173,21 @@ omrvmem_startup(struct OMRPortLibrary *portLibrary)
 	PPG_vmem_pageSize[0] = (uintptr_t)vm_page_size;
 	PPG_vmem_pageFlags[0] = OMRPORT_VMEM_PAGE_FLAG_NOT_USED;
 
-	/* Now the superpages */
-	PPG_vmem_pageSize[1] = 0;
-	PPG_vmem_pageFlags[1] = OMRPORT_VMEM_PAGE_FLAG_SUPERPAGE_ANY;
+	/* Index for superpages. We do this to keep the PPG_vmem_pageSize in ascending order. */
+	int32_t superpagesIndex = 1;
 
 #if defined(VM_FLAGS_SUPERPAGE_SIZE_2MB)
 	/* The OSX man pages for mmap state that mach/vm_statistics.h specifies the superpage size,
 	 * but in practice it appears to always be 2MB.
 	 */
-	PPG_vmem_pageSize[2] = 2*1024*1024;
-	PPG_vmem_pageFlags[2] = OMRPORT_VMEM_PAGE_FLAG_NOT_USED;
+	PPG_vmem_pageSize[1] = 2*1024*1024;
+	PPG_vmem_pageFlags[1] = OMRPORT_VMEM_PAGE_FLAG_NOT_USED;
+	superpagesIndex = 2;
 #endif /* defined(VM_FLAGS_SUPERPAGE_SIZE_2MB) */
+
+	/* Now the superpages */
+	PPG_vmem_pageSize[superpagesIndex] = OMRPORT_VMEM_PAGE_FLAG_NOT_USED_SPECIAL;
+	PPG_vmem_pageFlags[superpagesIndex] = OMRPORT_VMEM_PAGE_FLAG_SUPERPAGE_ANY;
 
 	/* Set default value to advise OS about vmem that is no longer needed */
 	portLibrary->portGlobals->vmemAdviseOSonFree = 1;
@@ -217,7 +221,7 @@ omrvmem_commit_memory(struct OMRPortLibrary *portLibrary, void *address, uintptr
 				Trc_PRT_vmem_omrvmem_commit_memory_mprotect_failure(errno);
 				portLibrary->error_set_last_error(portLibrary,  errno, OMRPORT_ERROR_VMEM_OPFAILED);
 			}
-		} else if (PPG_vmem_pageSize[2] == identifier->pageSize || PPG_vmem_pageFlags[1] == identifier->pageFlags) {
+		} else if (PPG_vmem_pageSize[1] == identifier->pageSize || PPG_vmem_pageFlags[2] == identifier->pageFlags) {
 			rc = address;
 		}
 	} else {
@@ -370,7 +374,7 @@ omrvmem_reserve_memory_ex(struct OMRPortLibrary *portLibrary, struct J9PortVmemI
 		if ((0 == minimumGranule) || (0 == (alignmentInBytes % minimumGranule))) {
 			memoryPointer = getMemoryInRange(portLibrary, identifier, category, params->byteAmount, params->startAddress, params->endAddress, alignmentInBytes, params->options, params->pageSize, params->pageFlags, params->mode);
 		}
-	} else if (PPG_vmem_pageSize[2] == params->pageSize) {
+	} else if (PPG_vmem_pageSize[1] == params->pageSize) {
 		uintptr_t largePageAlignmentInBytes = OMR_MAX(params->pageSize, params->alignmentInBytes);
 		uintptr_t largePageMinimumGranule = OMR_MIN(params->pageSize, params->alignmentInBytes);
 
@@ -458,7 +462,7 @@ reserveMemory(struct OMRPortLibrary *portLibrary, void *address, uintptr_t byteA
 	}
 
 #if defined(VM_FLAGS_SUPERPAGE_SIZE_2MB)
-	if (PPG_vmem_pageSize[2] == pageSize) {
+	if (PPG_vmem_pageSize[1] == pageSize) {
 		fd = VM_FLAGS_SUPERPAGE_SIZE_2MB;
 	}
 #endif /* defined(VM_FLAGS_SUPERPAGE_SIZE_2MB) */
@@ -576,16 +580,21 @@ get_protectionBits(uintptr_t mode)
 void
 omrvmem_default_large_page_size_ex(struct OMRPortLibrary *portLibrary, uintptr_t mode, uintptr_t *pageSize, uintptr_t *pageFlags)
 {
+	int32_t superpagesIndex = 1;
+#if defined(VM_FLAGS_SUPERPAGE_SIZE_2MB)
+	superpagesIndex = 2;
+#endif /* defined(VM_FLAGS_SUPERPAGE_SIZE_2MB) */
+
 	/* Note that the PPG_vmem_pageSize is a null-terminated list of page sizes.
 	 * There will always be the 0 element (default page size),
 	 * so the 1 element will be zero or the default large size where only 2 are supported
 	 * (platforms with more complicated logic will use their own special process to determine the best response)
 	 */
 	if (NULL != pageSize) {
-		*pageSize = PPG_vmem_pageSize[1];
+		*pageSize = PPG_vmem_pageSize[superpagesIndex];
 	}
 	if (NULL != pageFlags) {
-		*pageFlags = PPG_vmem_pageFlags[1];
+		*pageFlags = PPG_vmem_pageFlags[superpagesIndex];
 	}
 
 	return;
@@ -678,7 +687,7 @@ getMemoryInRange(struct OMRPortLibrary *portLibrary, struct J9PortVmemIdentifier
 	}
 	
 #if defined(VM_FLAGS_SUPERPAGE_SIZE_2MB)
-	if (PPG_vmem_pageSize[2] == pageSize) {
+	if (PPG_vmem_pageSize[1] == pageSize) {
 		/* Don't bother scanning the entire address space if the request can't be satisfied. */
 		void *tmpPointer = reserveMemory(portLibrary, NULL, byteAmount, identifier, mode, pageSize, pageFlags, category);
 		if (NULL == tmpPointer) {
