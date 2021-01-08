@@ -182,6 +182,9 @@ MM_MainGCThread::handleSTW(MM_EnvironmentBase *env)
 
 	env->_cycleState = NULL;
 	_incomingCycleState = NULL;
+	// TODO: Do something about updating _mainThreadState state.
+	//       How to transition from 1st STW phase to 2nd STW phase (soon to be concurrent)
+	//       Maybe create STATE_GC_CONCURRENT_REQUESTED state
 	_mainThreadState = STATE_WAITING;
 	omrthread_monitor_notify(_collectorControlMutex);
 }
@@ -265,7 +268,7 @@ MM_MainGCThread::mainThreadEntryPoint()
 		omrthread_monitor_notify(_collectorControlMutex);
 		do {
 			if (STATE_GC_REQUESTED == _mainThreadState) {
-				if (_runAsImplicit) {
+				if (_runAsImplicit) { // TODO: This will need to go since we'll need to run concurrently with an explicit GC thread (Concurrent PGC)
 					handleConcurrent(env);
 				} else {
 					handleSTW(env);
