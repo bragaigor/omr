@@ -165,7 +165,7 @@ MM_MainGCThread::shutdown()
 	}
 }
 
-
+/* TODO: Understand */
 void
 MM_MainGCThread::handleSTW(MM_EnvironmentBase *env)
 {
@@ -186,6 +186,7 @@ MM_MainGCThread::handleSTW(MM_EnvironmentBase *env)
 	omrthread_monitor_notify(_collectorControlMutex);
 }
 
+/* TODO: Understand */
 bool
 MM_MainGCThread::handleConcurrent(MM_EnvironmentBase *env)
 {
@@ -251,7 +252,7 @@ MM_MainGCThread::mainThreadEntryPoint()
 		/* attachVMThread could have allocated and execute a barrier (until point, this thread acted as a mutator thread.
 		 * Flush GC chaches (like barrier buffers) before turning into the main thread */
 		/* TODO: call plain env->initializeGCThread() once downstream projects are ready (subclass Env::init calls base Env::init)  */
-		env->MM_EnvironmentBase::initializeGCThread();
+		env->MM_EnvironmentBase::initializeGCThread(); // Main Thread is created!!!!!!
 
 		env->setThreadType(GC_MAIN_THREAD);
 
@@ -266,15 +267,15 @@ MM_MainGCThread::mainThreadEntryPoint()
 		do {
 			if (STATE_GC_REQUESTED == _mainThreadState) {
 				if (_runAsImplicit) {
-					handleConcurrent(env);
+					handleConcurrent(env); // Put print
 				} else {
-					handleSTW(env);
+					handleSTW(env); // Put print 
 				}
 			}
 
 			if (STATE_WAITING == _mainThreadState) {
 				if (_runAsImplicit || !handleConcurrent(env)) {
-					omrthread_monitor_wait(_collectorControlMutex);
+					omrthread_monitor_wait(_collectorControlMutex); // Most of the time the Main Thread will sit on this monitor waiting for some work
 				}
 			}
 		} while (STATE_TERMINATION_REQUESTED != _mainThreadState);
@@ -287,6 +288,7 @@ MM_MainGCThread::mainThreadEntryPoint()
 	}
 }
 
+// Who calls garbage Collect??
 bool
 MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription *allocDescription)
 {
@@ -327,7 +329,7 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 			MainGCThreadState previousState = _mainThreadState;
 			_mainThreadState = STATE_GC_REQUESTED;
 			if (STATE_WAITING == previousState) {
-				omrthread_monitor_notify(_collectorControlMutex);
+				omrthread_monitor_notify(_collectorControlMutex); // Case of PGC!!!!!! Notifies Main GC Thread from above (line 278) that has been sleeping 
 			} else if (STATE_RUNNING_CONCURRENT == previousState) {
 				_collector->forceConcurrentFinish();
 			} else {

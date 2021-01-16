@@ -1426,7 +1426,7 @@ MM_Scavenger::copy(MM_EnvironmentStandard *env, MM_ForwardedHeader* forwardedHea
 	uintptr_t oldObjectAge = objectAge;
 
 	/* Object is in the evacuate space but not forwarded. */
-	_extensions->objectModel.calculateObjectDetailsForCopy(env, forwardedHeader, &objectCopySizeInBytes, &objectReserveSizeInBytes, &hotFieldsDescriptor);
+	_extensions->objectModel.calculateObjectDetailsForCopy(env, forwardedHeader, &objectCopySizeInBytes, &objectReserveSizeInBytes, &hotFieldsDescriptor); /////////////// This???????
 
 	Assert_MM_objectAligned(env, objectReserveSizeInBytes);
 
@@ -1542,7 +1542,7 @@ MM_Scavenger::copy(MM_EnvironmentStandard *env, MM_ForwardedHeader* forwardedHea
 		 * For larger objects, there is only one copy (threads setup destination header, one wins, and other participate in copying or wait till copy is complete).
 		 * 1024 is somewhat arbitrary threshold, so that most of time we do not have to go through relatively expensive setup procedure.
 		 */
-		if (objectCopySizeInBytes <= 1024) {
+		if (objectCopySizeInBytes <= 1024) { ////////////////// Here?????????
 			allowDuplicate = true;
 		} else {
 			remainingSizeToCopy = objectCopySizeInBytes;
@@ -2406,6 +2406,7 @@ MM_Scavenger::completeScan(MM_EnvironmentStandard *env)
 	return !backOutRaisedThisScanCycle;
 }
 
+/* Min 20 */
 void
 MM_Scavenger::workThreadGarbageCollect(MM_EnvironmentStandard *env)
 {
@@ -2421,17 +2422,19 @@ MM_Scavenger::workThreadGarbageCollect(MM_EnvironmentStandard *env)
 	 *
 	 * So scavenge Remembered Set right away
 	 */
+// -------------------------------------------------- ROOT PHASE
 	MM_ScavengerRootScanner rootScanner(env, this);
 
 	rootScanner.scavengeRememberedSet(env);
 
 	rootScanner.scanRoots(env);
-
+// --------------------------------------------------  MAIN SCAN PHASE
 	if(completeScan(env)) {
 		if (_rescanThreadsForRememberedObjects) {
 			rootScanner.rescanThreadSlots(env);
 			flushRememberedSet(env);
 		}
+// -------------------------------------------------- COMPLETE PHASE
 		rootScanner.scanClearable(env);
 	}
 	rootScanner.flush(env);
@@ -5024,9 +5027,11 @@ MM_Scavenger::scavengeInit(MM_EnvironmentBase *env)
 	return false;
 }
 
+// ----------------------------------------- 36:40
 bool
 MM_Scavenger::scavengeRoots(MM_EnvironmentBase *env)
 {
+	// print
 	Assert_MM_true(concurrent_phase_roots == _concurrentPhase);
 
 	MM_ConcurrentScavengeTask scavengeTask(env, _dispatcher, this, MM_ConcurrentScavengeTask::SCAVENGE_ROOTS, env->_cycleState);
@@ -5326,6 +5331,7 @@ MM_Scavenger::threadReleaseCaches(MM_EnvironmentBase *currentEnvBase, MM_Environ
 	}
 }
 
+/* Important: TODO: Put print statements in each of these cases to see when each phase is triggered in normal gencon and CS gencon */
 bool
 MM_Scavenger::scavengeIncremental(MM_EnvironmentBase *env)
 {
@@ -5405,6 +5411,7 @@ MM_Scavenger::scavengeIncremental(MM_EnvironmentBase *env)
 	return result;
 }
 
+// -------------------------------------------------- ROOT PHASE for CS gencon
 void
 MM_Scavenger::workThreadProcessRoots(MM_EnvironmentStandard *env)
 {
@@ -5426,6 +5433,7 @@ MM_Scavenger::workThreadProcessRoots(MM_EnvironmentStandard *env)
 	mergeThreadGCStats(env);
 }
 
+// -------------------------------------------------- SCAN PHASE for CS gencon
 void
 MM_Scavenger::workThreadScan(MM_EnvironmentStandard *env)
 {
@@ -5447,6 +5455,7 @@ MM_Scavenger::workThreadScan(MM_EnvironmentStandard *env)
 	mergeThreadGCStats(env);
 }
 
+// -------------------------------------------------- COMPLETE PHASE for CS gencon
 void
 MM_Scavenger::workThreadComplete(MM_EnvironmentStandard *env)
 {

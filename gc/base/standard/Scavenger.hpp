@@ -124,12 +124,13 @@ private:
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 	MM_MainGCThread _mainGCThread; /**< An object which manages the state of the main GC thread */
 	
+	/* Scavenger states */
 	volatile enum ConcurrentState {
 		concurrent_phase_idle,
 		concurrent_phase_init,
-		concurrent_phase_roots,
-		concurrent_phase_scan,
-		concurrent_phase_complete
+		concurrent_phase_roots, // STW for both gencon and CS gencon
+		concurrent_phase_scan, // STW for gencon and concurrent for CS gencon
+		concurrent_phase_complete // STW for both gencon and CS gencon
 	} _concurrentPhase;
 	
 	bool _currentPhaseConcurrent;
