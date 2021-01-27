@@ -43,7 +43,7 @@
    in cases when it's likely not in data cash (GC thread encountering already forwarded object) */
 #define OMR_BEING_COPIED_HINT 2
 #define OMR_SELF_FORWARDED_TAG J9_GC_MULTI_SLOT_HOLE
-#define OMR_FORWARDED_TAG_MASK (OMR_FORWARDED_TAG | OMR_BEING_COPIED_HINT | OMR_SELF_FORWARDED_TAG)
+#define OMR_FORWARDED_TAG_MASK (OMR_FORWARDED_TAG | OMR_BEING_COPIED_HINT)
 
 
 /* Destination object header bits, masks, consts... */
