@@ -68,6 +68,9 @@ private:
 	bool _runAsImplicit; /**< if true, STW GC (via garbageCollect()) is executed with the main thread being the caller's thread, otherwise the request is passed to the explicit main thread */
 	bool _acquireVMAccessDuringConcurrent; /**< if true, (explicit) main GC thread holds VM access, while running concurrent phase of a GC cycle */
 	bool _concurrentResumable; /**< if true, a previously terminated concurrent phase (e.g. Concurrent Scavenger) is able to resume once vm access has been acquired again */
+#if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
+	bool _worktSTWDone;
+#endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
 
 /*
  * Function members
@@ -78,7 +81,7 @@ public:
 	 * Early initialize: montior creation
 	 * globalCollector[in] the global collector (typically the caller)
 	 */
-	bool initialize(MM_Collector *collector, bool runAsImplicit = false, bool acquireVMAccessDuringConcurrent = false, bool concurrentResumable = false);
+	bool initialize(MM_Collector *collector, bool runAsImplicit = false, bool acquireVMAccessDuringConcurrent = false, bool concurrentResumable = false, bool worktSTWDone = true);
 
 	/**
 	 * Teardown resources created by initialize
@@ -114,6 +117,10 @@ public:
 	 * @return true if a garbage collection is in progress
 	 */
 	bool isGarbageCollectInProgress() { return STATE_GC_REQUESTED != _mainThreadState; }
+
+#if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
+	inline void setWorkSTWDone(bool worktSTWDone) { _worktSTWDone = worktSTWDone; }
+#endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
 	
 	MM_MainGCThread(MM_EnvironmentBase *env);
 protected:
