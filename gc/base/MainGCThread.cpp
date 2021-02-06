@@ -48,6 +48,9 @@ MM_MainGCThread::MM_MainGCThread(MM_EnvironmentBase *env)
 	, _runAsImplicit(false)
 	, _acquireVMAccessDuringConcurrent(false)
 	, _concurrentResumable(false)
+#if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
+        , _worktSTWDone(true)
+#endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
 {
 	_typeId = __FUNCTION__;
 }
@@ -78,9 +81,13 @@ MM_MainGCThread::main_thread_proc(void *info)
 }
 
 
-
+// TODO: Idea, we could introduce another variable here to indicate that we're dealing with special VLHGC STW temporary phase
 bool
+#if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
+MM_MainGCThread::initialize(MM_Collector *collector, bool runAsImplicit, bool acquireVMAccessDuringConcurrent, bool concurrentResumable, bool worktSTWDone)
+#else
 MM_MainGCThread::initialize(MM_Collector *collector, bool runAsImplicit, bool acquireVMAccessDuringConcurrent, bool concurrentResumable)
+#endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
 {
 	bool success = true;
 	if(omrthread_monitor_init_with_name(&_collectorControlMutex, 0, "MM_MainGCThread::_collectorControlMutex")) {
@@ -91,6 +98,9 @@ MM_MainGCThread::initialize(MM_Collector *collector, bool runAsImplicit, bool ac
 	_runAsImplicit = runAsImplicit;
 	_acquireVMAccessDuringConcurrent = acquireVMAccessDuringConcurrent;
 	_concurrentResumable = concurrentResumable;
+#if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
+	_worktSTWDone = worktSTWDone;
+#endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
 
 	return success;
 }
@@ -177,16 +187,31 @@ MM_MainGCThread::handleSTW(MM_EnvironmentBase *env)
 
 	_collector->mainThreadGarbageCollect(env, _allocDesc);
 
-	uintptr_t exclusiveCount = env->relinquishExclusiveVMAccess();
-	Assert_MM_true(1 == exclusiveCount);
+#if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
+	if (_worktSTWDone) {
+#endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
+		// TODO: We might also want to deal with this
+		uintptr_t exclusiveCount = env->relinquishExclusiveVMAccess();
+		Assert_MM_true(1 == exclusiveCount);
 
-	env->_cycleState = NULL;
-	_incomingCycleState = NULL;
-	// TODO: Do something about updating _mainThreadState state.
-	//       How to transition from 1st STW phase to 2nd STW phase (soon to be concurrent)
-	//       Maybe create STATE_GC_CONCURRENT_REQUESTED state
-	_mainThreadState = STATE_WAITING;
-	omrthread_monitor_notify(_collectorControlMutex);
+		env->_cycleState = NULL;
+		_incomingCycleState = NULL;
+		// TODO: Do something about updating _mainThreadState state.
+		//       How to transition from 1st STW phase to 2nd STW phase (soon to be concurrent)
+		//       Maybe create STATE_GC_CONCURRENT_REQUESTED state
+		_mainThreadState = STATE_WAITING;
+		// TODO: This is fine for the final goal because at this point we're at the end of the 1st STW phase of PGC and
+		// 	 this monitor notify will wake up the mutator threads to continue it's work.
+		//
+		// 	 But, since we want 2nd phase to be STW (temporarily) we don't want to wake up any mutators. How will
+		// 	 we deal with this? We want to transition from the 1st STW phase to the second STW phase which will be
+		// 	 handled by handleConcurrent (temporarily).
+		//
+		// 	 Maybe it'll be worh creating another handleSTW for this special case?
+		omrthread_monitor_notify(_collectorControlMutex);
+#if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
+	}
+#endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
 }
 
 bool
@@ -201,10 +226,12 @@ MM_MainGCThread::handleConcurrent(MM_EnvironmentBase *env)
 			omrthread_monitor_exit(_collectorControlMutex);
 			env->acquireVMAccess();
 		}
+		// TODO: 2nd PGC phase should be dealt with this if, which eventually calls mainThreadConcurrentCollect
 		if (_collector->isConcurrentWorkAvailable(env)) {
 			MM_ConcurrentPhaseStatsBase *stats = _collector->getConcurrentPhaseStats();
 			stats->clear();
 
+			// TODO: This prints/reports concurrent start to stdout
 			_collector->preConcurrentInitializeStatsAndReport(env, stats);
 			if (!_acquireVMAccessDuringConcurrent) {
 				omrthread_monitor_exit(_collectorControlMutex);
@@ -215,6 +242,8 @@ MM_MainGCThread::handleConcurrent(MM_EnvironmentBase *env)
 				omrthread_monitor_enter(_collectorControlMutex);
 			}
 
+			// TODO: This prints/reports concurrent end to stdout
+			// 	 Should we move both report calls to the respective collectors? E.g. Scavenger and IncrementalGenerationalGC
 			_collector->postConcurrentUpdateStatsAndReport(env, stats, bytesConcurrentlyScanned);
 			workDone = true;
 		}
@@ -224,6 +253,9 @@ MM_MainGCThread::handleConcurrent(MM_EnvironmentBase *env)
 			omrthread_monitor_enter(_collectorControlMutex);
 		}
 	} while (_concurrentResumable && _collector->isConcurrentWorkAvailable(env));
+	// TODO: If we came from 2nd PGC STW phase, then we must somehow set STATE_GC_REQUESTED to force 3rd and last PGC STW phase
+	// 	 The goal is to eventually let mutator threads run during 2nd PGC phase but for the first iteration of changes
+	// 	 the 2ns PGC phase will be STW, therefore there's no need to let mutators run.
 	if (STATE_RUNNING_CONCURRENT == _mainThreadState) {
 		_mainThreadState = STATE_WAITING;
 	}
@@ -271,13 +303,20 @@ MM_MainGCThread::mainThreadEntryPoint()
 				if (_runAsImplicit) { // TODO: This will need to go since we'll need to run concurrently with an explicit GC thread (Concurrent PGC)
 					handleConcurrent(env);
 				} else {
+					// TODO: First phase of PGC will be called here <<<<<<<<<<<<<<<<<<<<
+					//
+					// 	 As a temporary fix ro STW -> STW -> STW we could create handleSTWforVLHGC, but how would we distinguish between
+					// 	 the 1st STW PGC and the 3rd STW PGC (because we want to relinquish VM exclusive access in the 3rdd STW PGC)
+					//
+					// TODO: Then inside handleSTW() we could check agains the newly introduced variable that distinguish between regular PGC and concurrent PGC policy
 					handleSTW(env);
 				}
 			}
 
 			if (STATE_WAITING == _mainThreadState) {
+				// TODO: Right after 1st STW PGC phase is done, we'll call this handleConcurrent
 				if (_runAsImplicit || !handleConcurrent(env)) {
-					omrthread_monitor_wait(_collectorControlMutex);
+					omrthread_monitor_wait(_collectorControlMutex); // <><><><><><><><><><><><>
 				}
 			}
 		} while (STATE_TERMINATION_REQUESTED != _mainThreadState);
@@ -339,6 +378,7 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 			
 			/* The main thread will claim exclusive VM access. Artificially give it up in this thread so that tools like -Xcheck:vm continue to work. */
 			uintptr_t savedExclusiveCount = env->relinquishExclusiveVMAccess();
+			// TODO: This is the entry point of PGC, in which case this thread will wake up the sleeping explicit thread from  <><><><><><><><> line above
 			while (STATE_GC_REQUESTED == _mainThreadState) {
 				omrthread_monitor_wait(_collectorControlMutex);
 			}
