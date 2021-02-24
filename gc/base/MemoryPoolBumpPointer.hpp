@@ -151,6 +151,8 @@ public:
 		/* note that actualFreeMemory can be measured as less than allocatableMemory if sweep calculated it since it won't
 		 * see the very end of the pool if it is less than minimumFreeEntrySize.
 		 */
+		printf("### TID: %zu. Inside getFreeMemoryAndDarkMatterBytes and actualFreeMemory: %zu, allocatableMemory: %zu!\n", (uintptr_t)pthread_self(), (uintptr_t)actualFreeMemory, (uintptr_t)allocatableMemory);
+		fflush(stdout);
 		Assert_MM_true((0 == actualFreeMemory) || (actualFreeMemory >= allocatableMemory));
 		return OMR_MAX(actualFreeMemory + darkMatter, allocatableMemory);
 	}

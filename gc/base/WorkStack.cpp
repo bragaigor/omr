@@ -52,12 +52,16 @@ void
 MM_WorkStack::prepareForWork(MM_EnvironmentBase *env, MM_WorkPackets *workPackets)
 {
 	if (NULL == _workPackets) {
+		printf("\t\t### TID: %zu. Setting UP _workPackets to be: %p\n", (uintptr_t)pthread_self(), (void*)workPackets);
+		fflush(stdout);
 		_workPackets = workPackets;
 		/* this is our first time using this work stack instance so the packets should be NULL */
 		Assert_MM_true(NULL == _inputPacket);
 		Assert_MM_true(NULL == _outputPacket);
 		Assert_MM_true(NULL == _deferredPacket);
 	} else {
+		printf("\t\t### TID: %zu. _workPackets is not NULL!!!!!! Therefore they must be equal, _workPackets: %p, workPackets: %p\n", (uintptr_t)pthread_self(), (void*)_workPackets, (void*)workPackets);
+		fflush(stdout);
 		Assert_MM_true(_workPackets == workPackets);
 	}
 }
