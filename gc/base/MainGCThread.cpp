@@ -48,9 +48,6 @@ MM_MainGCThread::MM_MainGCThread(MM_EnvironmentBase *env)
 	, _runAsImplicit(false)
 	, _acquireVMAccessDuringConcurrent(false)
 	, _concurrentResumable(false)
-#if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
-        , _worktSTWDone(true)
-#endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
 {
 	_typeId = __FUNCTION__;
 }
@@ -81,13 +78,8 @@ MM_MainGCThread::main_thread_proc(void *info)
 }
 
 
-// TODO: Idea, we could introduce another variable here to indicate that we're dealing with special VLHGC STW temporary phase
 bool
-#if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
-MM_MainGCThread::initialize(MM_Collector *collector, bool runAsImplicit, bool acquireVMAccessDuringConcurrent, bool concurrentResumable, bool worktSTWDone)
-#else
 MM_MainGCThread::initialize(MM_Collector *collector, bool runAsImplicit, bool acquireVMAccessDuringConcurrent, bool concurrentResumable)
-#endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
 {
 	bool success = true;
 	if(omrthread_monitor_init_with_name(&_collectorControlMutex, 0, "MM_MainGCThread::_collectorControlMutex")) {
@@ -98,9 +90,6 @@ MM_MainGCThread::initialize(MM_Collector *collector, bool runAsImplicit, bool ac
 	_runAsImplicit = runAsImplicit;
 	_acquireVMAccessDuringConcurrent = acquireVMAccessDuringConcurrent;
 	_concurrentResumable = concurrentResumable;
-#if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
-	_worktSTWDone = worktSTWDone;
-#endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
 
 	return success;
 }
@@ -182,36 +171,24 @@ MM_MainGCThread::handleSTW(MM_EnvironmentBase *env)
 	Assert_MM_true(NULL != _incomingCycleState);
 	env->_cycleState = _incomingCycleState;
 
+	printf("-|_|-|_|- TD#: %zu, inisde MM_MainGCThread::handleSTW how did we get here????? ##################\n", (uintptr_t)pthread_self());
+	fflush(stdout);
+
 	/* this thread effectively inherits exclusive access from the mutator thread -- set its state to indicate this */
+	// TODO: Why are we asserting here? This is not working because on first concurrent PGC phase we
+	// already call assumeExclusiveVMAccess(1) which already sets Exclusive VM access. This call assumes that
+	// we did not have exclusive VM access before, which is not try anymore. So how can we assert both cases?
 	env->assumeExclusiveVMAccess(1);
 
 	_collector->mainThreadGarbageCollect(env, _allocDesc);
 
-#if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
-	if (_worktSTWDone) {
-#endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
-		// TODO: We might also want to deal with this
-		uintptr_t exclusiveCount = env->relinquishExclusiveVMAccess();
-		Assert_MM_true(1 == exclusiveCount);
+	uintptr_t exclusiveCount = env->relinquishExclusiveVMAccess();
+	Assert_MM_true(1 == exclusiveCount);
 
-		env->_cycleState = NULL;
-		_incomingCycleState = NULL;
-		// TODO: Do something about updating _mainThreadState state.
-		//       How to transition from 1st STW phase to 2nd STW phase (soon to be concurrent)
-		//       Maybe create STATE_GC_CONCURRENT_REQUESTED state
-		_mainThreadState = STATE_WAITING;
-		// TODO: This is fine for the final goal because at this point we're at the end of the 1st STW phase of PGC and
-		// 	 this monitor notify will wake up the mutator threads to continue it's work.
-		//
-		// 	 But, since we want 2nd phase to be STW (temporarily) we don't want to wake up any mutators. How will
-		// 	 we deal with this? We want to transition from the 1st STW phase to the second STW phase which will be
-		// 	 handled by handleConcurrent (temporarily).
-		//
-		// 	 Maybe it'll be worh creating another handleSTW for this special case?
-		omrthread_monitor_notify(_collectorControlMutex);
-#if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
-	}
-#endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
+	env->_cycleState = NULL;
+	_incomingCycleState = NULL;
+	_mainThreadState = STATE_WAITING;
+	omrthread_monitor_notify(_collectorControlMutex);
 }
 
 bool
@@ -226,7 +203,6 @@ MM_MainGCThread::handleConcurrent(MM_EnvironmentBase *env)
 			omrthread_monitor_exit(_collectorControlMutex);
 			env->acquireVMAccess();
 		}
-		// TODO: 2nd PGC phase should be dealt with this if, which eventually calls mainThreadConcurrentCollect
 		if (_collector->isConcurrentWorkAvailable(env)) {
 			MM_ConcurrentPhaseStatsBase *stats = _collector->getConcurrentPhaseStats();
 			stats->clear();
@@ -236,7 +212,11 @@ MM_MainGCThread::handleConcurrent(MM_EnvironmentBase *env)
 			if (!_acquireVMAccessDuringConcurrent) {
 				omrthread_monitor_exit(_collectorControlMutex);
 			}
+			printf("TD#: %zu, inside handleConcurrent, about to call _collector->mainThreadConcurrentCollect -------------------\n", (uintptr_t)pthread_self());
+			fflush(stdout);
 			uintptr_t bytesConcurrentlyScanned = _collector->mainThreadConcurrentCollect(env);
+			printf("TD#: %zu, inside handleConcurrent, RETURNED from _collector->mainThreadConcurrentCollect -------------------\n", (uintptr_t)pthread_self());
+			fflush(stdout);
 
 			if (!_acquireVMAccessDuringConcurrent) {
 				omrthread_monitor_enter(_collectorControlMutex);
@@ -300,23 +280,27 @@ MM_MainGCThread::mainThreadEntryPoint()
 		omrthread_monitor_notify(_collectorControlMutex);
 		do {
 			if (STATE_GC_REQUESTED == _mainThreadState) {
-				if (_runAsImplicit) { // TODO: This will need to go since we'll need to run concurrently with an explicit GC thread (Concurrent PGC)
+				if (_runAsImplicit) { 
+					printf("TD#: %zu, inisde mainThreadEntryPoint(), about to call handleConcurrent() 0000000000000\n", (uintptr_t)pthread_self());
+					fflush(stdout);
 					handleConcurrent(env);
 				} else {
-					// TODO: First phase of PGC will be called here <<<<<<<<<<<<<<<<<<<<
-					//
-					// 	 As a temporary fix ro STW -> STW -> STW we could create handleSTWforVLHGC, but how would we distinguish between
-					// 	 the 1st STW PGC and the 3rd STW PGC (because we want to relinquish VM exclusive access in the 3rdd STW PGC)
-					//
-					// TODO: Then inside handleSTW() we could check agains the newly introduced variable that distinguish between regular PGC and concurrent PGC policy
+					// TODO: All 3 phases of concurrent PGC will be dealt here <<<<<<<<<<<<<<<<<<<<
+					printf("TD#: %zu, inisde mainThreadEntryPoint(), about to call handleSTW() 1111111111111\n", (uintptr_t)pthread_self());
+					fflush(stdout);
 					handleSTW(env);
 				}
 			}
 
 			if (STATE_WAITING == _mainThreadState) {
-				// TODO: Right after 1st STW PGC phase is done, we'll call this handleConcurrent
+				printf("TD#: %zu, inisde mainThreadEntryPoint(), about to call handleConcurrent() 22222222222222222222222 \n", (uintptr_t)pthread_self());
+				fflush(stdout);
 				if (_runAsImplicit || !handleConcurrent(env)) {
+					printf("TD#: %zu, inisde mainThreadEntryPoint, going to sleep and _runAsImplicit: %d\n", (uintptr_t)pthread_self(), (int)_runAsImplicit);
+					fflush(stdout);
 					omrthread_monitor_wait(_collectorControlMutex); // <><><><><><><><><><><><>
+					printf("TD#: %zu, inisde mainThreadEntryPoint, thread WOKE UP FROM SLEEP!!!!!\n", (uintptr_t)pthread_self());
+					fflush(stdout);
 				}
 			}
 		} while (STATE_TERMINATION_REQUESTED != _mainThreadState);
@@ -334,6 +318,8 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 {
 	Assert_MM_mustHaveExclusiveVMAccess(env->getOmrVMThread());
 	bool didAttemptCollect = false;
+	printf("TD#: %zu, inisde MM_MainGCThread::garbageCollect() This is most likely the entry point of a mutator thread!!!!!\n", (uintptr_t)pthread_self());
+	fflush(stdout);
 	
 	if (NULL != _collector) {
 		/* the collector has started up so try to run */
@@ -346,6 +332,8 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 			 */
 			Assert_MM_true(0 == env->getWorkerID());
 			_collector->preMainGCThreadInitialize(env);
+			printf("TD#: %zu, inisde MM_MainGCThread::garbageCollect() and about to call _collector->mainThreadGarbageCollect()......\n", (uintptr_t)pthread_self());
+			fflush(stdout);
 			_collector->mainThreadGarbageCollect(env, allocDescription);
 
 			if (_runAsImplicit && _collector->isConcurrentWorkAvailable(env)) {
@@ -353,6 +341,8 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 
 				if (STATE_WAITING == _mainThreadState) {
 					_mainThreadState = STATE_GC_REQUESTED;
+					printf("TD#: %zu, inisde MM_MainGCThread::garbageCollect, waking up other threads on _collectorControlMutex.........\n", (uintptr_t)pthread_self());
+					fflush(stdout);
 					omrthread_monitor_notify(_collectorControlMutex);
 				}
 
@@ -369,8 +359,12 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 			MainGCThreadState previousState = _mainThreadState;
 			_mainThreadState = STATE_GC_REQUESTED;
 			if (STATE_WAITING == previousState) {
+				printf("TD#: %zu, inisde garbageCollect() about to notify on _collectorControlMutex!!\n", (uintptr_t)pthread_self());
+				fflush(stdout);
 				omrthread_monitor_notify(_collectorControlMutex);
 			} else if (STATE_RUNNING_CONCURRENT == previousState) {
+				printf("TD#: %zu, inisde garbageCollect() forcing concurrent finish\n", (uintptr_t)pthread_self());
+				fflush(stdout);
 				_collector->forceConcurrentFinish();
 			} else {
 				Assert_MM_unreachable();
@@ -380,7 +374,11 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 			uintptr_t savedExclusiveCount = env->relinquishExclusiveVMAccess();
 			// TODO: This is the entry point of PGC, in which case this thread will wake up the sleeping explicit thread from  <><><><><><><><> line above
 			while (STATE_GC_REQUESTED == _mainThreadState) {
+				printf("TD#: %zu, inisde garbageCollect(), main thread going to take a nap zZzZzZzZzZzZzZzZzZZzZzZZzZzZZzZ... on _collectorControlMutex\n", (uintptr_t)pthread_self());
+				fflush(stdout);
 				omrthread_monitor_wait(_collectorControlMutex);
+				printf("TD#: %zu, inisde garbageCollect(), main thread just woke up from the nap!!!!!!!! on _collectorControlMutex\n", (uintptr_t)pthread_self());
+				fflush(stdout);
 			}
 			env->assumeExclusiveVMAccess(savedExclusiveCount);
 
@@ -389,6 +387,10 @@ MM_MainGCThread::garbageCollect(MM_EnvironmentBase *env, MM_AllocateDescription 
 		}
 		
 		didAttemptCollect = true;
+	}  else {
+		printf("TD#: %zu, inisde MM_MainGCThread::garbageCollect() and _collector is NULL!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (uintptr_t)pthread_self());
+		fflush(stdout);
 	}
+
 	return didAttemptCollect;
 }
