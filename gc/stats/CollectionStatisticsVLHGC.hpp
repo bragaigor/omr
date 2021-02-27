@@ -70,6 +70,11 @@ public:
 	uintptr_t _localNumaNodeBytes;
 	uintptr_t _nonLocalNumaNodeBytes;
 
+	uintptr_t _desiredCompactWork;
+	bool _useSlidingCompactor;
+	bool _abortFlagRaisedDuringPGC; /**< Was PGC cycle successful or not */
+	uintptr_t _startTimeOfCopyForward;
+
 
 private:
 protected:
