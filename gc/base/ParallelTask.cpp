@@ -112,8 +112,8 @@ MM_ParallelTask::synchronizeGCThreads(MM_EnvironmentBase *env, const char *id)
 bool
 MM_ParallelTask::synchronizeGCThreadsAndReleaseMain(MM_EnvironmentBase *env, const char *id)
 {
-	printf("\t\t\t\t\t\t- TID: %zu. Inside MM_ParallelTask::synchronizeGCThreadsAndReleaseMain 111111..\n", (uintptr_t)pthread_self());
-	fflush(stdout);
+	//printf("\t\t\t\t\t\t- TID: %zu. Inside MM_ParallelTask::synchronizeGCThreadsAndReleaseMain 111111..\n", (uintptr_t)pthread_self());
+	//fflush(stdout);
 	bool isMainThread = false;
 
 	Trc_MM_SynchronizeGCThreadsAndReleaseMain_Entry(env->getLanguageVMThread(), id);
@@ -135,8 +135,8 @@ MM_ParallelTask::synchronizeGCThreadsAndReleaseMain(MM_EnvironmentBase *env, con
 				"%s at %p from synchronizeGCThreadsAndReleaseMain: call with syncPointWorkUnitIndex %zu, expected %zu\n", getBaseVirtualTypeId(), this, env->getWorkUnitIndex(), _syncPointWorkUnitIndex);
 		}
 
-		printf("\t\t\t\t\t\t- TID: %zu. Inside MM_ParallelTask::synchronizeGCThreadsAndReleaseMain 2222222..\n", (uintptr_t)pthread_self());
-		fflush(stdout);
+		//printf("\t\t\t\t\t\t- TID: %zu. Inside MM_ParallelTask::synchronizeGCThreadsAndReleaseMain 2222222..\n", (uintptr_t)pthread_self());
+		//fflush(stdout);
 
 		_synchronizeCount += 1;
 		if(_synchronizeCount == _threadCount) {
@@ -149,8 +149,8 @@ MM_ParallelTask::synchronizeGCThreadsAndReleaseMain(MM_EnvironmentBase *env, con
 			omrthread_monitor_notify_all(_synchronizeMutex);
 		}
 
-		printf("\t\t\t\t\t\t- TID: %zu. Inside MM_ParallelTask::synchronizeGCThreadsAndReleaseMain 3333333..\n", (uintptr_t)pthread_self());
-		fflush(stdout);
+		//printf("\t\t\t\t\t\t- TID: %zu. Inside MM_ParallelTask::synchronizeGCThreadsAndReleaseMain 3333333..\n", (uintptr_t)pthread_self());
+		//fflush(stdout);
 
 		while(index == _synchronizeIndex) {
 			if(env->isMainThread() && (_synchronizeCount == _threadCount)) {

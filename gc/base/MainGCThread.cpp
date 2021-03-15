@@ -196,7 +196,6 @@ MM_MainGCThread::handleSTW(MM_EnvironmentBase *env)
 #if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
 	if (_worktSTWDone) {
 #endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
-		// TODO: We might also want to deal with this
 		uintptr_t exclusiveCount = env->relinquishExclusiveVMAccess();
 		Assert_MM_true(1 == exclusiveCount);
 
