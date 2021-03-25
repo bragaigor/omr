@@ -93,6 +93,12 @@ public:
 	}
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 
+	MMINLINE bool
+	isSparseHeapEnabled()
+	{
+		return false;
+	}
+
 };
 
 #endif /* ARRAYLETOBJECTMODEL_ */

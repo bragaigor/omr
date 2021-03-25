@@ -354,18 +354,26 @@ MM_VerboseHandlerOutput::outputInitializedRegion(MM_EnvironmentBase *env, MM_Ver
 	const char *arrayletDoubleMappingStatus = _extensions->indexableObjectModel.isDoubleMappingEnabled() ? "enabled" : "disabled";
 	const char *arrayletDoubleMappingRequested = isArrayletDoubleMapRequested ? "true" : "false";
 #endif /* OMR_GC_DOUBLE_MAP_ARRAYLETS */
+	bool isSparseHeapRequested = _extensions->isSparseHeapRequested;
+	const char *sparseHeapStatus = _extensions->indexableObjectModel.isSparseHeapEnabled() ? "enabled" : "disabled";
+	const char *sparseHeapRequested = isSparseHeapRequested ? "true" : "false";
+
 	buffer->formatAndOutput(env, 1, "<region>");
 	buffer->formatAndOutput(env, 2, "<attribute name=\"regionSize\" value=\"%zu\" />", _extensions->getHeap()->getHeapRegionManager()->getRegionSize());
 	buffer->formatAndOutput(env, 2, "<attribute name=\"regionCount\" value=\"%zu\" />", _extensions->getHeap()->getHeapRegionManager()->getTableRegionCount());
 	buffer->formatAndOutput(env, 2, "<attribute name=\"arrayletLeafSize\" value=\"%zu\" />", omrVM->_arrayletLeafSize);
-#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
 	if (_extensions->isVLHGC()) {
+#if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)
 		buffer->formatAndOutput(env, 2, "<attribute name=\"arrayletDoubleMappingRequested\" value=\"%s\"/>", arrayletDoubleMappingRequested);
 		if (isArrayletDoubleMapRequested) {
 			buffer->formatAndOutput(env, 2, "<attribute name=\"arrayletDoubleMapping\" value=\"%s\"/>", arrayletDoubleMappingStatus);
 		}
-	}
 #endif /* OMR_GC_DOUBLE_MAP_ARRAYLETS */
+		buffer->formatAndOutput(env, 2, "<attribute name=\"sparseHeapRequested\" value=\"%s\"/>", sparseHeapRequested);
+		if (isSparseHeapRequested) {
+			buffer->formatAndOutput(env, 2, "<attribute name=\"sparseHeapStatus\" value=\"%s\"/>", sparseHeapStatus);
+		}
+	}
 	buffer->formatAndOutput(env, 1, "</region>");
 }
 

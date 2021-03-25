@@ -141,6 +141,8 @@ set(omrgc_sources
 	base/ReferenceChainWalkerMarkMap.cpp
 	base/RegionPool.cpp
 	base/RegionPoolGeneric.cpp
+	base/SparseOrderedFixedSizePool.cpp
+	base/SparseVirtualMemory.cpp
 	base/StartupManager.cpp
 	base/SweepHeapSectioning.cpp
 	base/SweepPoolManager.cpp

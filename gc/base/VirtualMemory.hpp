@@ -191,6 +191,7 @@ public:
  * friends
  */
 	friend class MM_MemoryManager;
+	friend class MM_SparseVirtualMemory;
 };
 
 #endif /* VIRTUALMEMORY_HPP_ */
