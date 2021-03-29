@@ -296,6 +296,7 @@ public:
 	 * @param[out] doesObjectNeedHash flag that indicates if object needs hashing
 	 */
 	void calculateObjectDetailsForCopy(MM_EnvironmentBase *env, MM_ForwardedHeader* forwardedHeader, uintptr_t *objectCopySizeInBytes, uintptr_t *objectReserveSizeInBytes, bool *doesObjectNeedHash);
+	void calculateObjectDetailsForCopy(MM_EnvironmentBase *env, MM_ForwardedHeader* forwardedHeader, uintptr_t *objectCopySizeInBytes, uintptr_t *objectReserveSizeInBytes);
 
 	/**
 	 * Constructor receives a copy of OMR's object flags mask, normalized to low order byte.

@@ -55,3 +55,10 @@ GC_ObjectModelDelegate::calculateObjectDetailsForCopy(MM_EnvironmentBase *env, M
 	*objectReserveSizeInBytes = 0;
 	*doesObjectNeedHash = false;
 }
+
+void
+GC_ObjectModelDelegate::calculateObjectDetailsForCopy(MM_EnvironmentBase *env, MM_ForwardedHeader* forwardedHeader, uintptr_t *objectCopySizeInBytes, uintptr_t *objectReserveSizeInBytes)
+{
+	*objectCopySizeInBytes = 0;
+	*objectReserveSizeInBytes = 0;
+}
