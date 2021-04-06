@@ -407,6 +407,13 @@ MM_HeapVirtualMemory::heapRemoveRange(MM_EnvironmentBase* env, MM_MemorySubSpace
 	return result;
 }
 
+int
+MM_HeapVirtualMemory::getHeapFileDescriptor()
+{
+	MM_MemoryManager* memoryManager = MM_GCExtensionsBase::getExtensions(_omrVM)->memoryManager;
+	return memoryManager->getHeapFileDescriptor(&_vmemHandle);
+}
+
 bool
 MM_HeapVirtualMemory::initializeHeapRegionManager(MM_EnvironmentBase* env, MM_HeapRegionManager* manager)
 {

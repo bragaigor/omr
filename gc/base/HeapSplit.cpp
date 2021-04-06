@@ -160,6 +160,11 @@ MM_HeapSplit::getHeapBase()
 	return _lowExtent->getHeapBase();
 }
 
+int
+MM_HeapSplit::getHeapFileDescriptor()
+{
+	return _lowExtent->getHeapFileDescriptor();
+}
 
 /**
  * Answer the highest possible address for the heap that will ever be possible.

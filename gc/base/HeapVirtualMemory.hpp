@@ -54,6 +54,7 @@ public:
 
 	virtual uintptr_t getPageSize();
 	virtual uintptr_t getPageFlags();
+	virtual int getHeapFileDescriptor();
 	virtual void* getHeapBase();
 	virtual void* getHeapTop();
 #if defined(OMR_GC_DOUBLE_MAP_ARRAYLETS)

@@ -137,6 +137,11 @@ protected:
 		return _heapTop;
 	};
 
+	MMINLINE int getHeapFileDescriptor()
+	{
+		return _identifier.fd;
+	}
+
 	/** 
 	 * Return the size of the pages used in the virtual memory object
 	 */

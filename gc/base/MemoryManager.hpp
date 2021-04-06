@@ -274,6 +274,14 @@ public:
 	};
 
 	/**
+	 * Return file descriptor associated with heap
+	 *
+	 * @param handle pointer to memory handle
+	 * @return file descriptor associated with heap, if non existent return -1
+	 */
+	int getHeapFileDescriptor(MM_MemoryHandle* handle);
+
+	/**
 	 * Return the top of the heap of the virtual memory object.
 	 *
 	 * @param handle pointer to memory handle
