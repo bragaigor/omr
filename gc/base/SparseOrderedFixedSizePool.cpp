@@ -114,6 +114,44 @@ MM_SparseOrderedFixedSizePool::initialize(MM_EnvironmentBase *env, void *sparseH
 	return true;
 }
 
+#if defined(OSX)
+struct J9PortVmemIdentifier*
+MM_SparseOrderedFixedSizePool::getIdentifierFromDataPtr(void *dataPtr)
+{
+	J9ObjDataTableEntry lookupEntry;
+	J9ObjDataTableEntry *entry;
+
+	lookupEntry.dataPtr = dataPtr;
+	entry = (J9ObjDataTableEntry *)hashTableFind(_objectToDataTable, &lookupEntry);
+	if (NULL == entry || (entry->dataPtr != dataPtr)) {
+		printf("Failed retrieving entry from J9ObjDataTableEntry for dataPtr: %p!!!!!!\n", dataPtr);
+		return NULL;
+	}
+
+	return entry->identifier;
+}
+
+void
+MM_SparseOrderedFixedSizePool::recordDoubleMapIdentifier(void *dataPtr, struct J9PortVmemIdentifier *identifier)
+{
+	J9ObjDataTableEntry lookupEntry;
+	J9ObjDataTableEntry *entry;
+
+	lookupEntry.dataPtr = dataPtr;
+	entry = (J9ObjDataTableEntry *)hashTableFind(_objectToDataTable, &lookupEntry);
+
+	if (NULL == entry || (entry->dataPtr != dataPtr)) {
+#if defined(OMRVMEM_DEBUG)
+		printf("Failed trying to retrieve object pointer: %p!\n", dataPtr);
+		fflush(stdout);
+#endif
+	} else {
+		printf("Updating identifier of entry dataPtr: %p!!!!! address: %p, size: %zu\n", dataPtr, identifier->address, identifier->size);
+		entry->identifier = identifier;
+	}
+}
+#endif
+
 bool
 MM_SparseOrderedFixedSizePool::rememberObjectData(void *dataPtr, void* proxyObjPtr, uintptr_t size)
 {

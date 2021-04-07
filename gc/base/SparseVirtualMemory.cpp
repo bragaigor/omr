@@ -21,7 +21,6 @@
  *******************************************************************************/
 
 #include <string.h>
-#include <math.h>
 #if defined(OSX)
 #include <sys/mman.h>
 #include <sys/errno.h>
@@ -70,12 +69,19 @@ bool
 MM_SparseVirtualMemory::initialize(MM_EnvironmentBase* env, uint32_t memoryCategory)
 {
 	uintptr_t in_heap_size = (uintptr_t)_heap->getHeapTop() - (uintptr_t)_heap->getHeapBase();
+	uintptr_t maxHeapSize = _heap->getMaximumMemorySize();
+	printf("getHeapTop: %zu, getHeapBase: %zu, in_heap_size: %zu, maxHeapSize: %zu\n", (uintptr_t)_heap->getHeapTop(), (uintptr_t)_heap->getHeapBase(), in_heap_size, maxHeapSize);
 	uintptr_t regionSize = _heap->getHeapRegionManager()->getRegionSize();
 	uintptr_t regionCount = in_heap_size / regionSize;
 
-	uintptr_t off_heap_size = (uintptr_t)((ceil(log2((double)regionCount)) * in_heap_size) / 2.0);
+	// TODO: This must be ceil log, or should we just keep this way?
+	uintptr_t ceilLog2 = MM_Math::floorLog2(regionCount) + 1;
+
+	uintptr_t off_heap_size = (uintptr_t)((ceilLog2 * in_heap_size) / 2.0);
 	printf("Inisde MM_SparseVirtualMemory::initialize.. in_heap_size: %zu, region size: %zu, num of region: %zu, attempting off-heap size: %zu\n", in_heap_size, regionSize, regionCount, off_heap_size);
+#if !defined(J9ZOS390)
 	Assert_MM_true(regionSize % _pageSize == 0);
+#endif
 	bool ret = MM_VirtualMemory::initialize(env, off_heap_size, NULL, NULL, 0, memoryCategory);
 
 	if (ret) {
@@ -120,11 +126,11 @@ MM_SparseVirtualMemory::getAddressForData(void *proxyObjPtr, uintptr_t size)
 }
 
 bool
-MM_SparseVirtualMemory::decommitMemory(void* address, uintptr_t size)
+MM_SparseVirtualMemory::decommitMemory(MM_EnvironmentBase* env, void* address, uintptr_t size)
 {
 	bool ret = false;
 #if defined(OSX)
-	ret = decommitOSXMemory(address, size);
+	ret = decommitOSXMemory(env, address, size);
 #else /* defined(OSX) */
 	void *highValidAddress = (void *)((uintptr_t)address + size);
 	ret = MM_VirtualMemory::decommitMemory(address, size, address, highValidAddress);
@@ -134,7 +140,7 @@ MM_SparseVirtualMemory::decommitMemory(void* address, uintptr_t size)
 }
 
 bool
-MM_SparseVirtualMemory::removeObjFromPoolAndFreeSparseRegion(void *dataPtr)
+MM_SparseVirtualMemory::removeObjFromPoolAndFreeSparseRegion(MM_EnvironmentBase* env, void *dataPtr)
 {
 	uintptr_t dataSize = _sparsePool->getDataSizeForDataPtr(dataPtr);
 	bool ret = false;
@@ -142,7 +148,7 @@ MM_SparseVirtualMemory::removeObjFromPoolAndFreeSparseRegion(void *dataPtr)
 	if ((NULL != dataPtr) && (0 != dataSize)) {
 
 		Assert_MM_true(0 == (dataSize % _pageSize));
-		ret = decommitMemory(dataPtr, dataSize);
+		ret = decommitMemory(env, dataPtr, dataSize);
 		if (ret) {
 			_sparsePool->returnEntryToFreeList(dataPtr, dataSize);
 			_sparsePool->removeEntryFromTable(dataPtr);
@@ -160,6 +166,14 @@ MM_SparseVirtualMemory::removeObjFromPoolAndFreeSparseRegion(void *dataPtr)
 	return ret;
 }
 
+#if defined(OSX)
+void
+MM_SparseVirtualMemory::recordDoubleMapIdentifier(void *dataPtr, struct J9PortVmemIdentifier *identifier)
+{
+	_sparsePool->recordDoubleMapIdentifier(dataPtr, identifier);
+}
+#endif /* defined(OSX) */
+
 bool
 MM_SparseVirtualMemory::updateCopiedObject(void *dataPtr, void *objPtr)
 {
@@ -170,38 +184,27 @@ MM_SparseVirtualMemory::updateCopiedObject(void *dataPtr, void *objPtr)
 #if defined(OSX)
 /* Should this be somewhere in port library instead? */
 bool
-MM_SparseVirtualMemory::decommitOSXMemory(uintptr_t dataSize, void *dataPtr)
+MM_SparseVirtualMemory::decommitOSXMemory(MM_EnvironmentBase* env, void *dataPtr, uintptr_t dataSize)
 {
-	int flags = MAP_PRIVATE | MAP_FIXED | MAP_ANON;
-	int protFlags = PROT_NONE;
-	bool ret = true;
+	int rc = 0;
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+	struct J9PortVmemIdentifier *identifier = _sparsePool->getIdentifierFromDataPtr(dataPtr);
 
-	Assert_MM_true((getHeapBase() <= dataPtr) && (getHeapTop() > dataPtr));
+	if (0 == identifier->size || NULL == identifier->address) {
+		printf("___-----___----- Maybe this address was already returned to the pool!!! dataPtr: %p, dataSize: %zu\n", dataPtr, dataSize);
+		Assert_MM_unreachable();
+	} else {
+		printf("------------ dataPtr: %p, identifier->address: %p, dataSize: %zu, identifier->size: %zu\n", dataPtr, identifier->address, dataSize, identifier->size);
+		Assert_GC_true_with_message4(env, ((identifier->size == dataSize) && (identifier->address == dataPtr)),
+			"dataPtr: %p, identifier->address: %p, dataSize: %zu, identifier->size: %zu\n", dataPtr, identifier->address, dataSize, identifier->size);
+		Assert_MM_true((getHeapBase() <= dataPtr) && (getHeapTop() > dataPtr));
 
-	// TODO: Add trace point and portLibrary->error_set_last_error_with_message?
+		rc = omrvmem_release_double_mapped_region(dataPtr, dataSize, identifier);
 
-	void *address = mmap(
-		dataPtr,
-		dataSize,
-		protFlags,
-		flags,
-		-1,
-		0);
-	if (address == MAP_FAILED) {
-#if defined(OMRVMEM_DEBUG)
-		printf("***************************** errno: %d\n", errno);
-		printf("Failed to mmap address: %p\n", dataPtr);
-		fflush(stdout);
-#endif
-		ret = false;
-	} else if (address != dataPtr) {
-#if defined(OMRVMEM_DEBUG)
-		printf("Map failed to provide the correct address. nextAddress %p != %p\n", address, dataPtr);
-		fflush(stdout);
-#endif
-		ret = false;
+		if (-1 == rc) {
+			printf("omrvmem_release_double_mapped_region returned -1!!!!!! Failed trying to release double mapped region!!!\n");
+		}
 	}
-
-	return ret;
+	return -1 != rc;
 }
 #endif /* defined(OSX) */

@@ -59,6 +59,7 @@ public:
  * Function members
  */
 private:
+
 	bool initialize(MM_EnvironmentBase* env, uint32_t memoryCategory);
 #if defined(OSX)
 	/**
@@ -72,14 +73,14 @@ private:
 	 *
 	 * @return true if sparse region was successfully mmaped, false otherwise
 	 */
-	bool decommitOSXMemory(uintptr_t dataSize, void *dataPtr);
+	bool decommitOSXMemory(MM_EnvironmentBase* env, void *dataPtr, uintptr_t dataSize);
 #endif /* defined(OSX) */
 
 protected:
 
 	// TODO: Fix heap alignment param
 	MM_SparseVirtualMemory(MM_EnvironmentBase* env, uintptr_t pageSize, MM_Heap *in_heap)
-		: MM_VirtualMemory(env, env->getExtensions()->heapAlignment, pageSize, OMRPORT_VMEM_PAGE_FLAG_NOT_USED, 0, OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE)
+		: MM_VirtualMemory(env, env->getExtensions()->heapAlignment, pageSize, env->getExtensions()->requestedPageFlags, 0, OMRPORT_VMEM_MEMORY_MODE_READ | OMRPORT_VMEM_MEMORY_MODE_WRITE)
 		, _heap(in_heap)
 		, _sparsePool(NULL)
 	{
@@ -92,6 +93,10 @@ public:
 
 	/* TODO: DELETE */
 	bool updateCopiedObject(void *srcObj, void *dstObj);
+
+#if defined(OSX)
+	void recordDoubleMapIdentifier(void *dataPtr, struct J9PortVmemIdentifier *identifier);
+#endif /* defined(OSX) */
 
 	/**
 	 * Find free space at sparse heap address space that satisfy size
@@ -111,7 +116,7 @@ public:
 	 * @param dataPtr	void*		Data pointer
 	 * @return true if region associated to object was decommited and freed successfully, false otherwise
 	 */
-	bool removeObjFromPoolAndFreeSparseRegion(void *dataPtr);
+	bool removeObjFromPoolAndFreeSparseRegion(MM_EnvironmentBase* env, void *dataPtr);
 
 	/**
 	 * Decommits/Releases memory, returning the associated pages to the OS
@@ -121,7 +126,9 @@ public:
 	 *
 	 * @return true if memory was successfully decommited, false otherwise
 	 */
-	bool decommitMemory(void* address, uintptr_t size);
+	virtual bool decommitMemory(MM_EnvironmentBase* env, void* address, uintptr_t size);
+	/* tell the compiler we want both decommit from Base class and ours */
+	using MM_VirtualMemory::decommitMemory;
 
 	MMINLINE uintptr_t getReservedSize()
 	{

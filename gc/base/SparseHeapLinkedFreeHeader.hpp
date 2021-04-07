@@ -93,4 +93,5 @@ public:
 	friend class MM_SparseOrderedFixedSizePool;
 
 };
+
 #endif /* SPARSEHEAPLINKEDFREEHEADER_HPP_ */

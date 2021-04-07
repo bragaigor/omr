@@ -39,6 +39,9 @@ typedef struct J9ObjDataTableEntry {
 	void *dataPtr; /**< Object data pointer related to proxy object */
 	void *proxyObjPtr; /**< Pointer to proxy object that resides at in-heap */
 	uintptr_t size; /**< Total size of data pointed to by value */
+#if defined(OSX)
+	struct J9PortVmemIdentifier *identifier; /**< Identifier associated with double mapped region */
+#endif /* defined(OSX) */
 } J9ObjDataTableEntry;
 
 class MM_SparseOrderedFixedSizePool : public MM_BaseVirtual
@@ -102,6 +105,11 @@ public:
 	 * @param size		uintptr_t	Size of region to be returned to freeList
 	 */
 	bool returnEntryToFreeList(void *address, uintptr_t size);
+
+#if defined(OSX)
+	void recordDoubleMapIdentifier(void *dataPtr, struct J9PortVmemIdentifier *identifier);
+	struct J9PortVmemIdentifier* getIdentifierFromDataPtr(void *dataPtr);
+#endif
 
 	/**
 	 * Add mapping from object to data location to hash table
